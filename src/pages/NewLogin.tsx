@@ -54,20 +54,29 @@ export default function NewLogin() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      // Here we would normally integrate with Google's OAuth
-      // For now, we'll simulate a login with a dummy token
-      const idToken = "simulated-google-token";
+      // Import Firebase auth methods
+      const { signInWithPopup } = await import('firebase/auth');
+      const { auth, googleProvider } = await import('@/firebase');
+
+      // Trigger Google OAuth popup
+      const result = await signInWithPopup(auth, googleProvider);
+
+      // Get the ID token from the authenticated user
+      const idToken = await result.user.getIdToken();
+
+      // Send the real ID token to the backend
       await googleSignIn(idToken);
-      
+
       toast({
         title: 'Welcome!',
         description: 'You have successfully signed in with Google.',
       });
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Google. Please try again.';
       toast({
         title: 'Google sign-in failed',
-        description: error.message || 'Failed to sign in with Google. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -88,7 +97,7 @@ export default function NewLogin() {
           <div>
             <div className="flex items-center">
               <svg
-                className="h-10 w-10" 
+                className="h-10 w-10"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -105,19 +114,19 @@ export default function NewLogin() {
               Log in to continue your journey with AI-powered assistance.
             </p>
           </div>
-          
+
           <div className="mt-auto">
             <p className="text-sm text-white/60">
               Boost your productivity and well-being with our intelligent agents
             </p>
           </div>
         </div>
-        
+
         {/* Right side - Login Form */}
         <div className="md:w-1/2 p-12">
           <div className="max-w-sm mx-auto">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Log in to your account</h3>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
@@ -140,7 +149,7 @@ export default function NewLogin() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password" className="text-sm font-medium">
@@ -167,10 +176,10 @@ export default function NewLogin() {
                   />
                 </div>
               </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
+
+              <Button
+                type="submit"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -181,7 +190,7 @@ export default function NewLogin() {
                 ) : "Log in"}
               </Button>
             </form>
-            
+
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-200" />
@@ -190,13 +199,13 @@ export default function NewLogin() {
                 <span className="px-2 bg-white text-gray-500">or continue with</span>
               </div>
             </div>
-            
+
             <div className="flex space-x-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full" 
-                onClick={handleGoogleSignIn} 
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleSignIn}
                 disabled={isLoading}
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5 mr-2" aria-hidden="true">
@@ -219,17 +228,17 @@ export default function NewLogin() {
                 </svg>
                 Google
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full" 
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
                 disabled={isLoading}
               >
                 <Github className="h-5 w-5 mr-2" />
                 GitHub
               </Button>
             </div>
-            
+
             <p className="mt-6 text-center text-sm text-gray-600">
               Don't have an account?{" "}
               <Link to="/signup" className="font-medium text-purple-600 hover:underline">

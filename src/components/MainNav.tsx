@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,9 @@ import {
   FileText,
   Heart,
   User,
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,6 +29,17 @@ const MainNav = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const isAuthenticated = !!user;
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Track scroll position for nav styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const getInitials = (name: string) => {
     if (!name) return 'U';
@@ -39,12 +52,17 @@ const MainNav = () => {
 
   const userInitials = user?.full_name ? getInitials(user.full_name) : 'U';
 
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: <LayoutGrid className="h-5 w-5" /> },
-    { label: 'Documents', path: '/documents', icon: <FileText className="h-5 w-5" /> },
-    { label: 'Agents', path: '/agents', icon: <User className="h-5 w-5" /> },
-    { label: 'Well-being', path: '/wellbeing', icon: <Heart className="h-5 w-5" /> },
-    { label: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> }
+  const publicNavItems = [
+    { label: 'Pricing', path: '/pricing' },
+    { label: 'Agents', path: '/agents' },
+    { label: 'Well-being', path: '/wellbeing' },
+  ];
+
+  const authNavItems = [
+    { label: 'Dashboard', path: '/dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
+    { label: 'Documents', path: '/documents', icon: <FileText className="h-4 w-4" /> },
+    { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
+    { label: 'Well-being', path: '/wellbeing', icon: <Heart className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
@@ -57,101 +75,193 @@ const MainNav = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 border-b bg-white/80 backdrop-blur-md z-40">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <svg
-              className="h-8 w-8 text-purple-600" 
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            <span className="ml-2 text-xl font-bold text-purple-600">Lumicoria.ai</span>
-          </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
+      {/* Floating Glass Pill Navigation */}
+      <nav
+        className={cn(
+          "flex items-center justify-between px-3 py-3 rounded-full transition-all duration-500 ease-out",
+          "backdrop-blur-md border border-gray-200/30 dark:border-white/10",
+          "shadow-[0_4px_20px_rgba(0,0,0,0.08)]",
+          isScrolled
+            ? "bg-white/90 dark:bg-gray-900/90 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
+            : "bg-white/80 dark:bg-gray-900/80",
+          isAuthenticated ? "w-full max-w-4xl" : "w-full max-w-2xl"
+        )}
+      >
+        {/* Logo */}
+        <Link
+          to="/"
+          className="flex items-center px-4 py-2 group"
+        >
+          <span className="text-xl font-light tracking-tight text-gray-900 dark:text-white">
+            <span className="font-light italic">Lumi</span>
+            <span className="font-medium">coria</span>
+          </span>
+        </Link>
 
-          {isAuthenticated && (
-            <nav className="flex items-center ml-8 space-x-6">
-              {navItems.map((item) => (
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-1">
+          {isAuthenticated ? (
+            // Authenticated Navigation
+            <>
+              {authNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center text-sm font-medium transition-colors hover:text-purple-600",
+                    "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
                     location.pathname === item.path
-                      ? "text-purple-600 border-b-2 border-purple-600 pb-4 -mb-4"
-                      : "text-gray-700"
+                      ? "bg-gray-900/10 dark:bg-white/10 text-gray-900 dark:text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-white/5"
                   )}
                 >
-                  <span className="hidden md:block">{item.label}</span>
-                  <span className="block md:hidden">{item.icon}</span>
+                  {item.label}
                 </Link>
               ))}
-            </nav>
+            </>
+          ) : (
+            // Public Navigation
+            <>
+              {publicNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
+                    location.pathname === item.path
+                      ? "text-gray-900 dark:text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                Login
+              </Link>
+            </>
           )}
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Right Side Actions */}
+        <div className="flex items-center">
           {isAuthenticated ? (
-            <>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full h-9 w-9 hover:bg-gray-100/50 dark:hover:bg-white/10"
+              >
+                <Bell className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-purple-500"></span>
               </Button>
-              <Button variant="ghost" size="icon">
-                <Camera className="h-5 w-5" />
-              </Button>
-              <div className="border-l h-6 mx-2 border-gray-200" />
+
+              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9 ring-2 ring-white/50">
                       <AvatarImage src={user?.avatar_url || ''} />
-                      <AvatarFallback className="bg-purple-100 text-purple-600">
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-56 mt-2 rounded-2xl border-white/20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+                  <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">Profile</Link>
+                  <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/profile">Profile</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="cursor-pointer">Settings</Link>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
+                  <DropdownMenuItem onClick={handleLogout} className="px-4 py-2 rounded-lg mx-2 mb-2 cursor-pointer text-red-600 dark:text-red-400">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <Button asChild variant="ghost">
-                <Link to="/login">Log in</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/signup">Sign up</Link>
-              </Button>
             </div>
+          ) : (
+            <Link to="/signup">
+              <Button
+                className={cn(
+                  "rounded-full px-6 py-2 text-sm font-medium transition-all duration-300",
+                  "bg-gray-900 dark:bg-white text-white dark:text-gray-900",
+                  "hover:bg-gray-800 dark:hover:bg-gray-100",
+                  "shadow-lg hover:shadow-xl hover:scale-105"
+                )}
+              >
+                Get started
+              </Button>
+            </Link>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden ml-2 rounded-full"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
-      </div>
+      </nav>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="absolute top-full left-4 right-4 mt-2 md:hidden">
+          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-4 space-y-2">
+            {(isAuthenticated ? authNavItems : publicNavItems).map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all",
+                  location.pathname === item.path
+                    ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                )}
+              >
+                {'icon' in item && item.icon}
+                {item.label}
+              </Link>
+            ))}
+            {!isAuthenticated && (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-4 py-3 rounded-2xl text-sm font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-4 py-3 rounded-2xl text-sm font-medium bg-gray-900 text-white text-center"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
