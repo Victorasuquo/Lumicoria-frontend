@@ -25,6 +25,13 @@ import Profile from "@/pages/Profile";
 import Onboarding from "@/pages/Onboarding";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
+import Chat from "./pages/Chat";
+import Billing from "./pages/Billing";
+import Models from "./pages/Models";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -41,10 +48,15 @@ const AppRoutes = () => {
           <Route path="/agent-builder" element={<AgentBuilder />} />
           <Route path="/wellbeing" element={<NewWellbeing />} />
           <Route path="/pricing" element={<Pricing />} />
-            {/* Auth Routes */}
+          <Route path="/models" element={<Models />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
+          {/* Auth Routes */}
           <Route path="/login" element={<NewLogin />} />
           <Route path="/signup" element={<NewSignup />} />
-          
+
           {/* Protected Routes */}          <Route
             path="/dashboard"
             element={
@@ -85,7 +97,25 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-          
+
+          <Route
+            path="/billing"
+            element={
+              <ProtectedRoute>
+                <Billing />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch-all Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

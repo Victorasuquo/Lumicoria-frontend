@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User, Settings, LogOut, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileMenuProps {
   user: {
@@ -21,11 +22,11 @@ interface ProfileMenuProps {
 
 const ProfileMenu: React.FC<ProfileMenuProps> = ({ user }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      // TODO: Implement sign out logic
-      // await signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);

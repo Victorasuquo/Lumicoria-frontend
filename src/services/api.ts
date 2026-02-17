@@ -180,7 +180,7 @@ export const userApi = {
   uploadAvatar: async (file: File): Promise<User> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await api.post<User>('/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -213,7 +213,7 @@ export const documentApi = {
   uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await api.post<DocumentUploadResponse>('/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -400,7 +400,7 @@ export const meetingApi = {
     Object.keys(metadata).forEach(key => {
       formData.append(key, metadata[key]);
     });
-    
+
     const response = await api.post<any>('/meeting/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -413,6 +413,134 @@ export const meetingApi = {
     const response = await api.post<any>('/meeting/status-update', data);
     return response.data;
   }
+};
+
+// Chat API — Lumicoria Chat with intent routing
+export interface ChatRequest {
+  query: string;
+  conversation_id?: string;
+  save_to_context?: boolean;
+  include_sources?: string[];
+  max_sources_per_type?: number;
+}
+
+export interface ChatResponseData {
+  response: string;
+  conversation_id: string;
+  agent_used: string;
+  route_confidence: number;
+  sources: any[];
+  processing_time_seconds: number;
+  context_used: number;
+  success: boolean;
+}
+
+export interface ConversationSummary {
+  conversation_id: string;
+  title: string;
+  preview: string;
+  created_at?: string;
+  updated_at?: string;
+  agents_used: string[];
+}
+
+export const chatApi = {
+  sendMessage: async (data: ChatRequest): Promise<ChatResponseData> => {
+    const response = await api.post<ChatResponseData>('/lumicoria/chat', data);
+    return response.data;
+  },
+
+  listConversations: async (limit: number = 50, offset: number = 0): Promise<ConversationSummary[]> => {
+    const response = await api.get<ConversationSummary[]>('/lumicoria/conversations', {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+
+  getConversation: async (conversationId: string): Promise<any> => {
+    const response = await api.get<any>(`/lumicoria/conversations/${conversationId}`);
+    return response.data;
+  },
+
+  deleteConversation: async (conversationId: string): Promise<void> => {
+    await api.delete(`/lumicoria/conversations/${conversationId}`);
+  },
+};
+
+// ─── Billing API ───────────────────────────────────────────────────────────
+
+export interface PlanInfo {
+  plan: string;
+  display_name: string;
+  price_monthly: number | null;
+  max_agents: number;
+  max_agent_runs_per_month: number;
+  max_documents_per_month: number;
+  max_file_upload_mb: number;
+  max_knowledge_base_queries: number;
+  advanced_features: boolean;
+  priority_support: boolean;
+  api_access: boolean;
+  custom_agent_templates: boolean;
+}
+
+export interface SubscriptionInfo {
+  plan: string;
+  status: string;
+  cancel_at_period_end: boolean;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  trial_end: string | null;
+  is_active: boolean;
+}
+
+export interface UsageInfo {
+  plan: string;
+  month: number;
+  year: number;
+  agent_runs: number;
+  agent_runs_limit: number;
+  documents_processed: number;
+  documents_limit: number;
+  knowledge_base_queries: number;
+  knowledge_base_queries_limit: number;
+  usage_percent: number;
+}
+
+export interface CheckoutResponse {
+  checkout_url: string;
+  session_id: string;
+}
+
+export interface PortalResponse {
+  portal_url: string;
+}
+
+export const billingApi = {
+  getPlans: async (): Promise<PlanInfo[]> => {
+    const response = await api.get<PlanInfo[]>('/billing/plans');
+    return response.data;
+  },
+
+  getSubscription: async (): Promise<SubscriptionInfo> => {
+    const response = await api.get<SubscriptionInfo>('/billing/subscription');
+    return response.data;
+  },
+
+  getUsage: async (): Promise<UsageInfo> => {
+    const response = await api.get<UsageInfo>('/billing/usage');
+    return response.data;
+  },
+
+  createCheckout: async (data: { price_id: string; success_url?: string; cancel_url?: string }): Promise<CheckoutResponse> => {
+    const response = await api.post<CheckoutResponse>('/billing/checkout', data);
+    return response.data;
+  },
+
+  createPortalSession: async (data?: { return_url?: string }): Promise<PortalResponse> => {
+    const response = await api.post<PortalResponse>('/billing/portal', data || {});
+    return response.data;
+  },
 };
 
 // Export the api instance for custom requests

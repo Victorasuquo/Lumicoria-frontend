@@ -66,10 +66,10 @@ const Footer = () => {
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Product</h4>
               <ul className="space-y-3">
                 <li><Link to="/agents" className="text-sm text-gray-400 hover:text-white transition-colors">AI Agents</Link></li>
-                <li><Link to="/wellbeing" className="text-sm text-gray-400 hover:text-white transition-colors">Well-being</Link></li>
-                <li><Link to="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Integrations</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">API</a></li>
+                <li><Link to="/chat" className="text-sm text-gray-400 hover:text-white transition-colors">Chat</Link></li>
+                <li><Link to="/models" className="text-sm text-gray-400 hover:text-white transition-colors">Models</Link></li>
+                <li><Link to="/documents" className="text-sm text-gray-400 hover:text-white transition-colors">Documents</Link></li>
+                <li><Link to="/billing" className="text-sm text-gray-400 hover:text-white transition-colors">Billing</Link></li>
               </ul>
             </div>
 
@@ -77,11 +77,10 @@ const Footer = () => {
             <div>
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Resources</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Tutorials</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Case Studies</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Support</a></li>
+                <li><Link to="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link to="/wellbeing" className="text-sm text-gray-400 hover:text-white transition-colors">Well-being</Link></li>
+                <li><Link to="/live-studio" className="text-sm text-gray-400 hover:text-white transition-colors">Live Studio</Link></li>
+                <li><Link to="/agent-builder" className="text-sm text-gray-400 hover:text-white transition-colors">Agent Builder</Link></li>
               </ul>
             </div>
 
@@ -89,11 +88,10 @@ const Footer = () => {
             <div>
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Company</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+                <li><Link to="/about" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link to="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link to="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
           </div>
@@ -104,9 +102,9 @@ const Footer = () => {
               © {new Date().getFullYear()} Lumicoria.ai. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 text-sm">
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Cookies</a>
+              <Link to="/privacy" className="text-gray-500 hover:text-white transition-colors">Privacy</Link>
+              <Link to="/terms" className="text-gray-500 hover:text-white transition-colors">Terms</Link>
+              <Link to="/contact" className="text-gray-500 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
         </div>

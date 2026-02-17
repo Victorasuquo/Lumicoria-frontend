@@ -1,177 +1,120 @@
-
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 
-const plans = [
+const tiers = [
   {
-    name: "Free",
-    description: "Perfect for trying out Lumicoria.ai",
-    price: "0",
+    name: 'Free',
+    description: 'Try Lumicoria with core agents and essential workflows.',
+    price: '$0',
+    period: 'per month',
     features: [
-      "Access to 3 pre-built agents",
-      "1 hour/month live camera usage",
-      "Basic well-being coaching",
-      "Single user account",
-      "Standard document processing"
+      '3 pre-built agents',
+      '1 hour/month live camera usage',
+      'Basic well-being coaching'
     ],
-    notIncluded: [
-      "Custom agent creation",
-      "Advanced AI models",
-      "Team collaboration",
-      "Unlimited document uploads"
-    ],
-    buttonText: "Get Started",
-    buttonVariant: "outline"
+    highlighted: false,
+    cta: 'Start Free'
   },
   {
-    name: "Pro",
-    description: "For professionals and power users",
-    price: "29",
-    popular: true,
+    name: 'Pro',
+    description: 'For professionals and teams shipping real outcomes.',
+    price: '$29',
+    period: 'per user / month',
     features: [
-      "Access to all pre-built agents",
-      "Unlimited custom agents",
-      "Access to all AI models",
-      "Team collaboration features",
-      "Advanced well-being analytics",
-      "Unlimited document uploads",
-      "Priority processing"
+      'Unlimited custom agents & workflows',
+      'AI Model Hub (Gemini, Mistral, Perplexity)',
+      'Advanced well-being analytics'
     ],
-    buttonText: "Start 14-Day Free Trial",
-    buttonVariant: "default"
+    highlighted: true,
+    cta: 'Get Pro'
   },
   {
-    name: "Enterprise",
-    description: "For teams and organizations",
-    price: "Custom",
+    name: 'Enterprise',
+    description: 'Security, compliance, governance, and scale.',
+    price: 'Custom',
+    period: 'contact sales',
     features: [
-      "Everything in Pro",
-      "SSO & advanced security controls",
-      "Dedicated support & onboarding",
-      "Compliance reporting (GDPR, CCPA)",
-      "Custom integrations",
-      "SLA guarantees",
-      "Enterprise admin dashboard"
+      'SSO, audit logs, advanced security',
+      'Compliance reporting (GDPR, CCPA)',
+      'Custom integrations & SLAs'
     ],
-    buttonText: "Contact Sales",
-    buttonVariant: "outline"
+    highlighted: false,
+    cta: 'Contact Sales'
   }
 ];
 
 const Pricing = () => {
-  const [billingPeriod, setBillingPeriod] = useState("monthly");
-  
   return (
-    <section id="pricing" className="py-20 bg-gray-50">
+    <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16 reveal">
+        <div className="text-center mb-12 reveal">
           <span className="inline-block py-1 px-3 rounded-full bg-lumicoria-purple/10 text-lumicoria-purple text-sm font-medium mb-4">
             Pricing
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Simple, transparent pricing
-          </h2>
-          <p className="text-lg text-gray-600">
-            Choose the plan that's right for you. All plans include access to our core AI agent features.
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Plans built for real work</h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Start free, upgrade when you need more agents and workflow orchestration, and scale to enterprise governance when you’re ready.
           </p>
         </div>
-        
-        <div className="flex justify-center mb-10 reveal">
-          <div className="bg-white p-1 rounded-full shadow-sm inline-flex">
-            <button
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingPeriod === "monthly" 
-                  ? "bg-lumicoria-purple text-white shadow-md" 
-                  : "text-gray-600 hover:text-lumicoria-purple"
-              }`}
-              onClick={() => setBillingPeriod("monthly")}
-            >
-              Monthly Billing
-            </button>
-            <button
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingPeriod === "yearly" 
-                  ? "bg-lumicoria-purple text-white shadow-md" 
-                  : "text-gray-600 hover:text-lumicoria-purple"
-              }`}
-              onClick={() => setBillingPeriod("yearly")}
-            >
-              Yearly Billing
-              <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
-                Save 20%
-              </span>
-            </button>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan, index) => (
-            <div 
-              key={index}
-              className={`bg-white rounded-2xl shadow-lg overflow-hidden transition-all hover:shadow-xl relative reveal ${
-                plan.popular ? "border-2 border-lumicoria-purple" : ""
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {tiers.map((tier) => (
+            <Card
+              key={tier.name}
+              className={`relative rounded-2xl transition-all ${
+                tier.highlighted
+                  ? 'border-lumicoria-purple shadow-lg scale-105'
+                  : 'border-gray-200 shadow-sm hover:shadow-md'
               }`}
-              style={{ transitionDelay: `${index * 0.2}s` }}
             >
-              {plan.popular && (
-                <div className="absolute top-0 right-0 bg-lumicoria-purple text-white text-xs font-semibold py-1 px-3 rounded-bl-lg">
-                  Most Popular
+              {tier.highlighted && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-lumicoria-purple text-white px-4 py-1 rounded-full text-sm font-medium">
+                    Most Popular
+                  </span>
                 </div>
               )}
-              <div className="p-8">
-                <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
-                <p className="text-gray-500 mb-6">{plan.description}</p>
+
+              <CardHeader>
+                <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                <CardDescription>{tier.description}</CardDescription>
+              </CardHeader>
+
+              <CardContent>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  {plan.price !== "Custom" && (
-                    <span className="text-gray-500 ml-2">
-                      per user / {billingPeriod === "monthly" ? "month" : "year"}
-                    </span>
-                  )}
+                  <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
+                  <span className="text-gray-600 ml-2">{tier.period}</span>
                 </div>
-                <Button 
-                  variant={plan.buttonVariant as "outline" | "default"} 
-                  className={`w-full ${
-                    plan.buttonVariant === "default" 
-                      ? "bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white" 
-                      : "border-lumicoria-purple text-lumicoria-purple hover:bg-lumicoria-purple/10"
-                  } btn-hover-effect`}
-                >
-                  <span>{plan.buttonText}</span>
-                </Button>
-              </div>
-              
-              <div className="border-t border-gray-100 p-8">
-                <h4 className="font-semibold mb-4">Features included:</h4>
-                <ul className="space-y-3">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex">
-                      <Check size={20} className="text-green-500 mr-2 flex-shrink-0" />
+                <ul className="space-y-4">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start">
+                      <Check className="w-5 h-5 text-lumicoria-purple mr-2 mt-0.5" />
                       <span className="text-gray-600">{feature}</span>
                     </li>
                   ))}
-                  {plan.notIncluded && (
-                    <>
-                      <li className="pt-2 border-t border-gray-100"></li>
-                      {plan.notIncluded.map((feature, i) => (
-                        <li key={`not-${i}`} className="flex text-gray-400">
-                          <X size={20} className="text-gray-300 mr-2 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </>
-                  )}
                 </ul>
-              </div>
-            </div>
+              </CardContent>
+
+              <CardFooter className="flex flex-col gap-3">
+                <Button
+                  asChild
+                  className={`w-full ${
+                    tier.highlighted
+                      ? 'bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white'
+                      : 'bg-white text-lumicoria-purple border border-lumicoria-purple hover:bg-lumicoria-purple/10'
+                  }`}
+                >
+                  <Link to="/pricing">{tier.cta}</Link>
+                </Button>
+                <Button asChild variant="link" className="text-gray-500">
+                  <Link to="/pricing">See full details</Link>
+                </Button>
+              </CardFooter>
+            </Card>
           ))}
-        </div>
-        
-        <div className="mt-16 text-center reveal">
-          <p className="text-gray-600">
-            Need a custom solution? <span className="text-lumicoria-purple font-semibold cursor-pointer">Contact our sales team</span> to find the perfect fit for your organization.
-          </p>
         </div>
       </div>
     </section>

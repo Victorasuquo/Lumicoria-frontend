@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, User, Settings, ArrowRight } from 'lucide-react';
+import { userApi } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [profile, setProfile] = useState({
     full_name: '',
     job_title: '',
@@ -22,19 +26,30 @@ const Onboarding = () => {
 
   const handleProfileUpdate = async () => {
     try {
-      // TODO: Implement API call to update profile
-      // const response = await fetch('/api/v1/users/me/profile', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(profile)
-      // });
-      // if (!response.ok) throw new Error('Failed to update profile');
-      
-      // For now, just navigate to dashboard
+      setIsSubmitting(true);
+      await userApi.updateProfile({
+        full_name: profile.full_name,
+        job_title: profile.job_title,
+        company: profile.company,
+        timezone: profile.timezone,
+        preferred_language: profile.preferred_language,
+        onboarding_completed: true,
+      } as any);
+
+      toast({
+        title: "Profile updated!",
+        description: "Welcome to Lumicoria AI. Let's get started.",
+      });
       navigate('/dashboard');
     } catch (error) {
       console.error('Error updating profile:', error);
-      // TODO: Show error toast
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -54,7 +69,7 @@ const Onboarding = () => {
                   <AvatarFallback>{profile.full_name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" onClick={() => {/* TODO: Implement avatar upload */}}>
+                  <Button variant="outline" onClick={() => {/* TODO: Implement avatar upload */ }}>
                     Upload Photo
                   </Button>
                   <p className="text-sm text-gray-500 mt-2">JPG, GIF or PNG. Max size of 2MB.</p>
@@ -154,9 +169,9 @@ const Onboarding = () => {
                 <Button variant="outline" onClick={() => setStep(1)}>
                   Back
                 </Button>
-                <Button onClick={handleProfileUpdate}>
-                  Complete Setup
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button onClick={handleProfileUpdate} disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Complete Setup"}
+                  {!isSubmitting && <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
               </div>
             </CardContent>

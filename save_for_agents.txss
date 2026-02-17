@@ -1,0 +1,793 @@
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import {
+  Search,
+  Bot,
+  FileText,
+  Heart,
+  Camera,
+  Calendar,
+  Sparkles,
+  GraduationCap,
+  Database,
+  Shield,
+  Globe,
+  Lightbulb,
+  BookOpen,
+  Scale,
+  Brain,
+  Target,
+  Armchair,
+  Languages,
+  Headphones,
+  BarChart3,
+  Share2,
+  CheckCircle2,
+  ArrowRight,
+  Zap,
+  Star,
+  TrendingUp,
+  Users,
+  Clock,
+  ChevronRight,
+  Layers,
+  Play,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+/* ───────────────────── Category definitions ───────────────────── */
+
+type Category = "all" | "productivity" | "research" | "wellbeing" | "creative" | "analysis" | "communication";
+
+const categories: { id: Category; label: string; icon: React.ReactNode }[] = [
+  { id: "all", label: "All Agents", icon: <Layers size={16} /> },
+  { id: "productivity", label: "Productivity", icon: <Zap size={16} /> },
+  { id: "research", label: "Research & Learning", icon: <BookOpen size={16} /> },
+  { id: "wellbeing", label: "Well-being", icon: <Heart size={16} /> },
+  { id: "creative", label: "Creative", icon: <Sparkles size={16} /> },
+  { id: "analysis", label: "Analysis", icon: <BarChart3 size={16} /> },
+  { id: "communication", label: "Communication", icon: <Globe size={16} /> },
+];
+
+/* ───────────────────── Agent data (all 20 agents) ───────────────────── */
+
+interface AgentDef {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  icon: React.ElementType;
+  gradient: string;
+  iconBg: string;
+  category: Category;
+  tier: "core" | "advanced" | "specialized";
+  features: string[];
+  useCases: string[];
+  status: "stable" | "beta" | "coming-soon";
+}
+
+const agents: AgentDef[] = [
+  {
+    id: "document",
+    name: "Document Agent",
+    tagline: "Intelligent document processing",
+    description:
+      "Automatically extract, classify, and process information from any document format. Creates tasks, calendar events, and structured data from unstructured content.",
+    icon: FileText,
+    gradient: "from-violet-500 to-purple-600",
+    iconBg: "bg-violet-500/15 text-violet-600",
+    category: "productivity",
+    tier: "core",
+    features: ["OCR & Data Extraction", "Task Generation", "Calendar Integration", "Multi-format Support", "Smart Classification"],
+    useCases: ["Invoice processing", "Contract analysis", "Receipt scanning", "Report summarization"],
+    status: "stable",
+  },
+  {
+    id: "wellbeing",
+    name: "Well-being Coach",
+    tagline: "Your personal wellness guardian",
+    description:
+      "Monitors your workload patterns, screen time, and posture to deliver personalized breaks, guided exercises, and proactive well-being recommendations.",
+    icon: Heart,
+    gradient: "from-rose-500 to-pink-600",
+    iconBg: "bg-rose-500/15 text-rose-600",
+    category: "wellbeing",
+    tier: "core",
+    features: ["Activity Monitoring", "Break Reminders", "Guided Exercises", "Workload Analysis", "Stress Detection"],
+    useCases: ["Remote work wellness", "Burnout prevention", "Productivity coaching", "Ergonomic alerts"],
+    status: "stable",
+  },
+  {
+    id: "vision",
+    name: "Vision Agent",
+    tagline: "See and understand the world",
+    description:
+      "Real-time camera-based analysis for document scanning, workspace monitoring, object recognition, and instant intelligent task creation from visual input.",
+    icon: Camera,
+    gradient: "from-sky-500 to-cyan-600",
+    iconBg: "bg-sky-500/15 text-sky-600",
+    category: "productivity",
+    tier: "core",
+    features: ["Live Scanning", "Object Recognition", "Workspace Analysis", "Visual Q&A", "Real-time Processing"],
+    useCases: ["Whiteboard capture", "Product identification", "Workspace optimization", "Visual documentation"],
+    status: "stable",
+  },
+  {
+    id: "meeting",
+    name: "Meeting Assistant",
+    tagline: "Never miss a detail",
+    description:
+      "Captures meeting notes in real-time, extracts action items, identifies key decisions, and automatically schedules follow-ups with full context.",
+    icon: Calendar,
+    gradient: "from-emerald-500 to-teal-600",
+    iconBg: "bg-emerald-500/15 text-emerald-600",
+    category: "productivity",
+    tier: "core",
+    features: ["Live Transcription", "Action Item Extraction", "Decision Tracking", "Follow-up Scheduling", "Meeting Analytics"],
+    useCases: ["Team standups", "Client calls", "Board meetings", "Retrospectives"],
+    status: "stable",
+  },
+  {
+    id: "creative",
+    name: "Creative Agent",
+    tagline: "Amplify your creativity",
+    description:
+      "AI-powered creative partner for brainstorming, content generation, visual ideation, and iterative refinement of creative projects across any medium.",
+    icon: Sparkles,
+    gradient: "from-amber-500 to-orange-600",
+    iconBg: "bg-amber-500/15 text-amber-600",
+    category: "creative",
+    tier: "core",
+    features: ["Content Generation", "Brainstorming", "Style Transfer", "Iterative Refinement", "Multi-modal Output"],
+    useCases: ["Blog writing", "Marketing copy", "Visual concepts", "Story development"],
+    status: "stable",
+  },
+  {
+    id: "student",
+    name: "Student Agent",
+    tagline: "Your academic companion",
+    description:
+      "Personalized learning assistant that adapts to your study style, creates flashcards, generates practice quizzes, and tracks your academic progress.",
+    icon: GraduationCap,
+    gradient: "from-indigo-500 to-blue-600",
+    iconBg: "bg-indigo-500/15 text-indigo-600",
+    category: "research",
+    tier: "core",
+    features: ["Adaptive Learning", "Flashcard Generation", "Quiz Creation", "Progress Tracking", "Study Planning"],
+    useCases: ["Exam preparation", "Language learning", "Skill development", "Curriculum planning"],
+    status: "stable",
+  },
+  {
+    id: "rag",
+    name: "RAG Agent",
+    tagline: "Knowledge at your fingertips",
+    description:
+      "Retrieval-Augmented Generation agent that searches your private knowledge base to deliver accurate, contextual, citation-backed answers.",
+    icon: Database,
+    gradient: "from-purple-500 to-fuchsia-600",
+    iconBg: "bg-purple-500/15 text-purple-600",
+    category: "analysis",
+    tier: "core",
+    features: ["Semantic Search", "Citation Tracking", "Context Windows", "Multi-source Fusion", "Knowledge Indexing"],
+    useCases: ["Internal wikis", "Customer support", "Compliance queries", "Research papers"],
+    status: "stable",
+  },
+  {
+    id: "meeting-fact-checker",
+    name: "Fact Checker",
+    tagline: "Truth in every statement",
+    description:
+      "Real-time fact verification during meetings and content review. Cross-references claims against trusted sources and flags inaccuracies instantly.",
+    icon: Shield,
+    gradient: "from-red-500 to-rose-600",
+    iconBg: "bg-red-500/15 text-red-600",
+    category: "analysis",
+    tier: "core",
+    features: ["Real-time Verification", "Source Cross-referencing", "Confidence Scoring", "Claim Tracking", "Report Generation"],
+    useCases: ["Meeting integrity", "Content review", "News verification", "Due diligence"],
+    status: "stable",
+  },
+  {
+    id: "research",
+    name: "Research Agent",
+    tagline: "Deep-dive into any topic",
+    description:
+      "Autonomous research agent that scours the web, academic databases, and internal documents to compile comprehensive, structured research reports.",
+    icon: Globe,
+    gradient: "from-blue-500 to-indigo-600",
+    iconBg: "bg-blue-500/15 text-blue-600",
+    category: "research",
+    tier: "advanced",
+    features: ["Web Research", "Academic Search", "Report Generation", "Source Evaluation", "Trend Analysis"],
+    useCases: ["Market research", "Academic papers", "Competitive analysis", "Technology scouting"],
+    status: "stable",
+  },
+  {
+    id: "research-mentor",
+    name: "Research Mentor",
+    tagline: "Guided research excellence",
+    description:
+      "Expert research methodology guide that helps frame hypotheses, design studies, evaluate sources, and structure findings for publication.",
+    icon: Lightbulb,
+    gradient: "from-yellow-500 to-amber-600",
+    iconBg: "bg-yellow-500/15 text-yellow-600",
+    category: "research",
+    tier: "advanced",
+    features: ["Methodology Guidance", "Hypothesis Framing", "Source Evaluation", "Writing Assistance", "Peer Review Prep"],
+    useCases: ["Thesis writing", "Grant proposals", "Literature reviews", "Publication prep"],
+    status: "stable",
+  },
+  {
+    id: "social-media",
+    name: "Social Media Agent",
+    tagline: "Engage your audience",
+    description:
+      "Multi-platform social media manager that drafts posts, analyzes engagement metrics, suggests optimal posting times, and maintains brand voice consistency.",
+    icon: Share2,
+    gradient: "from-pink-500 to-rose-600",
+    iconBg: "bg-pink-500/15 text-pink-600",
+    category: "communication",
+    tier: "advanced",
+    features: ["Content Drafting", "Engagement Analytics", "Scheduling", "Brand Voice", "Multi-platform Support"],
+    useCases: ["Brand management", "Campaign planning", "Community engagement", "Influencer outreach"],
+    status: "stable",
+  },
+  {
+    id: "legal-document",
+    name: "Legal Document Agent",
+    tagline: "Legal clarity simplified",
+    description:
+      "Analyzes contracts, identifies key clauses, flags potential risks, and generates plain-language summaries of complex legal documents.",
+    icon: Scale,
+    gradient: "from-slate-500 to-gray-600",
+    iconBg: "bg-slate-500/15 text-slate-600",
+    category: "analysis",
+    tier: "advanced",
+    features: ["Contract Analysis", "Risk Identification", "Clause Extraction", "Plain-language Summary", "Comparison Tools"],
+    useCases: ["Contract review", "Compliance checks", "NDA analysis", "Terms of service"],
+    status: "stable",
+  },
+  {
+    id: "learning-coach",
+    name: "Learning Coach",
+    tagline: "Master any skill faster",
+    description:
+      "Adaptive learning coach that creates personalized curricula, identifies knowledge gaps, and dynamically adjusts difficulty based on your progress.",
+    icon: BookOpen,
+    gradient: "from-teal-500 to-emerald-600",
+    iconBg: "bg-teal-500/15 text-teal-600",
+    category: "research",
+    tier: "advanced",
+    features: ["Personalized Curriculum", "Gap Analysis", "Adaptive Difficulty", "Progress Metrics", "Resource Curation"],
+    useCases: ["Professional development", "Onboarding", "Certification prep", "Self-improvement"],
+    status: "stable",
+  },
+  {
+    id: "knowledge-graph",
+    name: "Knowledge Graph Agent",
+    tagline: "Connect the dots",
+    description:
+      "Builds and navigates knowledge graphs from your data, revealing hidden connections, dependencies, and insights across your entire information ecosystem.",
+    icon: Brain,
+    gradient: "from-fuchsia-500 to-purple-600",
+    iconBg: "bg-fuchsia-500/15 text-fuchsia-600",
+    category: "analysis",
+    tier: "specialized",
+    features: ["Graph Construction", "Relationship Mapping", "Pattern Discovery", "Visual Exploration", "Query Interface"],
+    useCases: ["Knowledge management", "Organizational mapping", "Research connections", "Data lineage"],
+    status: "beta",
+  },
+  {
+    id: "ethics-bias",
+    name: "Ethics & Bias Agent",
+    tagline: "Fair and responsible AI",
+    description:
+      "Audits content, datasets, and AI outputs for ethical concerns, bias patterns, and fairness issues. Provides actionable recommendations for mitigation.",
+    icon: Shield,
+    gradient: "from-green-500 to-emerald-600",
+    iconBg: "bg-green-500/15 text-green-600",
+    category: "analysis",
+    tier: "specialized",
+    features: ["Bias Detection", "Fairness Auditing", "Content Screening", "Impact Assessment", "Compliance Checks"],
+    useCases: ["AI model audits", "Content moderation", "Hiring process review", "Policy compliance"],
+    status: "beta",
+  },
+  {
+    id: "focus-flow",
+    name: "Focus & Flow Agent",
+    tagline: "Achieve deep work",
+    description:
+      "Optimizes your work environment for deep focus sessions. Manages distractions, schedules flow blocks, and tracks your productivity patterns.",
+    icon: Target,
+    gradient: "from-orange-500 to-red-600",
+    iconBg: "bg-orange-500/15 text-orange-600",
+    category: "wellbeing",
+    tier: "specialized",
+    features: ["Distraction Blocking", "Flow Scheduling", "Focus Analytics", "Environment Tuning", "Session Reports"],
+    useCases: ["Deep work sessions", "Creative sprints", "Study blocks", "Deadline crunches"],
+    status: "stable",
+  },
+  {
+    id: "workspace-ergonomics",
+    name: "Workspace Ergonomics",
+    tagline: "Optimize your setup",
+    description:
+      "Monitors and improves your physical workspace setup. Provides posture corrections, desk arrangement tips, and ergonomic health scoring.",
+    icon: Armchair,
+    gradient: "from-lime-500 to-green-600",
+    iconBg: "bg-lime-500/15 text-lime-600",
+    category: "wellbeing",
+    tier: "specialized",
+    features: ["Posture Monitoring", "Desk Setup Analysis", "Health Scoring", "Equipment Recs", "Habit Tracking"],
+    useCases: ["Home office setup", "Injury prevention", "Productivity improvement", "Health compliance"],
+    status: "beta",
+  },
+  {
+    id: "translation",
+    name: "Translation Agent",
+    tagline: "Break language barriers",
+    description:
+      "Context-aware translation across 100+ languages with tone preservation, domain-specific terminology, and real-time conversation translation.",
+    icon: Languages,
+    gradient: "from-cyan-500 to-blue-600",
+    iconBg: "bg-cyan-500/15 text-cyan-600",
+    category: "communication",
+    tier: "advanced",
+    features: ["100+ Languages", "Context Preservation", "Domain Terminology", "Real-time Mode", "Tone Matching"],
+    useCases: ["Document translation", "Meeting interpretation", "Email localization", "Multilingual content"],
+    status: "stable",
+  },
+  {
+    id: "customer-service",
+    name: "Customer Service Agent",
+    tagline: "Delight every customer",
+    description:
+      "Intelligent customer support agent that handles inquiries, routes complex issues, maintains conversation history, and continuously learns from interactions.",
+    icon: Headphones,
+    gradient: "from-violet-500 to-indigo-600",
+    iconBg: "bg-violet-500/15 text-violet-600",
+    category: "communication",
+    tier: "advanced",
+    features: ["Auto-response", "Smart Routing", "Sentiment Analysis", "Knowledge Base", "Escalation Rules"],
+    useCases: ["Help desk", "Live chat", "Email support", "FAQ automation"],
+    status: "stable",
+  },
+  {
+    id: "data-analysis",
+    name: "Data Analysis Agent",
+    tagline: "Insights from your data",
+    description:
+      "Transforms raw data into actionable insights with automated visualization, statistical analysis, anomaly detection, and natural language reporting.",
+    icon: BarChart3,
+    gradient: "from-blue-500 to-violet-600",
+    iconBg: "bg-blue-500/15 text-blue-600",
+    category: "analysis",
+    tier: "advanced",
+    features: ["Auto Visualization", "Statistical Analysis", "Anomaly Detection", "NL Reporting", "Data Cleaning"],
+    useCases: ["Business intelligence", "Sales analytics", "Financial modeling", "Operational metrics"],
+    status: "stable",
+  },
+];
+
+/* ───────────────────── Stats ───────────────────── */
+
+const stats = [
+  { label: "AI Agents", value: "20+", icon: Bot },
+  { label: "Tasks Automated", value: "1M+", icon: TrendingUp },
+  { label: "Active Users", value: "50K+", icon: Users },
+  { label: "Avg. Time Saved", value: "4.2h/day", icon: Clock },
+];
+
+/* ───────────────────── Animation variants ───────────────────── */
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: "easeOut" } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+/* ───────────────────── Tier / Status helpers ───────────────────── */
+
+const tierLabel: Record<string, { text: string; color: string }> = {
+  core: { text: "Core", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+  advanced: { text: "Advanced", color: "bg-blue-500/10 text-blue-700 border-blue-500/20" },
+  specialized: { text: "Specialized", color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+};
+
+const statusLabel: Record<string, { text: string; dot: string }> = {
+  stable: { text: "Stable", dot: "bg-emerald-500" },
+  beta: { text: "Beta", dot: "bg-amber-500" },
+  "coming-soon": { text: "Coming Soon", dot: "bg-gray-400" },
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Page Component
+   ═══════════════════════════════════════════════════════════════ */
+
+const AgentsUniverse: React.FC = () => {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<Category>("all");
+  const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
+
+  /* ── Filtered agents ── */
+  const filtered = useMemo(() => {
+    return agents.filter((a) => {
+      const matchesCategory = activeCategory === "all" || a.category === activeCategory;
+      const matchesSearch =
+        search.trim() === "" ||
+        a.name.toLowerCase().includes(search.toLowerCase()) ||
+        a.tagline.toLowerCase().includes(search.toLowerCase()) ||
+        a.description.toLowerCase().includes(search.toLowerCase()) ||
+        a.features.some((f) => f.toLowerCase().includes(search.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [search, activeCategory]);
+
+  const agentCount = filtered.length;
+
+  /* ─────────── Render ─────────── */
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white via-violet-50/30 to-white">
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-20">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-lumicoria-purple/10 to-lumicoria-blue/5 blur-3xl" />
+          <div className="absolute -bottom-20 -left-32 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-lumicoria-blue/10 to-transparent blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-purple-200/20 to-pink-200/20 blur-3xl" />
+        </div>
+
+        <div className="container relative z-10 mx-auto px-4 text-center">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+            <Badge
+              variant="outline"
+              className="mb-6 px-4 py-1.5 text-sm font-medium border-lumicoria-purple/30 text-lumicoria-purple bg-lumicoria-purple/5"
+            >
+              <Sparkles size={14} className="mr-1.5" />
+              20 Specialized AI Agents
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
+          >
+            The{" "}
+            <span className="gradient-text">Agent Universe</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
+          >
+            Deploy purpose-built AI agents that think, learn, and collaborate —
+            turning hours of work into seconds of magic.
+          </motion.p>
+
+          {/* ── Stats bar ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.6 }}
+            className="flex flex-wrap justify-center gap-6 md:gap-10"
+          >
+            {stats.map((s) => (
+              <div key={s.label} className="flex items-center gap-2.5 text-left">
+                <div className="w-10 h-10 rounded-xl bg-lumicoria-purple/10 flex items-center justify-center">
+                  <s.icon size={18} className="text-lumicoria-purple" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900 leading-tight">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════ FILTERS ═══════════ */}
+      <section className="sticky top-16 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search agents, features, or use cases…"
+                className="pl-10 bg-gray-50 border-gray-200 focus:ring-lumicoria-purple/30"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Category Tabs */}
+            <Tabs
+              value={activeCategory}
+              onValueChange={(v) => setActiveCategory(v as Category)}
+              className="w-full md:w-auto"
+            >
+              <TabsList className="bg-gray-100/80 h-auto flex-wrap gap-1 p-1">
+                {categories.map((cat) => (
+                  <TabsTrigger
+                    key={cat.id}
+                    value={cat.id}
+                    className="text-xs px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm gap-1.5"
+                  >
+                    {cat.icon}
+                    <span className="hidden sm:inline">{cat.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {/* Result count */}
+            <span className="text-sm text-muted-foreground whitespace-nowrap hidden lg:block">
+              {agentCount} agent{agentCount !== 1 && "s"}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ AGENTS GRID ═══════════ */}
+      <section className="container mx-auto px-4 py-12">
+        <AnimatePresence mode="popLayout">
+          {filtered.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-24"
+            >
+              <Bot size={48} className="mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">No agents found</h3>
+              <p className="text-muted-foreground mb-6">Try adjusting your search or category filter.</p>
+              <Button variant="outline" onClick={() => { setSearch(""); setActiveCategory("all"); }}>
+                Clear filters
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="grid"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+            >
+              {filtered.map((agent) => (
+                <motion.div
+                  key={agent.id}
+                  variants={cardVariants}
+                  layout
+                  whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                  className="group relative rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-shadow duration-300 cursor-pointer overflow-hidden"
+                  onClick={() => setSelectedAgent(agent)}
+                >
+                  {/* Gradient top bar */}
+                  <div className={`h-1 w-full bg-gradient-to-r ${agent.gradient}`} />
+
+                  <div className="p-5">
+                    {/* Header row */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-11 h-11 rounded-xl ${agent.iconBg} flex items-center justify-center`}>
+                        <agent.icon size={22} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${tierLabel[agent.tier].color}`}>
+                          {tierLabel[agent.tier].text}
+                        </Badge>
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusLabel[agent.status].dot}`} />
+                          {statusLabel[agent.status].text}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Name & tagline */}
+                    <h3 className="text-base font-semibold text-gray-900 mb-0.5 group-hover:text-lumicoria-purple transition-colors">
+                      {agent.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">{agent.tagline}</p>
+
+                    {/* Feature pills */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {agent.features.slice(0, 3).map((f) => (
+                        <span
+                          key={f}
+                          className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-100"
+                        >
+                          {f}
+                        </span>
+                      ))}
+                      {agent.features.length > 3 && (
+                        <span className="text-[11px] text-muted-foreground px-1">
+                          +{agent.features.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <div className="flex items-center justify-between">
+                      <button className="text-xs font-medium text-lumicoria-purple flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Explore
+                        <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                      <div className="flex items-center gap-0.5 text-amber-400">
+                        <Star size={12} fill="currentColor" />
+                        <span className="text-[11px] text-gray-500 font-medium">4.{8 + (agent.id.length % 2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* ═══════════ AGENT DETAIL DIALOG ═══════════ */}
+      <Dialog open={!!selectedAgent} onOpenChange={() => setSelectedAgent(null)}>
+        {selectedAgent && (
+          <DialogContent className="max-w-lg p-0 overflow-hidden">
+            {/* Gradient header */}
+            <div className={`bg-gradient-to-r ${selectedAgent.gradient} p-6 pb-8`}>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white">
+                    <selectedAgent.icon size={26} />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-white text-xl">{selectedAgent.name}</DialogTitle>
+                    <p className="text-white/80 text-sm">{selectedAgent.tagline}</p>
+                  </div>
+                </div>
+              </DialogHeader>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Status & tier */}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={`${tierLabel[selectedAgent.tier].color}`}>
+                  {tierLabel[selectedAgent.tier].text}
+                </Badge>
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <span className={`w-2 h-2 rounded-full ${statusLabel[selectedAgent.status].dot}`} />
+                  {statusLabel[selectedAgent.status].text}
+                </span>
+                <div className="flex items-center gap-1 ml-auto text-amber-400">
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" className="opacity-40" />
+                  <span className="text-sm text-gray-500 font-medium ml-1">4.{8 + (selectedAgent.id.length % 2)}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-sm text-gray-600 leading-relaxed">{selectedAgent.description}</p>
+
+              <Separator />
+
+              {/* Features */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">Key Features</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedAgent.features.map((f) => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Use cases */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">Use Cases</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAgent.useCases.map((uc) => (
+                    <Badge key={uc} variant="secondary" className="font-normal text-xs">
+                      {uc}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button
+                  className={`flex-1 bg-gradient-to-r ${selectedAgent.gradient} text-white hover:opacity-90 transition-opacity`}
+                  onClick={() => {
+                    setSelectedAgent(null);
+                    navigate("/dashboard");
+                  }}
+                >
+                  <Play size={16} className="mr-2" />
+                  Deploy Agent
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setSelectedAgent(null)}>
+                  Learn More
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* ═══════════ CTA SECTION ═══════════ */}
+      <section className="container mx-auto px-4 pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-lumicoria-deepPurple via-lumicoria-purple to-indigo-500 p-10 md:p-16 text-center text-white"
+        >
+          {/* Decorative circles */}
+          <div className="absolute -top-16 -right-16 w-60 h-60 rounded-full bg-white/5 blur-2xl" />
+          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-white/5 blur-2xl" />
+
+          <div className="relative z-10">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-6">
+              <Bot size={28} />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Build Your Own Agent</h2>
+            <p className="text-white/75 max-w-lg mx-auto mb-8 text-lg">
+              Use Lumicoria's No-Code Agent Builder to design, train, and deploy custom AI agents tailored to your unique workflows.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                size="lg"
+                className="bg-white text-lumicoria-purple hover:bg-white/90 font-semibold btn-hover-effect"
+                onClick={() => navigate("/agent-builder")}
+              >
+                <Sparkles size={18} className="mr-2" />
+                Open Agent Builder
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/30 text-white hover:bg-white/10"
+                onClick={() => navigate("/docs")}
+              >
+                Read the Docs
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+    </div>
+  );
+};
+
+export default AgentsUniverse;

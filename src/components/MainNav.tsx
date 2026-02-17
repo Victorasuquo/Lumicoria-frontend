@@ -60,6 +60,7 @@ const MainNav = () => {
 
   const authNavItems = [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
+    { label: 'Chat', path: '/chat', icon: <FileText className="h-4 w-4" /> },
     { label: 'Documents', path: '/documents', icon: <FileText className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
     { label: 'Well-being', path: '/wellbeing', icon: <Heart className="h-4 w-4" /> },
