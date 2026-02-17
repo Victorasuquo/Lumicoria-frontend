@@ -92,8 +92,13 @@ const MainNav = () => {
         {/* Logo */}
         <Link
           to="/"
-          className="flex items-center px-4 py-2 group"
+          className="flex items-center gap-2 px-4 py-2 group"
         >
+          <img
+            src="/images/lumicoria-logo-gradient.png"
+            alt="Lumicoria"
+            className="h-9 w-9 rounded-2xl"
+          />
           <span className="text-xl font-light tracking-tight text-gray-900 dark:text-white">
             <span className="font-light italic">Lumi</span>
             <span className="font-medium">coria</span>

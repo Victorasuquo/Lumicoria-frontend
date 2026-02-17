@@ -6,7 +6,6 @@ import HowItWorks from '../components/HowItWorks';
 import AgentsUniverse from '../components/AgentsUniverse';
 import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
-import Footer from '../components/Footer';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from 'lucide-react';
 
@@ -71,7 +70,6 @@ const Index = () => {
       </section>
       
       <Pricing />
-      <Footer />
     </div>
   );
 };

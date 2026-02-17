@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
@@ -7,20 +7,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MainNav from "@/components/MainNav";
+import Footer from "@/components/Footer";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AgentsUniverse from "./pages/AgentsUniverse";
 import LiveStudio from "./pages/LiveStudio";
 import AgentBuilder from "./pages/AgentBuilder";
-import Wellbeing from "./pages/Wellbeing";
 import NewWellbeing from "./pages/NewWellbeing";
 import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import NewLogin from "./pages/NewLogin";
-import NewSignup from "./pages/NewSignup";
 import Dashboard from "./pages/Dashboard";
-import NewDashboard from "./pages/NewDashboard";
 import Profile from "@/pages/Profile";
 import Onboarding from "@/pages/Onboarding";
 import Settings from "./pages/Settings";
@@ -37,9 +34,9 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <MainNav />
-      <main className="pt-16">
+      <main className="flex-1 pt-16">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Index />} />
@@ -54,14 +51,15 @@ const AppRoutes = () => {
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
           {/* Auth Routes */}
-          <Route path="/login" element={<NewLogin />} />
-          <Route path="/signup" element={<NewSignup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-          {/* Protected Routes */}          <Route
+          {/* Protected Routes */}
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <NewDashboard />
+                <Dashboard />
               </ProtectedRoute>
             }
           />
@@ -120,6 +118,7 @@ const AppRoutes = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+      <Footer />
       <Toaster />
       <Sonner />
     </div>
