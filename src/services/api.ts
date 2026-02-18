@@ -119,7 +119,17 @@ export interface AuthResponse {
 // Auth API
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', credentials);
+    // Backend expects OAuth2PasswordRequestForm (form-data with username/password)
+    const formData = new URLSearchParams();
+    formData.append('username', credentials.email); // Map email to username
+    formData.append('password', credentials.password);
+
+    // Explicitly override Content-Type for this request
+    const response = await api.post<AuthResponse>('/auth/login', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
     return response.data;
   },
 
