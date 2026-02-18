@@ -17,10 +17,13 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+import { getMessaging } from "firebase/messaging";
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+const messaging = getMessaging(app);
 
-export { auth, googleProvider };
+export { auth, googleProvider, messaging };

@@ -1,18 +1,19 @@
 
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowRight, FileText, Calendar, Check, Brain } from 'lucide-react';
 
 const Hero = () => {
   useEffect(() => {
     const handleScroll = () => {
       const reveals = document.querySelectorAll('.reveal');
-      
+
       reveals.forEach(element => {
         const windowHeight = window.innerHeight;
         const elementTop = element.getBoundingClientRect().top;
         const elementVisible = 150;
-        
+
         if (elementTop < windowHeight - elementVisible) {
           element.classList.add('active');
         }
@@ -22,7 +23,7 @@ const Hero = () => {
     window.addEventListener('scroll', handleScroll);
     // Trigger once on load
     handleScroll();
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
@@ -47,13 +48,32 @@ const Hero = () => {
                 <Button className="bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white py-6 px-8 text-lg btn-hover-effect">
                   <span>Try For Free</span>
                 </Button>
-                <Button variant="outline" className="border-lumicoria-purple text-lumicoria-purple hover:bg-lumicoria-purple/5 py-6 px-8 text-lg">
-                  <span>Watch Demo</span>
-                </Button>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="border-lumicoria-purple text-lumicoria-purple hover:bg-lumicoria-purple/5 py-6 px-8 text-lg">
+                      <span>Watch Demo</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[900px] p-0 border-none bg-black/80 shadow-2xl">
+                    <div className="aspect-video w-full rounded-lg overflow-hidden">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src="https://www.youtube.com/embed/zFcxA9T_BWs?si=Ov_7CYjzlUFjHYZ0&autoplay=1"
+                        title="Lumicoria Demo"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-            
-            <div className="mt-10 reveal" style={{transitionDelay: "0.2s"}}>
+
+            <div className="mt-10 reveal" style={{ transitionDelay: "0.2s" }}>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center text-gray-700">
                   <Check size={20} className="text-lumicoria-purple mr-2" />
@@ -70,12 +90,12 @@ const Hero = () => {
               </div>
             </div>
           </div>
-          
-          <div className="lg:w-1/2 relative reveal" style={{transitionDelay: "0.4s"}}>
+
+          <div className="lg:w-1/2 relative reveal" style={{ transitionDelay: "0.4s" }}>
             <div className="relative">
               <div className="absolute -top-6 -left-6 w-64 h-64 bg-lumicoria-lightPurple/10 rounded-full filter blur-xl"></div>
               <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-lumicoria-blue/10 rounded-full filter blur-xl"></div>
-              
+
               <div className="relative glass-card rounded-2xl overflow-hidden shadow-2xl">
                 <div className="bg-gradient-to-br from-white to-gray-50 p-3 border-b">
                   <div className="flex space-x-2">
@@ -94,7 +114,7 @@ const Hero = () => {
                       <p className="text-sm text-gray-600">Extracted 3 key dates from invoice_q2.pdf</p>
                     </div>
                   </div>
-                  
+
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Payment Due</span>
@@ -109,7 +129,7 @@ const Hero = () => {
                       <span className="text-sm text-lumicoria-purple">May 25, 2025</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -139,8 +159,8 @@ const Hero = () => {
                   <Calendar className="text-lumicoria-blue" />
                 </div>
               </div>
-              
-              <div className="absolute -bottom-10 -left-10 w-20 h-20 bg-white rounded-xl shadow-lg p-3 transform -rotate-12 animate-float opacity-90" style={{animationDelay: "1s"}}>
+
+              <div className="absolute -bottom-10 -left-10 w-20 h-20 bg-white rounded-xl shadow-lg p-3 transform -rotate-12 animate-float opacity-90" style={{ animationDelay: "1s" }}>
                 <div className="w-full h-full rounded-lg bg-gradient-to-br from-lumicoria-orange/30 to-yellow-400/30 flex items-center justify-center">
                   <FileText className="text-lumicoria-orange" />
                 </div>

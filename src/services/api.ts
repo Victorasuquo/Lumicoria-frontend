@@ -29,7 +29,8 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If error is 401 and we haven't tried to refresh token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // AND the request itself is not a refresh attempt
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
       originalRequest._retry = true;
 
       try {
@@ -551,6 +552,62 @@ export const billingApi = {
     const response = await api.post<PortalResponse>('/billing/portal', data || {});
     return response.data;
   },
+};
+
+// Notification API
+export enum NotificationType {
+  SYSTEM = "system",
+  TASK = "task",
+  DOCUMENT = "document",
+  AUTH = "auth",
+  BILLING = "billing",
+  WELLBEING = "wellbeing",
+  EMAIL = "email"
+}
+
+export enum NotificationPriority {
+  LOW = "low",
+  NORMAL = "normal",
+  HIGH = "high",
+  URGENT = "urgent"
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  notification_type: NotificationType;
+  title: string;
+  content: string;
+  priority: NotificationPriority;
+  read: boolean;
+  metadata?: any;
+  created_at: string;
+}
+
+export const notificationApi = {
+  getNotifications: async (unreadOnly: boolean = false, limit: number = 50, skip: number = 0): Promise<Notification[]> => {
+    const response = await api.get<Notification[]>('/notifications/', {
+      params: { unread_only: unreadOnly, limit, skip }
+    });
+    return response.data;
+  },
+
+  getUnreadCount: async (): Promise<{ unread_count: number }> => {
+    const response = await api.get<{ unread_count: number }>('/notifications/unread/count');
+    return response.data;
+  },
+
+  markAsRead: async (id: string): Promise<void> => {
+    await api.post(`/notifications/${id}/read`);
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await api.post('/notifications/read/all');
+  },
+
+  deleteNotification: async (id: string): Promise<void> => {
+    await api.delete(`/notifications/${id}`);
+  }
 };
 
 // Export the api instance for custom requests

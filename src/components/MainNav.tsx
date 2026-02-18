@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
-  Bell,
   Settings,
   Camera,
   LayoutGrid,
@@ -24,13 +23,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const MainNav = () => {
+export default function MainNav() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const isAuthenticated = !!user;
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Initialize push notifications
+  const { requestForToken } = usePushNotifications();
+
+  // Request permission on mount (or you could tie this to a button)
+  useEffect(() => {
+    if (user) {
+      requestForToken();
+    }
+  }, [user]);
 
   // Track scroll position for nav styling
   useEffect(() => {
@@ -156,15 +169,10 @@ const MainNav = () => {
         <div className="flex items-center">
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
-              {/* Notification Bell */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative rounded-full h-9 w-9 hover:bg-gray-100/50 dark:hover:bg-white/10"
-              >
-                <Bell className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-purple-500"></span>
-              </Button>
+              {/* Notification Center */}
+              <ErrorBoundary>
+                <NotificationCenter />
+              </ErrorBoundary>
 
               {/* User Menu */}
               <DropdownMenu>
@@ -272,4 +280,4 @@ const MainNav = () => {
   );
 };
 
-export default MainNav;
+// End of MainNav component

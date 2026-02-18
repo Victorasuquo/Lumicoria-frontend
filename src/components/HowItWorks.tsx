@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { FileText, Zap, Calendar, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const steps = [
   {
@@ -43,7 +44,7 @@ const HowItWorks = () => {
           <div className="relative">
             {/* Connecting line */}
             <div className="absolute top-24 left-0 right-0 h-0.5 bg-gray-200 hidden md:block"></div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {steps.map((step, index) => (
                 <div key={index} className="relative text-center reveal" style={{ transitionDelay: `${index * 0.2}s` }}>
@@ -54,7 +55,7 @@ const HowItWorks = () => {
                     <h3 className="text-xl font-bold mb-3">{step.title}</h3>
                     <p className="text-gray-600">{step.description}</p>
                   </div>
-                  
+
                   {/* Arrow between steps */}
                   {index < steps.length - 1 && (
                     <div className="hidden md:block absolute top-16 -right-6 transform translate-x-1/2">
@@ -67,31 +68,54 @@ const HowItWorks = () => {
           </div>
 
           {/* Demo section */}
-          <div className="mt-20 bg-feature-gradient rounded-2xl p-8 shadow-lg reveal">
-            <div className="flex flex-col md:flex-row items-center">
-              <div className="md:w-1/2 mb-8 md:mb-0 md:pr-8">
-                <h3 className="text-2xl font-bold mb-4">See it in action</h3>
-                <p className="text-gray-600 mb-6">
-                  Watch how Lumicoria.ai processes a client contract, extracts key information, and automatically creates tasks and calendar events in seconds.
-                </p>
-                <div className="inline-flex items-center font-medium text-lumicoria-purple cursor-pointer group">
-                  <span>Watch the demo</span>
-                  <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
-                </div>
-              </div>
-              <div className="md:w-1/2">
-                <div className="aspect-video bg-black rounded-lg overflow-hidden relative shadow-xl">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center cursor-pointer transition-transform hover:scale-110">
-                      <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
+          <Dialog>
+            <div className="mt-20 bg-feature-gradient rounded-2xl p-8 shadow-lg reveal">
+              <div className="flex flex-col md:flex-row items-center">
+                <div className="md:w-1/2 mb-8 md:mb-0 md:pr-8">
+                  <h3 className="text-2xl font-bold mb-4">See it in action</h3>
+                  <p className="text-gray-600 mb-6">
+                    Watch how Lumicoria.ai processes a client contract, extracts key information, and automatically creates tasks and calendar events in seconds.
+                  </p>
+                  <DialogTrigger asChild>
+                    <div className="inline-flex items-center font-medium text-lumicoria-purple cursor-pointer group">
+                      <span>Watch the demo</span>
+                      <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
                     </div>
-                  </div>
-                  {/* This would be replaced with actual video thumbnail */}
-                  <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900"></div>
+                  </DialogTrigger>
+                </div>
+                <div className="md:w-1/2">
+                  <DialogTrigger asChild>
+                    <div className="aspect-video bg-black rounded-lg overflow-hidden relative shadow-xl cursor-pointer group">
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform group-hover:scale-110">
+                          <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
+                        </div>
+                      </div>
+                      <img
+                        src="https://img.youtube.com/vi/zFcxA9T_BWs/maxresdefault.jpg"
+                        alt="Demo Video Thumbnail"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                  </DialogTrigger>
                 </div>
               </div>
             </div>
-          </div>
+            <DialogContent className="sm:max-w-[900px] p-0 border-none bg-black/80 shadow-2xl">
+              <div className="aspect-video w-full rounded-lg overflow-hidden">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/zFcxA9T_BWs?si=Ov_7CYjzlUFjHYZ0&autoplay=1"
+                  title="Lumicoria Demo"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </section>
