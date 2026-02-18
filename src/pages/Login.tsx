@@ -91,7 +91,7 @@ const Login: React.FC = () => {
               <img
                 src="/images/lumicoria-logo-gradient.png"
                 alt="Lumicoria"
-                className="h-12 w-12 rounded-2xl"
+                className="h-14 w-14 rounded-2xl"
               />
               <span className="ml-3 text-2xl font-bold">Lumicoria.ai</span>
             </div>
@@ -121,7 +121,7 @@ const Login: React.FC = () => {
                 </Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <MailIcon className="h-4 w-4 text-gray-500" />
+                    <MailIcon className="h-5 w-5 text-gray-500" />
                   </div>
                   <Input
                     id="email"
@@ -151,7 +151,7 @@ const Login: React.FC = () => {
                 </div>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <LockIcon className="h-4 w-4 text-gray-500" />
+                    <LockIcon className="h-5 w-5 text-gray-500" />
                   </div>
                   <Input
                     id="password"
@@ -174,7 +174,7 @@ const Login: React.FC = () => {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Logging in...
                   </>
                 ) : (
@@ -202,7 +202,7 @@ const Login: React.FC = () => {
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
               >
-                <svg viewBox="0 0 24 24" className="mr-2 h-5 w-5" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="mr-2 h-6 w-6" aria-hidden="true">
                   <path
                     d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.6875 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
                     fill="#EA4335"
@@ -228,7 +228,7 @@ const Login: React.FC = () => {
                 className="w-full"
                 disabled={isLoading}
               >
-                <Github className="mr-2 h-5 w-5" />
+                <Github className="mr-2 h-6 w-6" />
                 GitHub
               </Button>
             </div>

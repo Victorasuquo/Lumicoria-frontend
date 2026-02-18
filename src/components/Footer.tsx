@@ -46,17 +46,17 @@ const Footer = () => {
                 AI-powered document intelligence and well-being for professionals, students, and teams.
               </p>
               <div className="flex space-x-3">
-                <a href="#" className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-                  <Twitter size={16} className="text-gray-400 hover:text-white" />
+                <a href="#" className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                  <Twitter size={20} className="text-gray-400 hover:text-white" />
                 </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-                  <Linkedin size={16} className="text-gray-400 hover:text-white" />
+                <a href="#" className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                  <Linkedin size={20} className="text-gray-400 hover:text-white" />
                 </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-                  <Github size={16} className="text-gray-400 hover:text-white" />
+                <a href="#" className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                  <Github size={20} className="text-gray-400 hover:text-white" />
                 </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-                  <Youtube size={16} className="text-gray-400 hover:text-white" />
+                <a href="#" className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                  <Youtube size={20} className="text-gray-400 hover:text-white" />
                 </a>
               </div>
             </div>
