@@ -79,8 +79,27 @@ export const usePushNotifications = () => {
         }
     };
 
+    const deleteToken = async () => {
+        try {
+            const currentToken = fcmToken || await getToken(messaging, {
+                vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+            });
+
+            if (currentToken) {
+                await api.delete('/device-tokens/deregister', {
+                    data: { token: currentToken }
+                });
+                console.log('Device token deregistered from backend');
+                setFcmToken(null);
+            }
+        } catch (error) {
+            console.error('Failed to deregister device token:', error);
+        }
+    };
+
     return {
         requestForToken,
+        deleteToken,
         fcmToken,
         notificationPermission
     };

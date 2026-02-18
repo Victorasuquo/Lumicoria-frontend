@@ -36,7 +36,7 @@ export default function MainNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Initialize push notifications
-  const { requestForToken } = usePushNotifications();
+  const { requestForToken, deleteToken } = usePushNotifications();
 
   // Request permission on mount (or you could tie this to a button)
   useEffect(() => {
@@ -81,6 +81,7 @@ export default function MainNav() {
 
   const handleLogout = async () => {
     try {
+      await deleteToken(); // Deregister device token before logout
       await logout();
       window.location.href = '/';
     } catch (error) {
