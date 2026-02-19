@@ -45,12 +45,19 @@ export const usePushNotifications = () => {
             setNotificationPermission(permission);
 
             if (permission === 'granted') {
-                // Get the service worker registration we created in firebase.ts
-                const registration = await navigator.serviceWorker.getRegistration();
+                console.log('Notification permission granted. Waiting for SW ready...');
+                // Wait for the service worker to be active to avoid race conditions
+                const registration = await navigator.serviceWorker.ready;
+                console.log('Service Worker is ready:', registration);
+
+                const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+                if (!vapidKey) {
+                    console.error('Missing VITE_FIREBASE_VAPID_KEY in environment');
+                    return;
+                }
 
                 const token = await getToken(messaging, {
-                    // Using the VITE env var for the key. Ensure this is set in .env
-                    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+                    vapidKey: vapidKey,
                     serviceWorkerRegistration: registration
                 });
 

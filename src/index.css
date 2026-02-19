@@ -166,3 +166,49 @@
   position: relative;
   z-index: 2;
 }
+
+/* Chat module utilities */
+.chat-messages-scroll {
+  scroll-behavior: smooth;
+}
+
+.chat-messages-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(108, 74, 176, 0.2);
+  border-radius: 999px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 74, 176, 0.35);
+}
+
+/* Prose code blocks inside markdown */
+.prose pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  color: inherit !important;
+  font-size: 0.8rem !important;
+}
+
+/* Sidebar scrollbar */
+aside::-webkit-scrollbar {
+  width: 3px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: rgba(108, 74, 176, 0.15);
+  border-radius: 999px;
+}
+

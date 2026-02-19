@@ -455,26 +455,108 @@ export interface ConversationSummary {
   agents_used: string[];
 }
 
+export interface DocumentUploadResponse {
+  message: string;
+  status: string;
+  filename: string;
+  saved_as: string;
+}
+
+export interface DocumentListRequest {
+  source_types?: string[];
+  tags?: string[];
+  limit?: number;
+  offset?: number;
+}
+
+export interface DocumentItem {
+  document_id: string;
+  title: string;
+  source: string;
+  created_at: string;
+  tags?: string[];
+  chunk_count?: number;
+}
+
 export const chatApi = {
+  // ── Chat ──────────────────────────────────────────────────────
   sendMessage: async (data: ChatRequest): Promise<ChatResponseData> => {
-    const response = await api.post<ChatResponseData>('/lumicoria/chat', data);
+    const response = await api.post<ChatResponseData>('/chat/chat', data);
     return response.data;
   },
 
+  // ── Conversations ─────────────────────────────────────────────
   listConversations: async (limit: number = 50, offset: number = 0): Promise<ConversationSummary[]> => {
-    const response = await api.get<ConversationSummary[]>('/lumicoria/conversations', {
+    const response = await api.get<ConversationSummary[]>('/chat/conversations', {
       params: { limit, offset },
     });
     return response.data;
   },
 
   getConversation: async (conversationId: string): Promise<any> => {
-    const response = await api.get<any>(`/lumicoria/conversations/${conversationId}`);
+    const response = await api.get<any>(`/chat/conversations/${conversationId}`);
     return response.data;
   },
 
   deleteConversation: async (conversationId: string): Promise<void> => {
-    await api.delete(`/lumicoria/conversations/${conversationId}`);
+    await api.delete(`/chat/conversations/${conversationId}`);
+  },
+
+  // ── Documents ─────────────────────────────────────────────────
+  uploadDocument: async (
+    file: File,
+    title?: string,
+    tags?: string[]
+  ): Promise<DocumentUploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    if (tags && tags.length > 0) formData.append('tags', JSON.stringify(tags));
+    const response = await api.post<DocumentUploadResponse>('/chat/documents/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  addDocumentUrl: async (url: string, title?: string, tags?: string[]): Promise<any> => {
+    const response = await api.post('/chat/documents/url', { url, title, tags });
+    return response.data;
+  },
+
+  addDocumentText: async (text: string, title?: string, tags?: string[]): Promise<any> => {
+    const response = await api.post('/chat/documents/text', { text, title, tags });
+    return response.data;
+  },
+
+  addGoogleDriveDocument: async (driveFileId: string, title?: string, tags?: string[]): Promise<any> => {
+    const response = await api.post('/chat/documents/google-drive', {
+      drive_file_id: driveFileId, title, tags,
+    });
+    return response.data;
+  },
+
+  listDocuments: async (filters?: DocumentListRequest): Promise<{ documents: DocumentItem[]; total: number }> => {
+    const response = await api.post('/chat/documents/list', filters || {});
+    return response.data;
+  },
+
+  deleteDocument: async (documentId: string): Promise<void> => {
+    await api.delete(`/chat/documents/${documentId}`);
+  },
+
+  // ── Context ───────────────────────────────────────────────────
+  searchContext: async (query: string, maxResults?: number, includeSources?: string[]): Promise<any> => {
+    const response = await api.post('/chat/context/search', null, {
+      params: { query, max_results: maxResults, include_sources: includeSources },
+    });
+    return response.data;
+  },
+
+  combinedContextSearch: async (query: string, maxResultsPerSource?: number): Promise<any> => {
+    const response = await api.post('/chat/context/combined-search', null, {
+      params: { query, max_results_per_source: maxResultsPerSource },
+    });
+    return response.data;
   },
 };
 
