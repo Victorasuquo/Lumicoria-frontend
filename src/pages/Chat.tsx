@@ -5,8 +5,12 @@ import React, {
     useCallback,
     useMemo,
 } from 'react';
+import ReactDOM from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { chatApi, ConversationSummary } from '../services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -40,6 +44,9 @@ import {
     PanelLeftClose,
     PanelLeft,
     Check,
+    Copy,
+    ThumbsUp,
+    FileDown,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -144,17 +151,17 @@ const AgentBadge: React.FC<{ agent: string }> = ({ agent }) => {
 };
 
 const TypingIndicator: React.FC<{ agent: string }> = ({ agent }) => {
-    const meta = AGENT_META[agent] ?? { label: agent, color: '#6C4AB0', icon: <Brain size={11} /> };
     return (
         <div className="flex items-start gap-3 max-w-[85%]">
-            {/* Avatar */}
-            <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}99)` }}
-            >
-                <Sparkles size={14} color="white" />
+            <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm bg-gray-900 overflow-hidden border border-gray-800/20">
+                <img
+                    src="/images/lumicoria-logo-mono.png"
+                    alt="Lumicoria"
+                    className="w-5 h-5 object-contain"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
             </div>
-            <div className="bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
+            <div className="bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2">
                 <AgentBadge agent={agent} />
                 <div className="flex items-center gap-1 ml-1">
                     {[0, 150, 300].map((delay) => (
@@ -174,45 +181,94 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
     const isUser = msg.role === 'user';
     const meta = AGENT_META[msg.agent ?? 'general'] ?? AGENT_META['general'];
     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const [copied, setCopied] = useState(false);
+    const [liked, setLiked] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(msg.content).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    const handleExportWord = () => {
+        const titleRaw = msg.content.split('\n')[0].replace(/^#+\s*/, '').slice(0, 80) || 'Lumicoria Response';
+        const safeTitle = titleRaw.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] || c));
+        const body = msg.content
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+            .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+            .replace(/\n{2,}/g, '</p><p>');
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title><style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.6;margin:2cm}h1{font-size:16pt}h2{font-size:13pt}h3{font-size:12pt}code{font-family:Consolas,monospace;background:#f0f0f0;padding:2px 4px}li{margin-bottom:4px}</style></head><body><p>${body}</p></body></html>`;
+        const blob = new Blob([html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${titleRaw.slice(0, 40).replace(/[^a-zA-Z0-9 ]/g, '').trim() || 'lumicoria-response'}.doc`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     if (isUser) {
         return (
-            <div className="flex items-end gap-2 justify-end">
+            <div className="flex items-end justify-end">
                 <div className="flex flex-col items-end max-w-[75%] md:max-w-[60%]">
                     <div
                         className="px-4 py-3 rounded-2xl rounded-br-sm text-white text-sm leading-relaxed shadow-md"
                         style={{ background: 'linear-gradient(135deg, #6C4AB0 0%, #9B87F5 100%)' }}
                     >
-                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        <p className="whitespace-pre-wrap break-words font-normal tracking-tight">{msg.content}</p>
                     </div>
-                    <span className="text-[10px] text-gray-400 mt-1 mr-1">{time}</span>
-                </div>
-                <div
-                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm text-[10px] font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #6C4AB0, #9B87F5)' }}
-                >
-                    U
+                    <span className="text-[10px] text-gray-400 mt-1 mr-1 tabular-nums">{time}</span>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex items-start gap-3 max-w-[85%] md:max-w-[70%]">
-            <div
-                className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm mt-0.5"
-                style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}99)` }}
-            >
-                <Sparkles size={13} color="white" />
+        <div className="flex items-start gap-3 max-w-[85%] md:max-w-[70%] group">
+            {/* AI avatar — BW mono logo */}
+            <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm mt-0.5 bg-gray-900 overflow-hidden border border-gray-800/20">
+                <img
+                    src="/images/lumicoria-logo-mono.png"
+                    alt="Lumicoria"
+                    className="w-5 h-5 object-contain"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
             </div>
 
             <div className="flex flex-col items-start min-w-0 flex-1">
                 {msg.agent && <AgentBadge agent={msg.agent} />}
 
                 <div className="bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3 w-full">
-                    <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed [&>p]:mb-2 [&>p:last-child]:mb-0 [&_code]:bg-lumicoria-purple/10 [&_code]:text-lumicoria-purple [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-gray-50 [&_pre]:rounded-xl [&_pre]:p-3 [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:mb-1 [&_strong]:text-gray-900 [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_blockquote]:border-l-4 [&_blockquote]:border-lumicoria-purple/30 [&_blockquote]:pl-3 [&_blockquote]:text-gray-600 [&_a]:text-lumicoria-blue [&_a]:underline">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                    </div>
+                    {msg.content === '' ? (
+                        /* Thinking indicator — shows until first streaming token arrives */
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-[12px] text-gray-400 font-medium tracking-wide">Thinking</span>
+                            <span className="flex items-center gap-1">
+                                {[0, 160, 320].map((delay) => (
+                                    <span
+                                        key={delay}
+                                        className="w-1.5 h-1.5 rounded-full bg-lumicoria-purple/50 animate-bounce"
+                                        style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
+                                    />
+                                ))}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="ai-markdown">
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                            >{msg.content}</ReactMarkdown>
+                        </div>
+                    )}
 
                     {msg.sources && msg.sources.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-100">
@@ -232,8 +288,39 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 mt-1 ml-1">
-                    <span className="text-[10px] text-gray-400">{time}</span>
+                {/* Action bar — appears on hover */}
+                <div className="flex items-center gap-1 mt-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <button
+                        onClick={handleCopy}
+                        title={copied ? 'Copied!' : 'Copy response'}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-700 hover:bg-white/70 border border-transparent hover:border-gray-200 transition-all"
+                    >
+                        {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                        <span>{copied ? 'Copied' : 'Copy'}</span>
+                    </button>
+
+                    <button
+                        onClick={() => setLiked((p) => !p)}
+                        title={liked ? 'Unlike' : 'Like this response'}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all ${liked
+                            ? 'text-green-600 bg-green-50 border-green-200'
+                            : 'text-gray-400 border-transparent hover:text-gray-700 hover:bg-white/70 hover:border-gray-200'
+                            }`}
+                    >
+                        <ThumbsUp size={12} />
+                        <span>{liked ? 'Liked' : 'Like'}</span>
+                    </button>
+
+                    <button
+                        onClick={handleExportWord}
+                        title="Export as Word document"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-gray-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all"
+                    >
+                        <FileDown size={12} />
+                        <span>Export</span>
+                    </button>
+
+                    <span className="text-[10px] text-gray-300 ml-2">{time}</span>
                     {msg.processing_time != null && (
                         <span className="text-[10px] text-gray-300">· {msg.processing_time}s</span>
                     )}
@@ -242,6 +329,7 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
         </div>
     );
 };
+
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -273,13 +361,21 @@ const Chat: React.FC = () => {
     const messagesAreaRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const attachBtnRef = useRef<HTMLButtonElement>(null);
 
     // ── Data loading ──────────────────────────────────────────────────────────
 
     const loadConversations = useCallback(async () => {
         try {
             const data = await chatApi.listConversations(50);
-            setConversations(data);
+            // Deduplicate by conversation_id — prevents double-highlight if API returns duplicates
+            const seen = new Set<string>();
+            const unique = data.filter((c: ConversationSummary) => {
+                if (seen.has(c.conversation_id)) return false;
+                seen.add(c.conversation_id);
+                return true;
+            });
+            setConversations(unique);
         } catch { /* silent */ }
     }, []);
 
@@ -287,9 +383,11 @@ const Chat: React.FC = () => {
 
     // ── Auto-scroll ───────────────────────────────────────────────────────────
 
-    const scrollToBottom = useCallback(() => {
-        if (!userScrolledUp) {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = useCallback((force = false) => {
+        const el = messagesAreaRef.current;
+        if (!el) return;
+        if (force || !userScrolledUp) {
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
         }
     }, [userScrolledUp]);
 
@@ -413,7 +511,7 @@ const Chat: React.FC = () => {
         }
     }, [urlInput]);
 
-    // ── Send message ──────────────────────────────────────────────────────────
+    // ── Send message ───────────────────────────────────────────────────────────
 
     const sendMessage = useCallback(async () => {
         const trimmed = input.trim();
@@ -421,8 +519,11 @@ const Chat: React.FC = () => {
 
         setError(null);
         setUserScrolledUp(false);
+        setTimeout(() => {
+            const el = messagesAreaRef.current;
+            if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        }, 80);
 
-        // Upload any pending attachments first
         if (attachments.some((a) => a.status === 'pending')) {
             await uploadAttachments(attachments);
         }
@@ -439,39 +540,85 @@ const Chat: React.FC = () => {
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
-
-        // Reset textarea height
         if (inputRef.current) inputRef.current.style.height = 'auto';
 
+        const assistantId = `assistant-${Date.now()}`;
+        const BASE = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+        const token = localStorage.getItem('accessToken');
+
         try {
-            const response = await chatApi.sendMessage({
-                query: trimmed,
-                conversation_id: conversationId ?? undefined,
-                save_to_context: true,
+            const res = await fetch(`${BASE}/chat/stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    query: trimmed,
+                    conversation_id: conversationId ?? undefined,
+                    save_to_context: true,
+                }),
             });
 
-            if (!conversationId) setConversationId(response.conversation_id);
-            setCurrentAgent(response.agent_used);
-
-            const assistantMsg: Message = {
-                id: `assistant-${Date.now()}`,
-                role: 'assistant',
-                content: response.response,
-                agent: response.agent_used,
-                timestamp: new Date().toISOString(),
-                sources: response.sources,
-                processing_time: response.processing_time_seconds,
-            };
-            setMessages((prev) => [...prev, assistantMsg]);
-
-            // Refresh sidebar list
-            loadConversations();
-        } catch (err: any) {
-            const detail = err?.response?.data?.detail ?? err?.message ?? 'Something went wrong.';
-            setError(detail);
-            if ([400, 429].includes(err?.response?.status)) {
-                setMessages((prev) => prev.slice(0, -1));
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error((errJson as any)?.detail ?? `HTTP ${res.status}`);
             }
+
+            if (!res.body) throw new Error('No stream body from server');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+
+            // Immediately flush loading state and insert blank assistant placeholder
+            setIsLoading(false);
+            setMessages((prev) => [
+                ...prev,
+                { id: assistantId, role: 'assistant' as const, content: '', agent: 'general', timestamp: new Date().toISOString() },
+            ]);
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buf += decoder.decode(value, { stream: true });
+                const lines = buf.split('\n');
+                buf = lines.pop() ?? '';
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const raw = line.slice(6).trim();
+                    if (!raw) continue;
+                    try {
+                        const frame = JSON.parse(raw);
+                        if (frame.type === 'meta') {
+                            if (!conversationId) setConversationId(frame.conversation_id);
+                            setCurrentAgent(frame.agent_used ?? 'general');
+                            setMessages((prev) =>
+                                prev.map((m) => m.id === assistantId ? { ...m, agent: frame.agent_used ?? 'general' } : m)
+                            );
+                        } else if (frame.type === 'delta') {
+                            const chunk: string = frame.text ?? '';
+                            setMessages((prev) =>
+                                prev.map((m) => m.id === assistantId ? { ...m, content: m.content + chunk } : m)
+                            );
+                            const el = messagesAreaRef.current;
+                            if (el) el.scrollTo({ top: el.scrollHeight });
+                        } else if (frame.type === 'done') {
+                            setMessages((prev) =>
+                                prev.map((m) => m.id === assistantId ? { ...m, processing_time: frame.processing_time } : m)
+                            );
+                            loadConversations();
+                        } else if (frame.type === 'error') {
+                            setError(frame.message ?? 'Stream error');
+                        }
+                    } catch { /* skip malformed frames */ }
+                }
+            }
+        } catch (err: any) {
+            setError(err?.message ?? 'Something went wrong.');
+            setMessages((prev) => prev.filter((m) => !(m.id === assistantId && m.content === '')));
         } finally {
             setIsLoading(false);
         }
@@ -503,7 +650,7 @@ const Chat: React.FC = () => {
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <div className="flex h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/20 font-sans overflow-hidden">
+        <div className="flex h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/20 overflow-hidden" style={{ fontFamily: "'Inter', 'DM Sans', system-ui, sans-serif" }}>
 
             {/* ══════════════════════════════════════════════════
           SIDEBAR
@@ -632,23 +779,13 @@ const Chat: React.FC = () => {
                             background: `${agentMeta.color}10`,
                         }}
                     >
-                        <Sparkles size={11} />
+                        {agentMeta.icon}
                         <span>
                             {messages.length === 0 ? 'Lumicoria AI' : agentMeta.label}
                         </span>
                     </div>
 
                     <div className="flex-1" />
-
-                    {messages.length > 0 && (
-                        <button
-                            onClick={startNewConversation}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-lumicoria-purple bg-lumicoria-purple/10 hover:bg-lumicoria-purple/15 rounded-full transition-colors border border-lumicoria-purple/20"
-                        >
-                            <Plus size={13} />
-                            New chat
-                        </button>
-                    )}
                 </div>
 
                 {/* Messages Area */}
@@ -661,12 +798,21 @@ const Chat: React.FC = () => {
                     {/* ── Empty State ── */}
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full text-center px-4 py-12 space-y-6">
-                            {/* Logo / hero */}
-                            <div className="relative">
-                                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-lumicoria-purple to-lumicoria-lightPurple flex items-center justify-center shadow-2xl shadow-lumicoria-purple/30">
-                                    <Sparkles size={36} color="white" />
+                            {/* Logo / hero — gradient logo, large */}
+                            <div className="relative inline-block">
+                                <div className="w-24 h-24 rounded-3xl bg-white shadow-2xl shadow-gray-200/60 border border-gray-100 flex items-center justify-center overflow-hidden">
+                                    <img
+                                        src="/images/lumicoria-logo-gradient.png"
+                                        alt="Lumicoria AI"
+                                        className="w-20 h-20 object-contain"
+                                        onError={(e) => {
+                                            const el = e.currentTarget as HTMLImageElement;
+                                            el.style.display = 'none';
+                                            el.parentElement!.classList.add('bg-gradient-to-br', 'from-lumicoria-purple', 'to-lumicoria-lightPurple');
+                                        }}
+                                    />
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm animate-pulse" />
                             </div>
 
                             <div className="space-y-2">
@@ -803,62 +949,76 @@ const Chat: React.FC = () => {
                     {/* Main input box */}
                     <div className="relative bg-white/80 backdrop-blur-xl border border-white/60 shadow-lg shadow-gray-900/5 rounded-2xl overflow-visible">
 
-                        {/* Attachment menu */}
-                        {isAttachMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 w-72 bg-white/95 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-2xl p-3 z-50 space-y-2">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Add to context</p>
-
-                                {/* File */}
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 text-sm text-gray-700 transition-colors text-left"
+                        {/* Attach menu rendered via portal → bypasses overflow-hidden on <main> */}
+                        {isAttachMenuOpen && (() => {
+                            const rect = attachBtnRef.current?.getBoundingClientRect();
+                            const bottom = rect ? window.innerHeight - rect.top + 8 : 120;
+                            const left = rect ? rect.left : 80;
+                            return ReactDOM.createPortal(
+                                <div
+                                    className="fixed w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 space-y-2"
+                                    style={{ bottom, left, zIndex: 9999 }}
+                                    onMouseDown={(e) => e.stopPropagation()}
                                 >
-                                    <div className="w-7 h-7 rounded-lg bg-lumicoria-purple/10 flex items-center justify-center">
-                                        <FileTextIcon size={13} className="text-lumicoria-purple" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold">Upload file</p>
-                                        <p className="text-[10px] text-gray-400">PDF, Word, Image, CSV…</p>
-                                    </div>
-                                </button>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Add to context</p>
 
-                                {/* URL */}
-                                <div>
-                                    <div className="flex items-center gap-2.5 px-3 pt-2.5 pb-1">
-                                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                                            <LinkIcon size={13} className="text-lumicoria-blue" />
+                                    {/* Upload file */}
+                                    <button
+                                        type="button"
+                                        onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }}
+                                        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 text-sm text-gray-700 transition-colors text-left cursor-pointer"
+                                    >
+                                        <div className="w-7 h-7 rounded-lg bg-lumicoria-purple/10 flex items-center justify-center flex-shrink-0">
+                                            <FileTextIcon size={13} className="text-lumicoria-purple" />
                                         </div>
-                                        <p className="text-xs font-semibold text-gray-700">Add webpage URL</p>
-                                    </div>
-                                    <div className="px-3 pb-2.5 flex gap-2">
-                                        <input
-                                            type="url"
-                                            value={urlInput}
-                                            onChange={(e) => setUrlInput(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-                                            placeholder="https://…"
-                                            className="flex-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-lumicoria-purple/50 focus:ring-1 focus:ring-lumicoria-purple/20 bg-white"
-                                        />
-                                        <button
-                                            onClick={handleAddUrl}
-                                            disabled={!urlInput.trim() || isAddingUrl}
-                                            className="px-3 py-1.5 text-xs font-semibold bg-lumicoria-purple text-white rounded-lg disabled:opacity-40 hover:bg-lumicoria-deepPurple transition-colors"
-                                        >
-                                            {isAddingUrl ? <Loader2 size={11} className="animate-spin" /> : 'Add'}
-                                        </button>
-                                    </div>
-                                </div>
+                                        <div>
+                                            <p className="text-xs font-semibold">Upload file</p>
+                                            <p className="text-[10px] text-gray-400">PDF, Word, Image, CSV…</p>
+                                        </div>
+                                    </button>
 
-                                <div className="border-t border-gray-100 pt-2">
-                                    <p className="text-[10px] text-gray-400 px-3 pb-1">Documents are added to your knowledge base for context</p>
-                                </div>
-                            </div>
-                        )}
+                                    {/* Add URL */}
+                                    <div>
+                                        <div className="flex items-center gap-2.5 px-3 pt-2 pb-1">
+                                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                                <LinkIcon size={13} className="text-lumicoria-blue" />
+                                            </div>
+                                            <p className="text-xs font-semibold text-gray-700">Add webpage URL</p>
+                                        </div>
+                                        <div className="px-3 pb-2.5 flex gap-2">
+                                            <input
+                                                type="url"
+                                                value={urlInput}
+                                                onChange={(e) => setUrlInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
+                                                placeholder="https://…"
+                                                className="flex-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-lumicoria-purple/50 focus:ring-1 focus:ring-lumicoria-purple/20 bg-white"
+                                                autoFocus
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddUrl}
+                                                disabled={!urlInput.trim() || isAddingUrl}
+                                                className="px-3 py-1.5 text-xs font-semibold bg-lumicoria-purple text-white rounded-lg disabled:opacity-40 hover:bg-lumicoria-deepPurple transition-colors"
+                                            >
+                                                {isAddingUrl ? <Loader2 size={11} className="animate-spin" /> : 'Add'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-100 pt-2">
+                                        <p className="text-[10px] text-gray-400 px-3 pb-1">Documents are added to your knowledge base for context</p>
+                                    </div>
+                                </div>,
+                                document.body
+                            );
+                        })()}
 
                         {/* Textarea row */}
                         <div className="flex items-end gap-2 px-3 py-2.5">
                             {/* Attach button */}
                             <button
+                                ref={attachBtnRef}
                                 onClick={() => setIsAttachMenuOpen((v) => !v)}
                                 title="Attach file or URL"
                                 className={cn(
@@ -925,10 +1085,11 @@ const Chat: React.FC = () => {
                 onChange={handleFilePick}
             />
 
-            {/* Click-outside to close attach menu */}
+            {/* Click-outside overlay (z-9998, below menu at z-9999) */}
             {isAttachMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40"
+                    className="fixed inset-0"
+                    style={{ zIndex: 9998 }}
                     onClick={() => setIsAttachMenuOpen(false)}
                 />
             )}
