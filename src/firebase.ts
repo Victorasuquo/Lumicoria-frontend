@@ -26,4 +26,25 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const messaging = getMessaging(app);
 
+// Explicitly register Service Worker with config params to avoid hardcoding secrets in public file
+if ('serviceWorker' in navigator) {
+  const swParams = new URLSearchParams({
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  });
+
+  navigator.serviceWorker.register(`/firebase-messaging-sw.js?${swParams.toString()}`)
+    .then((registration) => {
+      console.log('Service Worker registered with config params');
+    })
+    .catch((err) => {
+      console.error('Service Worker registration failed:', err);
+    });
+}
+
 export { auth, googleProvider, messaging };
