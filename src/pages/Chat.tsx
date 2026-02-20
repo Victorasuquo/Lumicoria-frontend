@@ -185,10 +185,32 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
     const [liked, setLiked] = useState(false);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(msg.content).then(() => {
+        const text = msg.content;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            // Modern API (iOS 14.5+, Chrome, Firefox)
+            navigator.clipboard.writeText(text).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }).catch(() => fallbackCopy(text));
+        } else {
+            fallbackCopy(text);
+        }
+    };
+
+    const fallbackCopy = (text: string) => {
+        // Legacy execCommand fallback for older iOS Safari
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        });
+        } catch { /* silent — clipboard unavailable */ }
     };
 
     const handleExportWord = () => {
@@ -246,47 +268,45 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
             <div className="flex flex-col items-start min-w-0 flex-1">
                 {msg.agent && <AgentBadge agent={msg.agent} />}
 
-                <div className="bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3 w-full">
-                    {msg.content === '' ? (
-                        /* Thinking indicator — shows until first streaming token arrives */
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-[12px] text-gray-400 font-medium tracking-wide">Thinking</span>
-                            <span className="flex items-center gap-1">
-                                {[0, 160, 320].map((delay) => (
-                                    <span
-                                        key={delay}
-                                        className="w-1.5 h-1.5 rounded-full bg-lumicoria-purple/50 animate-bounce"
-                                        style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
-                                    />
-                                ))}
-                            </span>
-                        </div>
-                    ) : (
+                {msg.content === '' ? (
+                    /* Pure floating indicator — no card, just text + dots */
+                    <div className="flex items-center gap-2 mt-1 ml-1">
+                        <span className="text-[12px] text-gray-400 font-medium">Thinking</span>
+                        {[0, 160, 320].map((delay) => (
+                            <span
+                                key={delay}
+                                className="w-1.5 h-1.5 rounded-full bg-lumicoria-purple/50 animate-bounce"
+                                style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3 w-full">
                         <div className="ai-markdown">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkMath]}
                                 rehypePlugins={[rehypeKatex]}
                             >{msg.content}</ReactMarkdown>
                         </div>
-                    )}
 
-                    {msg.sources && msg.sources.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-100">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">Sources</p>
-                            <div className="flex flex-wrap gap-1">
-                                {msg.sources.slice(0, 3).map((s: any, i: number) => (
-                                    <span
-                                        key={i}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full text-[10px] text-gray-600"
-                                    >
-                                        <LinkIcon size={9} />
-                                        {s.title ?? s.source ?? `Source ${i + 1}`}
-                                    </span>
-                                ))}
+                        {msg.sources && msg.sources.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-gray-100">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">Sources</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {msg.sources.slice(0, 3).map((s: any, i: number) => (
+                                        <span
+                                            key={i}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full text-[10px] text-gray-600"
+                                        >
+                                            <LinkIcon size={9} />
+                                            {s.title ?? s.source ?? `Source ${i + 1}`}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Action bar — appears on hover */}
                 <div className="flex items-center gap-1 mt-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -430,13 +450,15 @@ const Chat: React.FC = () => {
             const data = await chatApi.getConversation(convId);
             setConversationId(convId);
             setMessages(
-                (data.messages ?? []).map((m: any, idx: number) => ({
-                    id: `${convId}-${idx}`,
-                    role: m.role,
-                    content: m.content,
-                    agent: m.agent,
-                    timestamp: m.timestamp ?? new Date().toISOString(),
-                }))
+                (data.messages ?? [])
+                    .filter((m: any) => m.content && m.content.trim().length > 0)
+                    .map((m: any, idx: number) => ({
+                        id: `${convId}-${idx}`,
+                        role: m.role,
+                        content: m.content,
+                        agent: m.agent,
+                        timestamp: m.timestamp ?? new Date().toISOString(),
+                    }))
             );
             const lastAgent = data.agent_history?.[data.agent_history.length - 1];
             if (lastAgent) setCurrentAgent(lastAgent);
