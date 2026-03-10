@@ -72,6 +72,11 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at?: string;
+  onboarding_completed?: boolean;
+  job_title?: string;
+  company?: string;
+  timezone?: string;
+  preferred_language?: string;
 }
 
 export interface UserProfile {
@@ -763,6 +768,71 @@ export const notificationApi = {
   deleteNotification: async (id: string): Promise<void> => {
     await api.delete(`/notifications/${id}`);
   }
+};
+
+// ─── Projects API ─────────────────────────────────────────────────────────────
+
+export interface Project {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  due_date?: string;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
+  color: string;
+  tasks: any[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectCreateData {
+  title: string;
+  description?: string;
+  due_date?: string;
+  status?: string;
+  color?: string;
+}
+
+export const projectApi = {
+  list: async (): Promise<Project[]> => {
+    const response = await api.get<Project[]>('/projects/projects');
+    return response.data;
+  },
+
+  create: async (data: ProjectCreateData): Promise<Project> => {
+    const response = await api.post<Project>('/projects/projects', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<ProjectCreateData>): Promise<Project> => {
+    const response = await api.put<Project>(`/projects/projects/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/projects/projects/${id}`);
+  },
+
+  addTask: async (projectId: string, task: { title: string; description?: string; due_date?: string; priority?: string; status?: string }): Promise<Project> => {
+    const response = await api.post<Project>(`/projects/projects/${projectId}/tasks`, task);
+    return response.data;
+  },
+};
+
+// ─── Onboarding API ────────────────────────────────────────────────────────────
+
+export const onboardingApi = {
+  complete: async (data: {
+    full_name?: string;
+    job_title?: string;
+    company?: string;
+    avatar_url?: string;
+    timezone?: string;
+    preferred_language?: string;
+  }): Promise<any> => {
+    const response = await api.post('/onboarding/complete', data);
+    return response.data;
+  },
 };
 
 // Export the api instance for custom requests

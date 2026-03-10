@@ -9,6 +9,8 @@ interface AuthContextType {
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   googleSignIn: (idToken: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,24 +20,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check if user is logged in on mount
-    const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          const userData = await authApi.getCurrentUser();
-          setUser(userData);
-        } catch (err) {
-          console.error('Failed to get current user:', err);
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-        }
+  const fetchCurrentUser = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      try {
+        const userData = await authApi.getCurrentUser();
+        setUser(userData);
+        return userData;
+      } catch (err) {
+        console.error('Failed to get current user:', err);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
       }
-      setLoading(false);
-    };
+    }
+    return null;
+  };
 
-    checkAuth();
+  useEffect(() => {
+    fetchCurrentUser().finally(() => setLoading(false));
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
@@ -71,10 +74,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await authApi.logout();
+    } catch {
+      // ignore logout errors
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setUser(null);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to logout');
-      throw err;
     }
   };
 
@@ -93,6 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Refetch the current user from the server — used after onboarding completes
+  const refreshUser = async () => {
+    await fetchCurrentUser();
+  };
+
   const value = {
     user,
     loading,
@@ -101,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     logout,
     googleSignIn,
+    refreshUser,
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -112,4 +124,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};

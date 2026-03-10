@@ -19,9 +19,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    // Redirect to login page but save the attempted url
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Only redirect to onboarding if the field is explicitly false
+  // (undefined means field not yet loaded / not applicable — don't redirect)
+  if (user.onboarding_completed === false && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <>{children}</>;
-}; 
+};

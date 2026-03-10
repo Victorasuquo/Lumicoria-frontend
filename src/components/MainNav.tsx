@@ -74,9 +74,9 @@ export default function MainNav() {
   const authNavItems = [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
     { label: 'Chat', path: '/chat', icon: <FileText className="h-4 w-4" /> },
+    { label: 'Projects', path: '/projects', icon: <Settings className="h-4 w-4" /> },
     { label: 'Documents', path: '/documents', icon: <FileText className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
-    { label: 'Well-being', path: '/wellbeing', icon: <Heart className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
@@ -252,7 +252,7 @@ export default function MainNav() {
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 )}
               >
-                {'icon' in item && item.icon}
+                {'icon' in item && (item as any).icon}
                 {item.label}
               </Link>
             ))}

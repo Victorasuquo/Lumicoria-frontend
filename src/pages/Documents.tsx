@@ -44,7 +44,7 @@ const Documents: React.FC = () => {
       if (target.files && target.files.length > 0) {
         const file = target.files[0];
         setIsLoading(true);
-        
+
         try {
           const response = await documentApi.uploadDocument(file);
           setDocuments(prev => [response.document, ...prev]);
@@ -68,14 +68,14 @@ const Documents: React.FC = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedDocuments.length === 0) return;
-    
+
     if (!confirm(`Are you sure you want to delete ${selectedDocuments.length} selected document(s)?`)) {
       return;
     }
-    
+
     setIsLoading(true);
     const deletePromises = selectedDocuments.map(id => documentApi.deleteDocument(id));
-    
+
     try {
       await Promise.all(deletePromises);
       setDocuments(docs => docs.filter(doc => !selectedDocuments.includes(doc.id)));
@@ -106,7 +106,7 @@ const Documents: React.FC = () => {
     });
   };
 
-  const filteredDocuments = documents.filter(doc => 
+  const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -123,9 +123,9 @@ const Documents: React.FC = () => {
       <div className="mb-6 flex gap-4">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <Input 
-            type="search" 
-            placeholder="Search documents..." 
+          <Input
+            type="search"
+            placeholder="Search documents..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -168,12 +168,11 @@ const Documents: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className={`overflow-hidden border ${
-              selectedDocuments.includes(doc.id) ? 'border-purple-500 ring-2 ring-purple-200' : ''
-            }`}>
+            <Card key={doc.id} className={`overflow-hidden border ${selectedDocuments.includes(doc.id) ? 'border-purple-500 ring-2 ring-purple-200' : ''
+              }`}>
               <div className="p-4 flex items-start justify-between">
                 <div className="flex items-start space-x-3">
-                  <div 
+                  <div
                     className="p-2 bg-purple-100 rounded-lg cursor-pointer"
                     onClick={() => toggleDocumentSelection(doc.id)}
                   >
