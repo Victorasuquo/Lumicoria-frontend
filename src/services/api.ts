@@ -609,6 +609,50 @@ export interface PortalResponse {
   portal_url: string;
 }
 
+// ─── Invoice & Credit Types ───────────────────────────────────────────────
+
+export interface InvoiceItem {
+  invoice_id: string;
+  invoice_number: string | null;
+  amount_due: number;
+  amount_paid: number;
+  currency: string;
+  status: string;
+  invoice_date: string;
+  paid_at: string | null;
+  invoice_pdf_url: string | null;
+  hosted_invoice_url: string | null;
+  line_items: Array<{ description: string; amount: number; currency: string; quantity: number }>;
+}
+
+export interface InvoiceListResponse {
+  invoices: InvoiceItem[];
+  total_count: number;
+}
+
+export interface CreditBalance {
+  user_id: string;
+  balance: number;
+  currency: string;
+}
+
+export interface CreditTransaction {
+  transaction_type: 'credit' | 'debit' | 'refund' | 'adjustment' | 'bonus';
+  amount: number;
+  balance_after: number;
+  description: string;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreditLedgerResponse {
+  balance: number;
+  transactions: CreditTransaction[];
+  total_count: number;
+  page: number;
+  page_size: number;
+}
+
 export const billingApi = {
   getPlans: async (): Promise<PlanInfo[]> => {
     const response = await api.get<PlanInfo[]>('/billing/plans');
@@ -632,6 +676,35 @@ export const billingApi = {
 
   createPortalSession: async (data?: { return_url?: string }): Promise<PortalResponse> => {
     const response = await api.post<PortalResponse>('/billing/portal', data || {});
+    return response.data;
+  },
+
+  // ─── Invoices ───────────────────────────────────────────────────────
+
+  getInvoices: async (params?: { limit?: number; skip?: number; status?: string }): Promise<InvoiceListResponse> => {
+    const response = await api.get<InvoiceListResponse>('/billing/invoices', { params });
+    return response.data;
+  },
+
+  getInvoicePdf: async (invoiceId: string): Promise<{ pdf_url: string }> => {
+    const response = await api.get<{ pdf_url: string }>(`/billing/invoices/${invoiceId}/pdf`);
+    return response.data;
+  },
+
+  exportInvoice: async (invoiceId: string): Promise<Record<string, unknown>> => {
+    const response = await api.get(`/billing/invoices/${invoiceId}/export`);
+    return response.data;
+  },
+
+  // ─── Credits ────────────────────────────────────────────────────────
+
+  getCreditBalance: async (): Promise<CreditBalance> => {
+    const response = await api.get<CreditBalance>('/billing/credits/balance');
+    return response.data;
+  },
+
+  getCreditLedger: async (params?: { limit?: number; skip?: number }): Promise<CreditLedgerResponse> => {
+    const response = await api.get<CreditLedgerResponse>('/billing/credits/ledger', { params });
     return response.data;
   },
 };
