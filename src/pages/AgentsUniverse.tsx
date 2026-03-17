@@ -476,6 +476,29 @@ function SideNav({ groups }: { groups: AgentGroup[] }) {
    PAGE
    ═══════════════════════════════════════════════════════════════════ */
 
+const agentRouteMap: Record<string, string> = {
+  "document": "/agents/document",
+  "meeting": "/agents/meeting",
+  "meeting-fact-checker": "/agents/meeting-fact-checker",
+  "vision": "/agents/vision",
+  "research": "/agents/research",
+  "research-mentor": "/agents/research-mentor",
+  "student": "/agents/student",
+  "learning-coach": "/agents/learning-coach",
+  "rag": "/agents/rag",
+  "data-analysis": "/agents/data-analysis",
+  "knowledge-graph": "/agents/knowledge-graph",
+  "legal-document": "/agents/legal-document",
+  "ethics-bias": "/agents/ethics-bias",
+  "wellbeing": "/agents/wellbeing",
+  "focus-flow": "/agents/focus-flow",
+  "workspace-ergonomics": "/agents/workspace-ergonomics",
+  "creative": "/agents/creative",
+  "social-media": "/agents/social-media",
+  "translation": "/agents/translation",
+  "customer-service": "/agents/customer-service",
+};
+
 const AgentsUniverse: React.FC = () => {
   const navigate = useNavigate();
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
@@ -759,12 +782,13 @@ const AgentsUniverse: React.FC = () => {
                 <Button
                   className="flex-1 bg-gray-900 hover:bg-gray-800 text-white h-10 text-sm"
                   onClick={() => {
+                    const route = agentRouteMap[selectedAgent.id];
                     setSelectedAgent(null);
-                    navigate("/dashboard");
+                    navigate(route || "/dashboard");
                   }}
                 >
                   <Play size={15} className="mr-2" />
-                  Deploy
+                  Open Agent
                 </Button>
                 <Button
                   variant="outline"

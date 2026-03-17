@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -30,6 +30,37 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Projects from "./pages/Projects";
+
+// Agent pages — lazy loaded
+const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
+const MeetingAssistant = lazy(() => import("./pages/agents/MeetingAssistant"));
+const MeetingFactChecker = lazy(() => import("./pages/agents/MeetingFactChecker"));
+const VisionAgent = lazy(() => import("./pages/agents/VisionAgent"));
+const ResearchAgent = lazy(() => import("./pages/agents/ResearchAgent"));
+const ResearchMentor = lazy(() => import("./pages/agents/ResearchMentor"));
+const StudentAgent = lazy(() => import("./pages/agents/StudentAgent"));
+const LearningCoach = lazy(() => import("./pages/agents/LearningCoach"));
+const RAGAgent = lazy(() => import("./pages/agents/RAGAgent"));
+const DataAnalysisAgent = lazy(() => import("./pages/agents/DataAnalysisAgent"));
+const KnowledgeGraphAgent = lazy(() => import("./pages/agents/KnowledgeGraphAgent"));
+const LegalDocumentAgent = lazy(() => import("./pages/agents/LegalDocumentAgent"));
+const EthicsBiasAgent = lazy(() => import("./pages/agents/EthicsBiasAgent"));
+const WellbeingCoach = lazy(() => import("./pages/agents/WellbeingCoach"));
+const FocusFlowAgent = lazy(() => import("./pages/agents/FocusFlowAgent"));
+const WorkspaceErgonomics = lazy(() => import("./pages/agents/WorkspaceErgonomics"));
+const CreativeAgent = lazy(() => import("./pages/agents/CreativeAgent"));
+const SocialMediaAgent = lazy(() => import("./pages/agents/SocialMediaAgent"));
+const TranslationAgent = lazy(() => import("./pages/agents/TranslationAgent"));
+const CustomerServiceAgent = lazy(() => import("./pages/agents/CustomerServiceAgent"));
+
+const AgentPageFallback = () => (
+  <div className="min-h-screen bg-[#FAFBFC] flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-gray-200 border-t-lumicoria-purple rounded-full animate-spin" />
+      <p className="text-sm text-gray-400">Loading agent...</p>
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -123,6 +154,28 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* Agent Pages */}
+          <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/meeting" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingAssistant /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/meeting-fact-checker" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingFactChecker /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/vision" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><VisionAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/research" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/research-mentor" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchMentor /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/student" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><StudentAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/learning-coach" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LearningCoach /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/rag" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><RAGAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/data-analysis" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DataAnalysisAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/knowledge-graph" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><KnowledgeGraphAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/legal-document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LegalDocumentAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/ethics-bias" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><EthicsBiasAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/wellbeing" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WellbeingCoach /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/focus-flow" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><FocusFlowAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/workspace-ergonomics" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WorkspaceErgonomics /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/creative" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CreativeAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/social-media" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
+          <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />
 
           {/* Catch-all Route */}
           <Route path="*" element={<NotFound />} />

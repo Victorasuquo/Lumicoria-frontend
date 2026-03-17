@@ -835,5 +835,215 @@ export const onboardingApi = {
   },
 };
 
+// ─── Research Mentor API ────────────────────────────────────────────────────
+
+export const researchMentorApi = {
+  analyzeProblem: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/analyze-problem', data);
+    return response.data;
+  },
+  planResearch: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/plan-research', data);
+    return response.data;
+  },
+  reviewLiterature: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/review-literature', data);
+    return response.data;
+  },
+  developHypothesis: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/develop-hypothesis', data);
+    return response.data;
+  },
+  guideMethodology: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/guide-methodology', data);
+    return response.data;
+  },
+  evaluateCritically: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/evaluate-critically', data);
+    return response.data;
+  },
+  synthesize: async (data: any): Promise<any> => {
+    const response = await api.post('/research-mentor/synthesize', data);
+    return response.data;
+  },
+};
+
+// ─── Ethics & Bias API ──────────────────────────────────────────────────────
+
+export const ethicsBiasApi = {
+  analyzeContent: async (data: any): Promise<any> => {
+    const response = await api.post('/ethics-bias/analyze', data);
+    return response.data;
+  },
+  checkGuidelines: async (data: any): Promise<any> => {
+    const response = await api.post('/ethics-bias/check-guidelines', data);
+    return response.data;
+  },
+  generateSuggestions: async (data: any): Promise<any> => {
+    const response = await api.post('/ethics-bias/generate-suggestions', data);
+    return response.data;
+  },
+  getCitations: async (data: any): Promise<any> => {
+    const response = await api.post('/ethics-bias/get-citations', data);
+    return response.data;
+  },
+  getCategories: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/ethics-bias/ethics-categories');
+    return response.data;
+  },
+  getBiasTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/ethics-bias/bias-types');
+    return response.data;
+  },
+  getSeverityLevels: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/ethics-bias/severity-levels');
+    return response.data;
+  },
+};
+
+// ─── Knowledge Graph API ────────────────────────────────────────────────────
+
+export const knowledgeGraphApi = {
+  extractKnowledge: async (data: any): Promise<any> => {
+    const response = await api.post('/knowledge-graph/extract', data);
+    return response.data;
+  },
+  discoverRelations: async (data: any): Promise<any> => {
+    const response = await api.post('/knowledge-graph/discover-relations', data);
+    return response.data;
+  },
+  fillGaps: async (data: any): Promise<any> => {
+    const response = await api.post('/knowledge-graph/fill-gaps', data);
+    return response.data;
+  },
+  queryGraph: async (data: any): Promise<any> => {
+    const response = await api.post('/knowledge-graph/query', data);
+    return response.data;
+  },
+  visualize: async (data: any): Promise<any> => {
+    const response = await api.post('/knowledge-graph/visualize', data);
+    return response.data;
+  },
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/knowledge-graph/stats');
+    return response.data;
+  },
+  getNodeTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/knowledge-graph/node-types');
+    return response.data;
+  },
+  getRelationTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/knowledge-graph/relation-types');
+    return response.data;
+  },
+};
+
+// ─── Workspace Ergonomics API ───────────────────────────────────────────────
+
+export const workspaceErgonomicsApi = {
+  analyzeWorkspace: async (data: any): Promise<any> => {
+    const response = await api.post('/workspace-ergonomics/analyze', data);
+    return response.data;
+  },
+  analyzeImage: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/workspace-ergonomics/analyze-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  monitorWorkspace: async (data: any): Promise<any> => {
+    const response = await api.post('/workspace-ergonomics/monitor', data);
+    return response.data;
+  },
+  getRecommendations: async (data: any): Promise<any> => {
+    const response = await api.post('/workspace-ergonomics/get-recommendations', data);
+    return response.data;
+  },
+  getGuidelines: async (data: any): Promise<any> => {
+    const response = await api.post('/workspace-ergonomics/get-guidelines', data);
+    return response.data;
+  },
+  getCategories: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/workspace-ergonomics/ergonomic-categories');
+    return response.data;
+  },
+  getSeverityLevels: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/workspace-ergonomics/issue-severity-levels');
+    return response.data;
+  },
+};
+
+// ─── Focus Flow API ─────────────────────────────────────────────────────────
+
+export const focusFlowApi = {
+  monitorFocus: async (data: any): Promise<any> => {
+    const response = await api.post('/focus-flow/monitor', data);
+    return response.data;
+  },
+  analyzePatterns: async (data: any): Promise<any> => {
+    const response = await api.post('/focus-flow/analyze-patterns', data);
+    return response.data;
+  },
+  getRecommendations: async (data: any): Promise<any> => {
+    const response = await api.post('/focus-flow/get-recommendations', data);
+    return response.data;
+  },
+  trackDistraction: async (data: any): Promise<any> => {
+    const response = await api.post('/focus-flow/track-distraction', data);
+    return response.data;
+  },
+  endSession: async (data: any): Promise<any> => {
+    const response = await api.post('/focus-flow/end-session', data);
+    return response.data;
+  },
+  getFocusStates: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/focus-flow/focus-states');
+    return response.data;
+  },
+  getDistractionTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/focus-flow/distraction-types');
+    return response.data;
+  },
+  getProductivityTechniques: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/focus-flow/productivity-techniques');
+    return response.data;
+  },
+};
+
+// ─── Meeting Fact Checker API ───────────────────────────────────────────────
+
+export const meetingFactCheckerApi = {
+  verifyClaim: async (data: any): Promise<any> => {
+    const response = await api.post('/meeting-fact-checker/verify-claim', data);
+    return response.data;
+  },
+  startSession: async (data: any): Promise<any> => {
+    const response = await api.post('/meeting-fact-checker/start-session', data);
+    return response.data;
+  },
+  endSession: async (data: any): Promise<any> => {
+    const response = await api.post('/meeting-fact-checker/end-session', data);
+    return response.data;
+  },
+  getSummary: async (data: any): Promise<any> => {
+    const response = await api.post('/meeting-fact-checker/get-summary', data);
+    return response.data;
+  },
+  getClaimTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/meeting-fact-checker/claim-types');
+    return response.data;
+  },
+  getVerificationStatuses: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/meeting-fact-checker/verification-statuses');
+    return response.data;
+  },
+  getClaimSeverities: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/meeting-fact-checker/claim-severities');
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
