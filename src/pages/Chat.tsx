@@ -11,7 +11,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { chatApi, ConversationSummary } from '../services/api';
+import { chatApi, documentApi, ConversationSummary } from '../services/api';
+import DocumentPreview, { CitationHighlight } from '@/components/DocumentPreview';
+import CitationBadge, { SourceInfo } from '@/components/CitationBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -177,7 +179,7 @@ const TypingIndicator: React.FC<{ agent: string }> = ({ agent }) => {
     );
 };
 
-const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
+const ChatBubble: React.FC<{ msg: Message; onCitationClick?: (source: SourceInfo) => void }> = ({ msg, onCitationClick }) => {
     const isUser = msg.role === 'user';
     const meta = AGENT_META[msg.agent ?? 'general'] ?? AGENT_META['general'];
     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -293,14 +295,17 @@ const ChatBubble: React.FC<{ msg: Message }> = ({ msg }) => {
                             <div className="mt-2 pt-2 border-t border-gray-100">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">Sources</p>
                                 <div className="flex flex-wrap gap-1">
-                                    {msg.sources.slice(0, 3).map((s: any, i: number) => (
-                                        <span
+                                    {msg.sources.map((s: any, i: number) => (
+                                        <button
                                             key={i}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full text-[10px] text-gray-600"
+                                            onClick={() => onCitationClick?.(s)}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full text-[10px] text-gray-600 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 transition-colors cursor-pointer"
                                         >
+                                            <span className="font-semibold text-violet-600">[{s.index ?? i + 1}]</span>
                                             <LinkIcon size={9} />
                                             {s.title ?? s.source ?? `Source ${i + 1}`}
-                                        </span>
+                                            {s.page_number && <span className="text-gray-400">p.{s.page_number}</span>}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -374,6 +379,36 @@ const Chat: React.FC = () => {
 
     // Sidebar section collapse state
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+    // Document preview state (for citation click-through)
+    const [previewDoc, setPreviewDoc] = useState<{
+        url: string;
+        page?: number;
+        highlights?: CitationHighlight[];
+    } | null>(null);
+
+    const handleCitationClick = useCallback(async (source: SourceInfo) => {
+        if (!source.document_id) return;
+        try {
+            const { url } = await documentApi.getPresignedUrl(source.document_id);
+            setPreviewDoc({
+                url,
+                page: source.page_number || 1,
+                highlights: source.bbox
+                    ? [{
+                        pageNumber: source.page_number || 1,
+                        bbox: source.bbox,
+                        pageWidth: source.page_width,
+                        pageHeight: source.page_height,
+                    }]
+                    : source.chunk_text
+                        ? [{ pageNumber: source.page_number || 1, text: source.chunk_text.slice(0, 60) }]
+                        : [],
+            });
+        } catch {
+            // Fallback: no preview available
+        }
+    }, []);
 
     // Auto-scroll
     const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -895,7 +930,7 @@ const Chat: React.FC = () => {
                                 msg.role === 'user' ? 'justify-end' : 'justify-start'
                             )}
                         >
-                            <ChatBubble msg={msg} />
+                            <ChatBubble msg={msg} onCitationClick={handleCitationClick} />
                         </div>
                     ))}
 
@@ -1113,6 +1148,16 @@ const Chat: React.FC = () => {
                     className="fixed inset-0"
                     style={{ zIndex: 9998 }}
                     onClick={() => setIsAttachMenuOpen(false)}
+                />
+            )}
+            {/* Document Preview Modal */}
+            {previewDoc && (
+                <DocumentPreview
+                    documentUrl={previewDoc.url}
+                    isOpen={!!previewDoc}
+                    onClose={() => setPreviewDoc(null)}
+                    initialPage={previewDoc.page}
+                    highlights={previewDoc.highlights}
                 />
             )}
         </div>

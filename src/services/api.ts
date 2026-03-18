@@ -226,14 +226,22 @@ export interface DocumentUploadResponse {
 }
 
 export const documentApi = {
-  uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {
+  uploadDocument: async (
+    file: File,
+    name?: string,
+    documentType?: string,
+    description?: string,
+    metadata?: Record<string, any>,
+  ): Promise<DocumentUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('name', name || file.name);
+    formData.append('document_type', documentType || 'pdf');
+    if (description) formData.append('description', description);
+    if (metadata) formData.append('metadata', JSON.stringify(metadata));
 
     const response = await api.post<DocumentUploadResponse>('/documents/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },
@@ -245,6 +253,11 @@ export const documentApi = {
 
   getDocument: async (id: string): Promise<Document> => {
     const response = await api.get<Document>(`/documents/${id}`);
+    return response.data;
+  },
+
+  getPresignedUrl: async (documentId: string): Promise<{ url: string }> => {
+    const response = await api.get<{ url: string }>(`/documents/${documentId}/presigned-url`);
     return response.data;
   },
 
@@ -260,7 +273,7 @@ export const documentApi = {
   summarizeDocument: async (id: string): Promise<any> => {
     const response = await api.post<any>(`/documents/summarize`, { document_id: id });
     return response.data;
-  }
+  },
 };
 
 // Agent API
