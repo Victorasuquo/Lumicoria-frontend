@@ -46,11 +46,11 @@ const Documents: React.FC = () => {
         setIsLoading(true);
 
         try {
-          const response = await documentApi.uploadDocument(file);
-          setDocuments(prev => [response.document, ...prev]);
+          const doc = await documentApi.uploadDocument(file);
+          setDocuments(prev => [doc, ...prev]);
           toast({
             title: 'Document uploaded',
-            description: response.message || 'Document successfully uploaded'
+            description: 'Document successfully uploaded'
           });
         } catch (error) {
           console.error('Error uploading document:', error);
@@ -107,7 +107,7 @@ const Documents: React.FC = () => {
   };
 
   const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (doc.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -176,18 +176,18 @@ const Documents: React.FC = () => {
                     className="p-2 bg-purple-100 rounded-lg cursor-pointer"
                     onClick={() => toggleDocumentSelection(doc.id)}
                   >
-                    {doc.file_type === 'application/pdf' ? (
+                    {doc.mime_type === 'application/pdf' ? (
                       <FileTextIcon className="h-6 w-6 text-purple-600" />
-                    ) : doc.file_type.includes('image/') ? (
+                    ) : (doc.mime_type || '').includes('image/') ? (
                       <ImageIcon className="h-6 w-6 text-purple-600" />
                     ) : (
                       <FileIcon className="h-6 w-6 text-purple-600" />
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium">{doc.title}</h3>
+                    <h3 className="font-medium">{doc.name}</h3>
                     <p className="text-sm text-gray-500">
-                      {doc.file_type.split('/')[1].toUpperCase()} • {new Date(doc.created_at).toLocaleDateString()}
+                      {(doc.mime_type || 'unknown').split('/').pop()?.toUpperCase()} • {new Date(doc.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

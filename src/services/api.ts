@@ -209,20 +209,20 @@ export const userApi = {
 // Document API
 export interface Document {
   id: string;
-  title: string;
-  file_type: string;
+  name: string;
+  description?: string;
+  document_type: string;
+  mime_type?: string;
+  file_url?: string;
   file_size: number;
   created_at: string;
   updated_at?: string;
-  user_id: string;
+  created_by: string;
+  organization_id: string;
   status: string;
-  extracted_items?: number;
-  tasks_created?: number;
-}
-
-export interface DocumentUploadResponse {
-  document: Document;
-  message: string;
+  metadata?: Record<string, any>;
+  extraction_status?: string;
+  extraction_result?: Record<string, any>;
 }
 
 export const documentApi = {
@@ -232,7 +232,7 @@ export const documentApi = {
     documentType?: string,
     description?: string,
     metadata?: Record<string, any>,
-  ): Promise<DocumentUploadResponse> => {
+  ): Promise<Document> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name || file.name);
@@ -240,7 +240,7 @@ export const documentApi = {
     if (description) formData.append('description', description);
     if (metadata) formData.append('metadata', JSON.stringify(metadata));
 
-    const response = await api.post<DocumentUploadResponse>('/documents/upload', formData, {
+    const response = await api.post<Document>('/documents/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
