@@ -1,215 +1,667 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileTextIcon, ImageIcon, FileIcon, Download, Trash2, Settings2, Upload, Search, Filter } from 'lucide-react';
-import { Document, documentApi } from '@/services/api';
-import { toast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  FileText,
+  Image as ImageIcon,
+  FileSpreadsheet,
+  File,
+  FileType,
+  Upload,
+  Search,
+  Trash2,
+  Download,
+  MoreVertical,
+  Eye,
+  Sparkles,
+  ArrowRight,
+  CloudUpload,
+  Loader2,
+  X,
+  MessageSquareText,
+} from "lucide-react";
+import { Document, documentApi } from "@/services/api";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import DocumentPreview from "@/components/DocumentPreview";
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+const MIME_LABELS: Record<string, string> = {
+  "application/pdf": "PDF",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
+  "application/msword": "DOC",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "XLSX",
+  "application/vnd.ms-excel": "XLS",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "PPTX",
+  "text/plain": "TXT",
+  "text/csv": "CSV",
+  "image/png": "PNG",
+  "image/jpeg": "JPEG",
+  "image/webp": "WEBP",
+};
+
+function getFileLabel(mime?: string | null): string {
+  if (!mime) return "FILE";
+  if (MIME_LABELS[mime]) return MIME_LABELS[mime];
+  const ext = mime.split("/").pop()?.toUpperCase();
+  return ext && ext.length <= 6 ? ext : "FILE";
+}
+
+function getFileIcon(mime?: string | null, size = "h-7 w-7") {
+  if (!mime) return <File className={size} />;
+  if (mime === "application/pdf") return <FileText className={size} />;
+  if (mime.includes("image/")) return <ImageIcon className={size} />;
+  if (mime.includes("spreadsheet") || mime.includes("excel") || mime.includes("csv"))
+    return <FileSpreadsheet className={size} />;
+  if (mime.includes("word") || mime.includes("document"))
+    return <FileType className={size} />;
+  return <File className={size} />;
+}
+
+function getCardGradient(mime?: string | null, index = 0) {
+  if (!mime) return { card: "from-purple-50 via-violet-50 to-indigo-50", icon: "text-purple-400", glow: "shadow-purple-200/60" };
+  if (mime === "application/pdf") return { card: "from-purple-50 via-violet-50 to-fuchsia-50", icon: "text-purple-600", glow: "shadow-purple-200/50" };
+  if (mime.includes("image/")) return { card: "from-violet-50 via-purple-50 to-indigo-50", icon: "text-violet-500", glow: "shadow-violet-200/50" };
+  if (mime.includes("spreadsheet") || mime.includes("excel")) return { card: "from-indigo-50 via-purple-50 to-violet-50", icon: "text-indigo-500", glow: "shadow-indigo-200/50" };
+  if (mime.includes("word") || mime.includes("document")) return { card: "from-blue-50 via-indigo-50 to-purple-50", icon: "text-indigo-500", glow: "shadow-indigo-200/50" };
+  const fallbacks = [
+    { card: "from-purple-50 via-violet-50 to-fuchsia-50", icon: "text-purple-500", glow: "shadow-purple-200/50" },
+    { card: "from-indigo-50 via-purple-50 to-violet-50", icon: "text-indigo-500", glow: "shadow-indigo-200/50" },
+    { card: "from-fuchsia-50 via-purple-50 to-violet-50", icon: "text-fuchsia-500", glow: "shadow-fuchsia-200/50" },
+  ];
+  return fallbacks[index % fallbacks.length];
+}
+
+function getStatusDot(status: string) {
+  switch (status) {
+    case "processed": return "bg-emerald-400 shadow-emerald-400/40";
+    case "processing": return "bg-amber-400 shadow-amber-400/40 animate-pulse";
+    case "failed": return "bg-red-400 shadow-red-400/40";
+    case "uploaded": return "bg-blue-400 shadow-blue-400/40";
+    default: return "bg-gray-400";
+  }
+}
+
+function formatFileSize(bytes: number): string {
+  if (!bytes) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// Each card floats at its own rhythm
+function getFloatAnimation(index: number) {
+  const duration = 5 + (index % 5) * 0.8;
+  const yRange = 5 + (index % 4) * 2;
+  const rotRange = 0.3 + (index % 3) * 0.2;
+  const delay = (index % 8) * 0.35;
+  return {
+    animate: {
+      y: [0, -yRange, 0, yRange * 0.5, 0],
+      rotate: [0, rotRange, 0, -rotRange, 0],
+    },
+    transition: { duration, repeat: Infinity, ease: "easeInOut" as const, delay },
+  };
+}
+
+// Stacking: cards tilt slightly and overlap via negative margin + z-index on hover
+function getStackStyle(index: number) {
+  const rotations = [-1.5, 0.8, -0.5, 1.2, -0.8, 0.5, -1, 0.7, -0.3, 1.5];
+  return {
+    rotate: rotations[index % rotations.length],
+    zIndex: 10 + index,
+  };
+}
+
+// ── Component ────────────────────────────────────────────────────────────
 
 const Documents: React.FC = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchDocuments = async () => {
+    (async () => {
       setIsLoading(true);
-      try {
-        const docs = await documentApi.getDocuments();
-        setDocuments(docs);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch documents',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDocuments();
+      try { setDocuments(await documentApi.getDocuments()); }
+      catch { toast({ title: "Error", description: "Failed to fetch documents", variant: "destructive" }); }
+      finally { setIsLoading(false); }
+    })();
   }, []);
 
-  const handleUploadDocument = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
-    fileInput.click();
-
-    fileInput.onchange = async (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files.length > 0) {
-        const file = target.files[0];
-        setIsLoading(true);
-
-        try {
-          const doc = await documentApi.uploadDocument(file);
-          setDocuments(prev => [doc, ...prev]);
-          toast({
-            title: 'Document uploaded',
-            description: 'Document successfully uploaded'
-          });
-        } catch (error) {
-          console.error('Error uploading document:', error);
-          toast({
-            title: 'Upload failed',
-            description: 'Failed to upload document. Please try again.',
-            variant: 'destructive',
-          });
-        } finally {
-          setIsLoading(false);
-        }
+  const handleUpload = useCallback(async (files: FileList | File[]) => {
+    setIsUploading(true);
+    for (const file of Array.from(files)) {
+      try {
+        const doc = await documentApi.uploadDocument(file);
+        setDocuments((p) => [doc, ...p]);
+        toast({ title: "Uploaded", description: `${file.name}` });
+      } catch {
+        toast({ title: "Failed", description: `Could not upload ${file.name}`, variant: "destructive" });
       }
-    };
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedDocuments.length === 0) return;
-
-    if (!confirm(`Are you sure you want to delete ${selectedDocuments.length} selected document(s)?`)) {
-      return;
     }
+    setIsUploading(false);
+  }, []);
 
-    setIsLoading(true);
-    const deletePromises = selectedDocuments.map(id => documentApi.deleteDocument(id));
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (dropRef.current && !dropRef.current.contains(e.relatedTarget as Node)) setIsDragging(false);
+  }, []);
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false);
+    if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files);
+  }, [handleUpload]);
 
+  const handleDelete = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} document(s)?`)) return;
     try {
-      await Promise.all(deletePromises);
-      setDocuments(docs => docs.filter(doc => !selectedDocuments.includes(doc.id)));
-      setSelectedDocuments([]);
-      toast({
-        title: 'Documents deleted',
-        description: `${selectedDocuments.length} document(s) successfully deleted`
-      });
-    } catch (error) {
-      console.error('Error deleting documents:', error);
-      toast({
-        title: 'Delete failed',
-        description: 'Failed to delete some documents. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+      await Promise.all(ids.map((id) => documentApi.deleteDocument(id)));
+      setDocuments((p) => p.filter((d) => !ids.includes(d.id)));
+      setSelectedDocs(new Set());
+      toast({ title: "Deleted", description: `${ids.length} removed` });
+    } catch {
+      toast({ title: "Failed", description: "Could not delete", variant: "destructive" });
     }
   };
 
-  const toggleDocumentSelection = (id: string) => {
-    setSelectedDocuments(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(docId => docId !== id);
+  const handleDownload = async (doc: Document) => {
+    try {
+      const { url } = await documentApi.getPresignedUrl(doc.id);
+      const a = window.document.createElement("a");
+      a.href = url; a.download = doc.name; a.target = "_blank"; a.click();
+    } catch {
+      toast({ title: "Failed", description: "Could not download", variant: "destructive" });
+    }
+  };
+
+  const handlePreview = async (doc: Document) => {
+    try {
+      const { url } = await documentApi.getPresignedUrl(doc.id);
+      setPreviewDoc({ url, name: doc.name });
+    } catch {
+      // Fallback: try file_url directly or show error
+      if (doc.file_url) {
+        setPreviewDoc({ url: doc.file_url, name: doc.name });
       } else {
-        return [...prev, id];
+        toast({ title: "Preview unavailable", description: "No preview URL available for this document", variant: "destructive" });
       }
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedDocs((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
     });
   };
 
-  const filteredDocuments = documents.filter(doc =>
-    (doc.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  const filtered = documents.filter((d) =>
+    (d.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Documents</h1>
-        <Button onClick={handleUploadDocument} disabled={isLoading}>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload Document
-        </Button>
-      </div>
+    <div
+      ref={dropRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="relative min-h-screen overflow-hidden"
+    >
+      {/* ── Vibrant ocean background ──────────────────────── */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-100/70 via-purple-50/40 to-sky-100/60" />
 
-      <div className="mb-6 flex gap-4">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Search documents..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+        {/* Large drifting blobs */}
+        <motion.div
+          className="absolute w-[700px] h-[700px] rounded-full bg-gradient-to-br from-purple-300/30 to-violet-400/20 blur-[100px]"
+          style={{ top: "-15%", right: "-10%" }}
+          animate={{ x: [0, 40, 0, -30, 0], y: [0, 30, 0, -20, 0], scale: [1, 1.05, 1, 0.97, 1] }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-[600px] h-[600px] rounded-full bg-gradient-to-br from-blue-300/25 to-cyan-300/15 blur-[100px]"
+          style={{ bottom: "0%", left: "-10%" }}
+          animate={{ x: [0, -35, 0, 25, 0], y: [0, -25, 0, 20, 0], scale: [1, 0.96, 1, 1.04, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+        />
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-br from-fuchsia-200/20 to-pink-300/15 blur-[100px]"
+          style={{ top: "35%", left: "25%" }}
+          animate={{ x: [0, 20, 0, -15, 0], y: [0, -15, 0, 12, 0] }}
+          transition={{ duration: 17, repeat: Infinity, ease: "easeInOut", delay: 7 }}
+        />
+        <motion.div
+          className="absolute w-[350px] h-[350px] rounded-full bg-gradient-to-br from-indigo-200/20 to-blue-200/15 blur-[80px]"
+          style={{ top: "60%", right: "15%" }}
+          animate={{ x: [0, -20, 0, 15, 0], y: [0, 10, 0, -12, 0] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+
+        {/* Animated waves */}
+        <svg className="absolute bottom-0 left-0 w-full h-48 opacity-[0.08]" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <motion.path
+            fill="url(#waveGrad)"
+            animate={{
+              d: [
+                "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
+                "M0,224L60,208C120,192,240,160,360,165.3C480,171,600,213,720,229.3C840,245,960,235,1080,208C1200,181,1320,139,1380,117.3L1440,96L1440,320L0,320Z",
+                "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
+              ],
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
-        </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-        {selectedDocuments.length > 0 && (
-          <Button variant="destructive" onClick={handleDeleteSelected}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Selected ({selectedDocuments.length})
-          </Button>
-        )}
+          <defs>
+            <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="50%" stopColor="#6366f1" />
+              <stop offset="100%" stopColor="#0ea5e9" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <svg className="absolute bottom-0 left-0 w-full h-32 opacity-[0.05]" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <motion.path
+            fill="url(#waveGrad2)"
+            animate={{
+              d: [
+                "M0,256L60,240C120,224,240,192,360,186.7C480,181,600,203,720,218.7C840,235,960,245,1080,234.7C1200,224,1320,192,1380,176L1440,160L1440,320L0,320Z",
+                "M0,192L60,202.7C120,213,240,235,360,229.3C480,224,600,192,720,176C840,160,960,160,1080,176C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
+                "M0,256L60,240C120,224,240,192,360,186.7C480,181,600,203,720,218.7C840,235,960,245,1080,234.7C1200,224,1320,192,1380,176L1440,160L1440,320L0,320Z",
+              ],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+          />
+          <defs>
+            <linearGradient id="waveGrad2" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#06b6d4" />
+              <stop offset="100%" stopColor="#a78bfa" />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
 
-      {isLoading && documents.length === 0 ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        </div>
-      ) : filteredDocuments.length === 0 ? (
-        <div className="text-center py-12">
-          <FileTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No documents found</h3>
-          <p className="mt-1 text-gray-500">
-            {searchQuery ? 'Try adjusting your search terms' : 'Upload your first document to get started'}
-          </p>
-          {searchQuery ? (
-            <Button variant="outline" className="mt-4" onClick={() => setSearchQuery('')}>
-              Clear Search
-            </Button>
-          ) : (
-            <Button className="mt-4" onClick={handleUploadDocument}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Document
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className={`overflow-hidden border ${selectedDocuments.includes(doc.id) ? 'border-purple-500 ring-2 ring-purple-200' : ''
-              }`}>
-              <div className="p-4 flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <div
-                    className="p-2 bg-purple-100 rounded-lg cursor-pointer"
-                    onClick={() => toggleDocumentSelection(doc.id)}
-                  >
-                    {doc.mime_type === 'application/pdf' ? (
-                      <FileTextIcon className="h-6 w-6 text-purple-600" />
-                    ) : (doc.mime_type || '').includes('image/') ? (
-                      <ImageIcon className="h-6 w-6 text-purple-600" />
-                    ) : (
-                      <FileIcon className="h-6 w-6 text-purple-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{doc.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {(doc.mime_type || 'unknown').split('/').pop()?.toUpperCase()} • {new Date(doc.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.txt,.md,.pptx"
+        multiple
+        onChange={(e) => e.target.files && handleUpload(e.target.files)}
+      />
+
+      {/* ── Drag overlay ──────────────────────────────────── */}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-50/90 to-blue-50/90 backdrop-blur-md"
+          >
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-4 p-16 rounded-3xl border-2 border-dashed border-purple-300 bg-white/60">
+              <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                <CloudUpload className="h-14 w-14 text-purple-500" />
+              </motion.div>
+              <p className="text-lg font-semibold text-purple-700">Drop to upload</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Document Preview Modal ────────────────────────── */}
+      {previewDoc && (
+        <DocumentPreview
+          documentUrl={previewDoc.url}
+          isOpen={true}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        {/* ── Header ──────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-end justify-between mb-8"
+        >
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Documents</h1>
+            <p className="text-sm text-gray-400 mt-1">
+              {documents.length} file{documents.length !== 1 ? "s" : ""}
+              {documents.length > 0 && ` \u00b7 ${formatFileSize(documents.reduce((s, d) => s + (d.file_size || 0), 0))}`}
+            </p>
+          </div>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-purple-300/40 hover:shadow-purple-400/50 transition-all hover:-translate-y-0.5"
+          >
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            Upload
+          </Button>
+        </motion.div>
+
+        {/* ── Ask AI CTA ──────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          onClick={() => navigate("/chat")}
+          className="mb-8 group cursor-pointer"
+        >
+          <div className="relative overflow-hidden rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 p-5 transition-all duration-300 hover:shadow-xl hover:shadow-purple-200/30 hover:bg-white/80">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/[0.04] via-transparent to-blue-500/[0.04] pointer-events-none" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-100 to-violet-100 shadow-inner flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-purple-500" />
                 </div>
-                <div className="flex space-x-1">
-                  <Button variant="ghost" size="icon">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
+                <div>
+                  <h3 className="font-semibold text-gray-800 group-hover:text-purple-700 transition-colors">
+                    What do you want to know?
+                  </h3>
+                  <p className="text-xs text-gray-400">AI-powered search across all your documents</p>
                 </div>
               </div>
-              <CardContent>
-                <div className="flex justify-between text-sm pt-2">
-                  <div>Status: <strong>{doc.status}</strong></div>
-                  <div>Size: <strong>{Math.round(doc.file_size / 1024)} KB</strong></div>
+              <div className="flex items-center gap-3">
+                <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-50/80 border border-gray-100 text-sm text-gray-300">
+                  <MessageSquareText className="h-4 w-4" />
+                  <span>Ask anything...</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Search + bulk actions ────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex gap-3 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+            <Input
+              placeholder="Search documents..."
+              className="pl-10 h-10 bg-white/70 backdrop-blur-sm border-white/80 rounded-xl text-sm focus:ring-2 focus:ring-purple-200 focus:border-purple-300 shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <AnimatePresence>
+            {selectedDocs.size > 0 && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+                <Button variant="destructive" onClick={() => handleDelete(Array.from(selectedDocs))} className="h-10 rounded-xl shadow-md">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete ({selectedDocs.size})
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* ── Content ─────────────────────────────────────── */}
+        {isLoading && documents.length === 0 ? (
+          <div className="flex flex-col items-center py-24">
+            <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
+            <p className="mt-3 text-sm text-gray-400">Loading...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-24">
+            <div className="w-16 h-16 rounded-2xl bg-white/80 border border-white shadow-lg flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-purple-300" />
+            </div>
+            <h3 className="font-semibold text-gray-700">{searchQuery ? "No matches" : "No documents yet"}</h3>
+            <p className="text-sm text-gray-400 mt-1">{searchQuery ? "Try a different search" : "Upload files to get started"}</p>
+            {!searchQuery && (
+              <Button className="mt-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" /> Upload
+              </Button>
+            )}
+          </motion.div>
+        ) : (
+          /* ── Stacked floating cards ─────────────────────── */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((doc, index) => {
+              const gradient = getCardGradient(doc.mime_type, index);
+              const float = getFloatAnimation(index);
+              const stack = getStackStyle(index);
+              const isSelected = selectedDocs.has(doc.id);
+              const isHovered = hoveredId === doc.id;
+              const isPdf = doc.mime_type === "application/pdf";
+              const isImage = (doc.mime_type || "").includes("image/");
+
+              return (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, y: 30, rotate: stack.rotate * 2 }}
+                  animate={{ opacity: 1, y: 0, rotate: stack.rotate }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ delay: index * 0.05, duration: 0.5, type: "spring", stiffness: 120 }}
+                  style={{ zIndex: isHovered ? 50 : stack.zIndex }}
+                  className="relative"
+                  onMouseEnter={() => setHoveredId(doc.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  <motion.div
+                    animate={isHovered ? { y: -8, rotate: 0, scale: 1.03 } : float.animate}
+                    transition={isHovered ? { duration: 0.3, ease: "easeOut" } : float.transition}
+                  >
+                    <div
+                      onClick={() => toggleSelect(doc.id)}
+                      className={`
+                        relative cursor-pointer rounded-2xl overflow-hidden
+                        border-2 transition-all duration-300
+                        shadow-lg ${gradient.glow}
+                        ${isSelected
+                          ? "border-purple-400 ring-2 ring-purple-200/60 shadow-xl shadow-purple-200/40"
+                          : isHovered
+                            ? "border-white/90 shadow-2xl"
+                            : "border-white/70 shadow-lg"
+                        }
+                      `}
+                    >
+                      {/* Gradient header / preview area */}
+                      <div className={`relative h-32 bg-gradient-to-br ${gradient.card} flex items-center justify-center overflow-hidden`}>
+                        {/* Background pattern */}
+                        <div className="absolute inset-0 opacity-[0.03]"
+                          style={{
+                            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                            backgroundSize: "16px 16px",
+                          }}
+                        />
+
+                        {/* Preview for images or icon for other types */}
+                        {isImage && doc.file_url ? (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/20">
+                            <div className="text-xs text-gray-400 flex flex-col items-center gap-1">
+                              <ImageIcon className="h-8 w-8 text-emerald-400/60" />
+                              <span>Image</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <motion.div
+                            animate={isHovered ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="relative"
+                          >
+                            {/* Stacked paper effect behind icon */}
+                            <div className="absolute -bottom-1 -right-1 w-14 h-14 rounded-xl bg-white/40 rotate-6" />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-14 h-14 rounded-xl bg-white/60 rotate-3" />
+                            <div className={`relative w-14 h-14 rounded-xl bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center ${gradient.icon}`}>
+                              {getFileIcon(doc.mime_type)}
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* File type label */}
+                        <div className="absolute top-3 left-3">
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-white/70 backdrop-blur-sm text-gray-500 shadow-sm">
+                            {getFileLabel(doc.mime_type)}
+                          </span>
+                        </div>
+
+                        {/* Selection check */}
+                        <AnimatePresence>
+                          {isSelected && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              className="absolute top-3 right-3 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center shadow-lg"
+                            >
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Preview button (shows on hover for PDFs) */}
+                        <AnimatePresence>
+                          {isHovered && (isPdf || isImage) && (
+                            <motion.button
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 5 }}
+                              onClick={(e) => { e.stopPropagation(); handlePreview(doc); }}
+                              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-md text-xs font-medium text-gray-700 hover:bg-white transition-colors"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Preview
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
+                      {/* Card body */}
+                      <div className="bg-white p-4">
+                        {/* Top row: Name + action icons */}
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-semibold text-sm text-gray-800 truncate flex-1" title={doc.name}>
+                            {doc.name}
+                          </h3>
+                          <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => handleDownload(doc)}
+                              className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"
+                              title="Download"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => navigate("/chat")}
+                              className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"
+                              title="Ask AI"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Meta: type + date + size */}
+                        <p className="text-xs text-gray-400 mb-3">
+                          {getFileLabel(doc.mime_type)} &middot; {formatDate(doc.created_at)} &middot; {formatFileSize(doc.file_size)}
+                        </p>
+
+                        {/* Footer: status + delete menu */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full shadow-sm ${getStatusDot(doc.status)}`} />
+                            <span className="text-[11px] text-gray-400 capitalize">{doc.status}</span>
+                          </div>
+
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="p-1 rounded-md hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-colors">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                                {(isPdf || isImage) && (
+                                  <DropdownMenuItem onClick={() => handlePreview(doc)} className="gap-2 cursor-pointer text-sm">
+                                    <Eye className="h-3.5 w-3.5" /> Preview
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDelete([doc.id])} className="gap-2 cursor-pointer text-sm text-red-600 focus:text-red-600">
+                                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Empty upload zone ────────────────────────────── */}
+        {documents.length === 0 && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-6 cursor-pointer group"
+          >
+            <div className="rounded-2xl border-2 border-dashed border-purple-200/60 hover:border-purple-300 bg-white/40 backdrop-blur-sm p-14 text-center transition-all hover:bg-white/60">
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 mb-4"
+              >
+                <CloudUpload className="h-7 w-7 text-purple-400" />
+              </motion.div>
+              <p className="font-medium text-gray-600 group-hover:text-purple-600 transition-colors">Drag & drop or click to upload</p>
+              <p className="text-xs text-gray-300 mt-1">PDF, DOCX, XLSX, Images, CSV, TXT</p>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
