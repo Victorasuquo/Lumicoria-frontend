@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Document as PdfDocument, Page as PdfPage, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -20,18 +22,20 @@ import {
   Trash2,
   Download,
   MoreVertical,
-  Eye,
   Sparkles,
   ArrowRight,
   CloudUpload,
   Loader2,
   X,
   MessageSquareText,
+  Check,
 } from "lucide-react";
 import { Document, documentApi } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import DocumentPreview from "@/components/DocumentPreview";
+
+// Configure pdf.js worker — use CDN to avoid Vite cache version mismatches
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -112,7 +116,6 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// Each card floats at its own rhythm
 function getFloatAnimation(index: number) {
   const duration = 5 + (index % 5) * 0.8;
   const yRange = 5 + (index % 4) * 2;
@@ -127,7 +130,6 @@ function getFloatAnimation(index: number) {
   };
 }
 
-// Stacking: cards tilt slightly and overlap via negative margin + z-index on hover
 function getStackStyle(index: number) {
   const rotations = [-1.5, 0.8, -0.5, 1.2, -0.8, 0.5, -1, 0.7, -0.3, 1.5];
   return {
@@ -136,7 +138,190 @@ function getStackStyle(index: number) {
   };
 }
 
-// ── Component ────────────────────────────────────────────────────────────
+// Fetch a URL as blob to bypass CORS (MinIO presigned URLs block fetch from react-pdf)
+function useBlobUrl(url: string | undefined) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    if (!url) return;
+    let revoke = "";
+    fetch(url)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const u = URL.createObjectURL(blob);
+        revoke = u;
+        setBlobUrl(u);
+      })
+      .catch(() => setError(true));
+    return () => { if (revoke) URL.revokeObjectURL(revoke); };
+  }, [url]);
+  return { blobUrl, error };
+}
+
+// ── PDF Thumbnail ────────────────────────────────────────────────────────
+
+const PdfThumbnail: React.FC<{ url: string }> = ({ url }) => {
+  const { blobUrl, error } = useBlobUrl(url);
+  const [loaded, setLoaded] = useState(false);
+
+  if (error || !blobUrl) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <FileText className="h-8 w-8 text-purple-300/60" />
+        ) : (
+          <Loader2 className="h-5 w-5 text-purple-300 animate-spin" />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-5 w-5 text-purple-300 animate-spin" />
+        </div>
+      )}
+      <PdfDocument
+        file={blobUrl}
+        onLoadSuccess={() => setLoaded(true)}
+        onLoadError={() => setLoaded(false)}
+        loading=""
+      >
+        <PdfPage
+          pageNumber={1}
+          width={220}
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
+        />
+      </PdfDocument>
+    </div>
+  );
+};
+
+// ── Full Preview Modal ───────────────────────────────────────────────────
+
+const FullPreview: React.FC<{
+  url: string;
+  name: string;
+  mime?: string | null;
+  onClose: () => void;
+}> = ({ url, name, mime, onClose }) => {
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scale, setScale] = useState(1.2);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  const isImage = (mime || "").includes("image/");
+  const isPdf = mime === "application/pdf";
+
+  // For PDFs, fetch as blob to bypass CORS
+  const { blobUrl: pdfBlobUrl } = useBlobUrl(isPdf ? url : undefined);
+
+  const goToPage = (page: number) => {
+    const target = Math.max(1, Math.min(page, numPages));
+    setCurrentPage(target);
+    const el = pageRefs.current.get(target);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="relative w-[90vw] max-w-4xl h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-white shrink-0">
+          <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{name}</span>
+          <div className="flex items-center gap-1">
+            {isPdf && numPages > 0 && (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1} className="h-8 w-8 p-0">
+                  <span className="text-xs">&larr;</span>
+                </Button>
+                <span className="text-xs text-gray-500 mx-1">
+                  {currentPage} / {numPages}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= numPages} className="h-8 w-8 p-0">
+                  <span className="text-xs">&rarr;</span>
+                </Button>
+                <div className="w-px h-5 bg-gray-200 mx-1" />
+                <Button variant="ghost" size="sm" onClick={() => setScale((s) => Math.max(s - 0.2, 0.5))} className="h-8 w-8 p-0 text-xs">-</Button>
+                <span className="text-xs text-gray-500 w-10 text-center">{Math.round(scale * 100)}%</span>
+                <Button variant="ghost" size="sm" onClick={() => setScale((s) => Math.min(s + 0.2, 3))} className="h-8 w-8 p-0 text-xs">+</Button>
+                <div className="w-px h-5 bg-gray-200 mx-1" />
+              </>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
+              <X size={16} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 p-4 flex justify-center">
+          {isImage ? (
+            <img src={url} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-md" />
+          ) : isPdf ? (
+            pdfBlobUrl ? (
+            <PdfDocument
+              file={pdfBlobUrl}
+              onLoadSuccess={({ numPages: total }) => setNumPages(total)}
+              onLoadError={(err) => console.error("PDF load error:", err)}
+              loading={
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
+                </div>
+              }
+            >
+              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
+                <div
+                  key={pageNum}
+                  ref={(el) => { if (el) pageRefs.current.set(pageNum, el); }}
+                  className="relative mb-4 mx-auto shadow-lg bg-white"
+                  style={{ width: "fit-content" }}
+                >
+                  <PdfPage
+                    pageNumber={pageNum}
+                    scale={scale}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                  />
+                </div>
+              ))}
+            </PdfDocument>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
+              </div>
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
+              <File className="h-16 w-16" />
+              <p className="text-sm">Preview not available for this file type</p>
+              <a href={url} download={name} className="text-sm text-purple-600 hover:underline">Download instead</a>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ── Main Component ───────────────────────────────────────────────────────
 
 const Documents: React.FC = () => {
   const navigate = useNavigate();
@@ -147,10 +332,12 @@ const Documents: React.FC = () => {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; mime?: string | null } | null>(null);
+  const [presignedUrls, setPresignedUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
+  // Fetch documents
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -159,6 +346,27 @@ const Documents: React.FC = () => {
       finally { setIsLoading(false); }
     })();
   }, []);
+
+  // Fetch presigned URLs for thumbnails after documents load
+  useEffect(() => {
+    if (documents.length === 0) return;
+    const fetchUrls = async () => {
+      const urls: Record<string, string> = {};
+      await Promise.allSettled(
+        documents.map(async (doc) => {
+          try {
+            const { url } = await documentApi.getPresignedUrl(doc.id);
+            urls[doc.id] = url;
+          } catch {
+            // If presigned URL fails, use file_url as fallback
+            if (doc.file_url) urls[doc.id] = doc.file_url;
+          }
+        })
+      );
+      setPresignedUrls(urls);
+    };
+    fetchUrls();
+  }, [documents]);
 
   const handleUpload = useCallback(async (files: FileList | File[]) => {
     setIsUploading(true);
@@ -196,31 +404,36 @@ const Documents: React.FC = () => {
     }
   };
 
+  // Instant download via hidden anchor with blob
   const handleDownload = async (doc: Document) => {
     try {
-      const { url } = await documentApi.getPresignedUrl(doc.id);
+      const url = presignedUrls[doc.id];
+      if (!url) { toast({ title: "Failed", description: "File URL not available", variant: "destructive" }); return; }
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const a = window.document.createElement("a");
-      a.href = url; a.download = doc.name; a.target = "_blank"; a.click();
+      a.href = blobUrl;
+      a.download = doc.name;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
     } catch {
       toast({ title: "Failed", description: "Could not download", variant: "destructive" });
     }
   };
 
-  const handlePreview = async (doc: Document) => {
-    try {
-      const { url } = await documentApi.getPresignedUrl(doc.id);
-      setPreviewDoc({ url, name: doc.name });
-    } catch {
-      // Fallback: try file_url directly or show error
-      if (doc.file_url) {
-        setPreviewDoc({ url: doc.file_url, name: doc.name });
-      } else {
-        toast({ title: "Preview unavailable", description: "No preview URL available for this document", variant: "destructive" });
-      }
+  // Click card → open preview
+  const handleCardClick = (doc: Document) => {
+    const url = presignedUrls[doc.id];
+    if (url) {
+      setPreviewDoc({ url, name: doc.name, mime: doc.mime_type });
+    } else {
+      toast({ title: "Loading", description: "File is still loading, try again" });
     }
   };
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedDocs((prev) => {
       const n = new Set(prev);
       n.has(id) ? n.delete(id) : n.add(id);
@@ -242,10 +455,7 @@ const Documents: React.FC = () => {
     >
       {/* ── Vibrant ocean background ──────────────────────── */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Base gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-100/70 via-purple-50/40 to-sky-100/60" />
-
-        {/* Large drifting blobs */}
         <motion.div
           className="absolute w-[700px] h-[700px] rounded-full bg-gradient-to-br from-purple-300/30 to-violet-400/20 blur-[100px]"
           style={{ top: "-15%", right: "-10%" }}
@@ -270,18 +480,16 @@ const Documents: React.FC = () => {
           animate={{ x: [0, -20, 0, 15, 0], y: [0, 10, 0, -12, 0] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         />
-
-        {/* Animated waves */}
+        {/* Waves */}
         <svg className="absolute bottom-0 left-0 w-full h-48 opacity-[0.08]" viewBox="0 0 1440 320" preserveAspectRatio="none">
           <motion.path
             fill="url(#waveGrad)"
-            animate={{
-              d: [
-                "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
-                "M0,224L60,208C120,192,240,160,360,165.3C480,171,600,213,720,229.3C840,245,960,235,1080,208C1200,181,1320,139,1380,117.3L1440,96L1440,320L0,320Z",
-                "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
-              ],
-            }}
+            d="M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z"
+            animate={{ d: [
+              "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
+              "M0,224L60,208C120,192,240,160,360,165.3C480,171,600,213,720,229.3C840,245,960,235,1080,208C1200,181,1320,139,1380,117.3L1440,96L1440,320L0,320Z",
+              "M0,160L60,176C120,192,240,224,360,218.7C480,213,600,171,720,154.7C840,139,960,149,1080,170.7C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
+            ] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
           <defs>
@@ -289,25 +497,6 @@ const Documents: React.FC = () => {
               <stop offset="0%" stopColor="#8b5cf6" />
               <stop offset="50%" stopColor="#6366f1" />
               <stop offset="100%" stopColor="#0ea5e9" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <svg className="absolute bottom-0 left-0 w-full h-32 opacity-[0.05]" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <motion.path
-            fill="url(#waveGrad2)"
-            animate={{
-              d: [
-                "M0,256L60,240C120,224,240,192,360,186.7C480,181,600,203,720,218.7C840,235,960,245,1080,234.7C1200,224,1320,192,1380,176L1440,160L1440,320L0,320Z",
-                "M0,192L60,202.7C120,213,240,235,360,229.3C480,224,600,192,720,176C840,160,960,160,1080,176C1200,192,1320,224,1380,240L1440,256L1440,320L0,320Z",
-                "M0,256L60,240C120,224,240,192,360,186.7C480,181,600,203,720,218.7C840,235,960,245,1080,234.7C1200,224,1320,192,1380,176L1440,160L1440,320L0,320Z",
-              ],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          />
-          <defs>
-            <linearGradient id="waveGrad2" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#a78bfa" />
             </linearGradient>
           </defs>
         </svg>
@@ -342,14 +531,17 @@ const Documents: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Document Preview Modal ────────────────────────── */}
-      {previewDoc && (
-        <DocumentPreview
-          documentUrl={previewDoc.url}
-          isOpen={true}
-          onClose={() => setPreviewDoc(null)}
-        />
-      )}
+      {/* ── Full Preview Modal ─────────────────────────────── */}
+      <AnimatePresence>
+        {previewDoc && (
+          <FullPreview
+            url={previewDoc.url}
+            name={previewDoc.name}
+            mime={previewDoc.mime}
+            onClose={() => setPreviewDoc(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         {/* ── Header ──────────────────────────────────────── */}
@@ -468,6 +660,7 @@ const Documents: React.FC = () => {
               const isHovered = hoveredId === doc.id;
               const isPdf = doc.mime_type === "application/pdf";
               const isImage = (doc.mime_type || "").includes("image/");
+              const thumbUrl = presignedUrls[doc.id];
 
               return (
                 <motion.div
@@ -486,7 +679,7 @@ const Documents: React.FC = () => {
                     transition={isHovered ? { duration: 0.3, ease: "easeOut" } : float.transition}
                   >
                     <div
-                      onClick={() => toggleSelect(doc.id)}
+                      onClick={() => handleCardClick(doc)}
                       className={`
                         relative cursor-pointer rounded-2xl overflow-hidden
                         border-2 transition-all duration-300
@@ -499,8 +692,8 @@ const Documents: React.FC = () => {
                         }
                       `}
                     >
-                      {/* Gradient header / preview area */}
-                      <div className={`relative h-32 bg-gradient-to-br ${gradient.card} flex items-center justify-center overflow-hidden`}>
+                      {/* Thumbnail / preview area */}
+                      <div className={`relative h-40 bg-gradient-to-br ${gradient.card} flex items-center justify-center overflow-hidden`}>
                         {/* Background pattern */}
                         <div className="absolute inset-0 opacity-[0.03]"
                           style={{
@@ -509,27 +702,33 @@ const Documents: React.FC = () => {
                           }}
                         />
 
-                        {/* Preview for images or icon for other types */}
-                        {isImage && doc.file_url ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/20">
-                            <div className="text-xs text-gray-400 flex flex-col items-center gap-1">
-                              <ImageIcon className="h-8 w-8 text-emerald-400/60" />
-                              <span>Image</span>
-                            </div>
-                          </div>
+                        {/* Real thumbnail: image or PDF first page */}
+                        {isImage && thumbUrl ? (
+                          <img
+                            src={thumbUrl}
+                            alt={doc.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        ) : isPdf && thumbUrl ? (
+                          <PdfThumbnail url={thumbUrl} />
                         ) : (
                           <motion.div
                             animate={isHovered ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
                             transition={{ duration: 0.3 }}
                             className="relative"
                           >
-                            {/* Stacked paper effect behind icon */}
                             <div className="absolute -bottom-1 -right-1 w-14 h-14 rounded-xl bg-white/40 rotate-6" />
                             <div className="absolute -bottom-0.5 -right-0.5 w-14 h-14 rounded-xl bg-white/60 rotate-3" />
                             <div className={`relative w-14 h-14 rounded-xl bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center ${gradient.icon}`}>
                               {getFileIcon(doc.mime_type)}
                             </div>
                           </motion.div>
+                        )}
+
+                        {/* Fade overlay at bottom for text readability */}
+                        {(isImage || isPdf) && thumbUrl && (
+                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/80 to-transparent pointer-events-none" />
                         )}
 
                         {/* File type label */}
@@ -539,42 +738,28 @@ const Documents: React.FC = () => {
                           </span>
                         </div>
 
-                        {/* Selection check */}
-                        <AnimatePresence>
-                          {isSelected && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              className="absolute top-3 right-3 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center shadow-lg"
-                            >
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* Preview button (shows on hover for PDFs) */}
-                        <AnimatePresence>
-                          {isHovered && (isPdf || isImage) && (
-                            <motion.button
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 5 }}
-                              onClick={(e) => { e.stopPropagation(); handlePreview(doc); }}
-                              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-md text-xs font-medium text-gray-700 hover:bg-white transition-colors"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              Preview
-                            </motion.button>
-                          )}
-                        </AnimatePresence>
+                        {/* Selection checkbox */}
+                        <div className="absolute top-3 right-3" onClick={(e) => toggleSelect(doc.id, e)}>
+                          <div className={`
+                            w-6 h-6 rounded-full flex items-center justify-center transition-all
+                            ${isSelected
+                              ? "bg-purple-600 shadow-lg"
+                              : isHovered
+                                ? "bg-white/80 border-2 border-purple-300 shadow-sm"
+                                : "bg-white/50 border-2 border-white/60 opacity-0 group-hover:opacity-100"
+                            }
+                          `}
+                          style={{ opacity: isSelected || isHovered ? 1 : 0 }}
+                          >
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Card body */}
                       <div className="bg-white p-4">
-                        {/* Top row: Name + action icons */}
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <h3 className="font-semibold text-sm text-gray-800 truncate flex-1" title={doc.name}>
                             {doc.name}
@@ -597,18 +782,15 @@ const Documents: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Meta: type + date + size */}
                         <p className="text-xs text-gray-400 mb-3">
                           {getFileLabel(doc.mime_type)} &middot; {formatDate(doc.created_at)} &middot; {formatFileSize(doc.file_size)}
                         </p>
 
-                        {/* Footer: status + delete menu */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className={`w-2 h-2 rounded-full shadow-sm ${getStatusDot(doc.status)}`} />
                             <span className="text-[11px] text-gray-400 capitalize">{doc.status}</span>
                           </div>
-
                           <div onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -617,12 +799,6 @@ const Documents: React.FC = () => {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                                {(isPdf || isImage) && (
-                                  <DropdownMenuItem onClick={() => handlePreview(doc)} className="gap-2 cursor-pointer text-sm">
-                                    <Eye className="h-3.5 w-3.5" /> Preview
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleDelete([doc.id])} className="gap-2 cursor-pointer text-sm text-red-600 focus:text-red-600">
                                   <Trash2 className="h-3.5 w-3.5" /> Delete
                                 </DropdownMenuItem>

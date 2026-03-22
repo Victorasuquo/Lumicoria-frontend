@@ -276,6 +276,70 @@ export const documentApi = {
   },
 };
 
+// Research API
+export interface ResearchRequest {
+  query: string;
+  research_type?: string;
+  depth?: string;
+  focus_areas?: string[];
+  model?: string;
+  context?: {
+    domain?: string;
+    purpose?: string;
+    time_scope?: string;
+  };
+}
+
+export interface ResearchResponse {
+  findings: {
+    executive_summary?: string;
+    key_findings?: string[];
+    main_content?: Record<string, any>;
+    perspectives?: string[];
+    limitations?: string[];
+    sources?: Array<{ title?: string; url?: string; snippet?: string; type?: string; credibility?: number }>;
+  };
+  raw_response?: string;
+  processed_at: string;
+  model_used: string;
+  research_type: string;
+  query: string;
+  sub_questions?: string[];
+  citations?: Array<{ url?: string; title?: string; text?: string }>;
+}
+
+export const researchApi = {
+  query: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/query', data);
+    return response.data;
+  },
+
+  topic: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/topic', { ...data, research_type: 'topic_research' });
+    return response.data;
+  },
+
+  literatureReview: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/literature-review', { ...data, research_type: 'literature_review' });
+    return response.data;
+  },
+
+  factCheck: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/fact-check', { ...data, research_type: 'fact_checking' });
+    return response.data;
+  },
+
+  compareSources: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/compare-sources', { ...data, research_type: 'source_comparison' });
+    return response.data;
+  },
+
+  comprehensive: async (data: ResearchRequest): Promise<ResearchResponse> => {
+    const response = await api.post<ResearchResponse>('/research/comprehensive', { ...data, depth: 'deep' });
+    return response.data;
+  },
+};
+
 // Agent API
 export interface Agent {
   id: string;
@@ -494,6 +558,8 @@ export interface DocumentItem {
   created_at: string;
   tags?: string[];
   chunk_count?: number;
+  mime_type?: string;
+  file_url?: string;
 }
 
 export const chatApi = {
@@ -1054,6 +1120,58 @@ export const meetingFactCheckerApi = {
   },
   getClaimSeverities: async (): Promise<string[]> => {
     const response = await api.get<string[]>('/meeting-fact-checker/claim-severities');
+    return response.data;
+  },
+};
+
+// Activity API
+export interface ActivityEntry {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  activity_type: string;
+  timestamp: string;
+  details: Record<string, any>;
+  related_resource_type?: string;
+  related_resource_id?: string;
+}
+
+export interface ActivitySummary {
+  total_events: number;
+  by_type: Record<string, number>;
+  by_severity: Record<string, number>;
+  time_range: { start?: string; end?: string };
+}
+
+export const activityApi = {
+  getRecent: async (limit = 20, skip = 0, activityType?: string, agentId?: string): Promise<ActivityEntry[]> => {
+    const params: Record<string, any> = { limit, skip };
+    if (activityType) params.activity_type = activityType;
+    if (agentId) params.agent_id = agentId;
+    const response = await api.get<ActivityEntry[]>('/activity/recent', { params });
+    return response.data;
+  },
+
+  getByAgent: async (agentId: string, limit = 20, skip = 0): Promise<ActivityEntry[]> => {
+    const response = await api.get<ActivityEntry[]>(`/activity/by-agent/${agentId}`, { params: { limit, skip } });
+    return response.data;
+  },
+
+  getSummary: async (startDate?: string, endDate?: string): Promise<ActivitySummary> => {
+    const params: Record<string, any> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const response = await api.get<ActivitySummary>('/activity/summary', { params });
+    return response.data;
+  },
+
+  logInternal: async (activityType: string, details: Record<string, any>, agentId?: string, agentName?: string): Promise<any> => {
+    const response = await api.post('/activity/internal/log', {
+      activity_type: activityType,
+      details,
+      agent_id: agentId,
+      agent_name: agentName,
+    });
     return response.data;
   },
 };

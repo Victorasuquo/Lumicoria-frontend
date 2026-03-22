@@ -11,9 +11,10 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { chatApi, documentApi, ConversationSummary } from '../services/api';
+import { chatApi, documentApi, ConversationSummary, DocumentItem } from '../services/api';
 import DocumentPreview, { CitationHighlight } from '@/components/DocumentPreview';
 import CitationBadge, { SourceInfo } from '@/components/CitationBadge';
+import MentionPopup, { MentionItem, MentionDocument, AGENT_LIST } from '@/components/MentionPopup';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -380,6 +381,14 @@ const Chat: React.FC = () => {
     // Sidebar section collapse state
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
+    // @ / mention system
+    const [mentionMode, setMentionMode] = useState<'@' | '/' | null>(null);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [mentionIndex, setMentionIndex] = useState(0);
+    const [mentionDocs, setMentionDocs] = useState<MentionDocument[]>([]);
+    const [selectedDocs, setSelectedDocs] = useState<MentionDocument[]>([]);
+    const [selectedAgent, setSelectedAgent] = useState<{ key: string; label: string } | null>(null);
+
     // Document preview state (for citation click-through)
     const [previewDoc, setPreviewDoc] = useState<{
         url: string;
@@ -435,6 +444,125 @@ const Chat: React.FC = () => {
     }, []);
 
     useEffect(() => { loadConversations(); }, [loadConversations]);
+
+    // ── Mention system: load docs for @ autocomplete ──────────────────────────
+
+    const loadMentionDocs = useCallback(async () => {
+        try {
+            const res = await chatApi.listDocuments({ limit: 200 });
+            setMentionDocs((res.documents || []).map((d: any) => ({
+                document_id: d.document_id,
+                title: d.title || 'Untitled',
+                source: d.source || 'upload',
+                chunk_count: d.chunk_count,
+                mime_type: d.mime_type,
+            })));
+        } catch { /* silent */ }
+    }, []);
+
+    useEffect(() => { loadMentionDocs(); }, [loadMentionDocs]);
+
+    // Filtered items for the popup
+    const mentionItems = useMemo((): MentionItem[] => {
+        if (!mentionMode) return [];
+        const q = mentionQuery.toLowerCase();
+
+        if (mentionMode === '@') {
+            return mentionDocs
+                .filter((d) => d.title.toLowerCase().includes(q))
+                .slice(0, 12)
+                .map((d) => ({ type: 'document' as const, data: d }));
+        }
+
+        // / mode — agents
+        return AGENT_LIST
+            .filter((a) => a.label.toLowerCase().includes(q) || a.key.toLowerCase().includes(q) || a.description.toLowerCase().includes(q))
+            .slice(0, 12)
+            .map((a) => ({ type: 'agent' as const, data: a }));
+    }, [mentionMode, mentionQuery, mentionDocs]);
+
+    // Reset index when items change
+    useEffect(() => { setMentionIndex(0); }, [mentionItems.length]);
+
+    // Detect @ and / triggers from input
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const val = e.target.value;
+        setInput(val);
+
+        const cursorPos = e.target.selectionStart || val.length;
+        const textBeforeCursor = val.slice(0, cursorPos);
+
+        // Find the last trigger character
+        const lastAt = textBeforeCursor.lastIndexOf('@');
+        const lastSlash = textBeforeCursor.lastIndexOf('/');
+
+        if (lastAt >= 0 && lastAt > lastSlash) {
+            // Check it's at start or after whitespace (not mid-word like email)
+            if (lastAt === 0 || /\s/.test(textBeforeCursor[lastAt - 1])) {
+                const query = textBeforeCursor.slice(lastAt + 1);
+                // Only show popup if no space in query (still typing the mention)
+                if (!query.includes('\n')) {
+                    setMentionMode('@');
+                    setMentionQuery(query);
+                    return;
+                }
+            }
+        }
+
+        if (lastSlash >= 0 && lastSlash > lastAt) {
+            if (lastSlash === 0 || /\s/.test(textBeforeCursor[lastSlash - 1])) {
+                const query = textBeforeCursor.slice(lastSlash + 1);
+                if (!query.includes('\n') && !query.includes(' ')) {
+                    setMentionMode('/');
+                    setMentionQuery(query);
+                    return;
+                }
+            }
+        }
+
+        // No trigger active
+        if (mentionMode) {
+            setMentionMode(null);
+            setMentionQuery('');
+        }
+    }, [mentionMode]);
+
+    // Handle mention selection
+    const handleMentionSelect = useCallback((item: MentionItem) => {
+        if (item.type === 'document') {
+            // Add doc to selected list (deduplicate)
+            setSelectedDocs((prev) => {
+                if (prev.some((d) => d.document_id === item.data.document_id)) return prev;
+                return [...prev, item.data];
+            });
+            // Remove the @query from input text
+            setInput((prev) => {
+                const lastAt = prev.lastIndexOf('@');
+                if (lastAt >= 0) return prev.slice(0, lastAt).trimEnd() + (lastAt > 0 ? ' ' : '');
+                return prev;
+            });
+        } else {
+            // Set agent override
+            setSelectedAgent({ key: item.data.key, label: item.data.label });
+            // Remove the /query from input text
+            setInput((prev) => {
+                const lastSlash = prev.lastIndexOf('/');
+                if (lastSlash >= 0) return prev.slice(0, lastSlash).trimEnd() + (lastSlash > 0 ? ' ' : '');
+                return prev;
+            });
+        }
+        setMentionMode(null);
+        setMentionQuery('');
+        inputRef.current?.focus();
+    }, []);
+
+    const removeMentionedDoc = useCallback((docId: string) => {
+        setSelectedDocs((prev) => prev.filter((d) => d.document_id !== docId));
+    }, []);
+
+    const removeSelectedAgent = useCallback(() => {
+        setSelectedAgent(null);
+    }, []);
 
     // ── Auto-scroll ───────────────────────────────────────────────────────────
 
@@ -585,6 +713,9 @@ const Chat: React.FC = () => {
             await uploadAttachments(attachments);
         }
 
+        // Clear successfully uploaded attachments from the UI
+        setAttachments((prev) => prev.filter((a) => a.status !== 'done'));
+
         if (!trimmed) return;
 
         const userMsg: Message = {
@@ -596,6 +727,9 @@ const Chat: React.FC = () => {
 
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
+        setSelectedDocs([]);
+        setSelectedAgent(null);
+        setMentionMode(null);
         setIsLoading(true);
         if (inputRef.current) inputRef.current.style.height = 'auto';
 
@@ -614,6 +748,8 @@ const Chat: React.FC = () => {
                     query: trimmed,
                     conversation_id: conversationId ?? undefined,
                     save_to_context: true,
+                    ...(selectedDocs.length > 0 ? { document_ids: selectedDocs.map((d) => d.document_id) } : {}),
+                    ...(selectedAgent ? { agent_override: selectedAgent.key } : {}),
                 }),
             });
 
@@ -664,7 +800,12 @@ const Chat: React.FC = () => {
                             if (el) el.scrollTo({ top: el.scrollHeight });
                         } else if (frame.type === 'done') {
                             setMessages((prev) =>
-                                prev.map((m) => m.id === assistantId ? { ...m, processing_time: frame.processing_time } : m)
+                                prev.map((m) => m.id === assistantId ? {
+                                    ...m,
+                                    processing_time: frame.processing_time,
+                                    sources: frame.sources || [],
+                                    context_used: frame.context_used || 0,
+                                } : m)
                             );
                             loadConversations();
                         } else if (frame.type === 'error') {
@@ -682,11 +823,36 @@ const Chat: React.FC = () => {
     }, [input, attachments, isLoading, conversationId, uploadAttachments, loadConversations]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        // When mention popup is open, intercept navigation keys
+        if (mentionMode && mentionItems.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setMentionIndex((i) => (i + 1) % mentionItems.length);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setMentionIndex((i) => (i - 1 + mentionItems.length) % mentionItems.length);
+                return;
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                handleMentionSelect(mentionItems[mentionIndex]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setMentionMode(null);
+                setMentionQuery('');
+                return;
+            }
+        }
+
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
-    }, [sendMessage]);
+    }, [sendMessage, mentionMode, mentionItems, mentionIndex, handleMentionSelect]);
 
     // ── Grouped conversations ─────────────────────────────────────────────────
 
@@ -788,7 +954,7 @@ const Chat: React.FC = () => {
                                                             : 'text-gray-700'
                                                     )}
                                                 >
-                                                    {conv.title || 'New conversation'}
+                                                    {(conv.title && !/^chat_[0-9a-f-]{8,}$/i.test(conv.title) && !/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(conv.title)) ? conv.title : (conv.preview?.slice(0, 40) || 'New conversation')}
                                                 </span>
                                                 {conv.preview && (
                                                     <span className="text-[10px] text-gray-400 truncate leading-snug mt-0.5">
@@ -1071,35 +1237,75 @@ const Chat: React.FC = () => {
                             );
                         })()}
 
-                        {/* Textarea row */}
-                        <div className="flex items-end gap-2 px-3 py-2.5">
-                            {/* Attach button */}
-                            <button
-                                ref={attachBtnRef}
-                                onClick={() => setIsAttachMenuOpen((v) => !v)}
-                                title="Attach file or URL"
-                                className={cn(
-                                    'flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-150 flex-shrink-0 mb-0.5',
-                                    isAttachMenuOpen
-                                        ? 'bg-lumicoria-purple text-white shadow-sm'
-                                        : 'text-gray-400 hover:text-lumicoria-purple hover:bg-lumicoria-purple/10'
+                        {/* Selected docs / agent pills */}
+                        {(selectedDocs.length > 0 || selectedAgent) && (
+                            <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2">
+                                {selectedAgent && (
+                                    <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium border"
+                                        style={{
+                                            backgroundColor: (AGENT_LIST.find((a) => a.key === selectedAgent.key)?.color || '#6C4AB0') + '12',
+                                            borderColor: (AGENT_LIST.find((a) => a.key === selectedAgent.key)?.color || '#6C4AB0') + '30',
+                                            color: AGENT_LIST.find((a) => a.key === selectedAgent.key)?.color || '#6C4AB0',
+                                        }}
+                                    >
+                                        /{selectedAgent.label}
+                                        <button onClick={removeSelectedAgent} className="ml-0.5 hover:opacity-70"><X size={10} /></button>
+                                    </span>
                                 )}
-                            >
-                                <PaperclipIcon size={16} />
-                            </button>
+                                {selectedDocs.map((doc) => (
+                                    <span
+                                        key={doc.document_id}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200/60"
+                                    >
+                                        <FileTextIcon size={10} />
+                                        <span className="max-w-[120px] truncate">{doc.title}</span>
+                                        <button onClick={() => removeMentionedDoc(doc.document_id)} className="ml-0.5 hover:opacity-70"><X size={10} /></button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
-                            {/* Textarea */}
-                            <textarea
-                                ref={inputRef}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Ask Lumicoria anything…"
-                                rows={1}
-                                disabled={isLoading}
-                                className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-gray-800 placeholder-gray-400 leading-relaxed py-1 max-h-40 overflow-y-auto"
-                                style={{ minHeight: '32px' }}
+                        {/* Textarea row — relative for mention popup positioning */}
+                        <div className="relative">
+                            {/* Mention popup */}
+                            <MentionPopup
+                                isOpen={!!mentionMode && mentionItems.length > 0}
+                                mode={mentionMode || '@'}
+                                query={mentionQuery}
+                                items={mentionItems}
+                                selectedIndex={mentionIndex}
+                                onSelect={handleMentionSelect}
                             />
+
+                            <div className="flex items-end gap-2 px-3 py-2.5">
+                                {/* Attach button */}
+                                <button
+                                    ref={attachBtnRef}
+                                    onClick={() => setIsAttachMenuOpen((v) => !v)}
+                                    title="Attach file or URL"
+                                    className={cn(
+                                        'flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-150 flex-shrink-0 mb-0.5',
+                                        isAttachMenuOpen
+                                            ? 'bg-lumicoria-purple text-white shadow-sm'
+                                            : 'text-gray-400 hover:text-lumicoria-purple hover:bg-lumicoria-purple/10'
+                                    )}
+                                >
+                                    <PaperclipIcon size={16} />
+                                </button>
+
+                                {/* Textarea */}
+                                <textarea
+                                    ref={inputRef}
+                                    value={input}
+                                    onChange={handleInputChange}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder={selectedDocs.length > 0 || selectedAgent ? "Type your message…" : "Ask Lumicoria anything… (@ docs, / agents)"}
+                                    rows={1}
+                                    disabled={isLoading}
+                                    className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-gray-800 placeholder-gray-400 leading-relaxed py-1 max-h-40 overflow-y-auto"
+                                    style={{ minHeight: '32px' }}
+                                />
 
                             {/* Send button */}
                             <button
@@ -1117,12 +1323,13 @@ const Chat: React.FC = () => {
                                     : <Send size={15} />
                                 }
                             </button>
+                            </div>
                         </div>
 
                         {/* Hint row */}
                         <div className="flex items-center justify-between px-4 pb-2">
                             <p className="text-[10px] text-gray-300 tracking-wide">
-                                ↵ Send · ⇧↵ New line
+                                ↵ Send · ⇧↵ New line · @ docs · / agents
                             </p>
                             <p className="text-[10px] text-gray-300">
                                 Powered by Lumicoria AI · 21 specialist agents
