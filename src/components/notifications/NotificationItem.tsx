@@ -19,12 +19,14 @@ interface NotificationItemProps {
     notification: Notification;
     onRead: (id: string) => void;
     onDelete: (id: string) => void;
+    onClick?: (id: string) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
     notification,
     onRead,
-    onDelete
+    onDelete,
+    onClick,
 }) => {
     const getIcon = () => {
         switch (notification.notification_type) {
@@ -59,9 +61,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     return (
         <div
             className={cn(
-                "group relative flex gap-3 p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/5",
+                "group relative flex gap-3 p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer",
                 !notification.read && "bg-purple-50/50 dark:bg-purple-900/10"
             )}
+            onClick={() => onClick?.(notification.id)}
         >
             {/* Icon & Priority Indicator */}
             <div className="relative mt-1 shrink-0">

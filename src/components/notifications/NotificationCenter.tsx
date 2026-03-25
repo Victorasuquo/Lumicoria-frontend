@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Popover,
@@ -21,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationCenter = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -309,6 +311,10 @@ const NotificationCenter = () => {
                                             notification={notification}
                                             onRead={handleMarkAsRead}
                                             onDelete={handleDelete}
+                                            onClick={(id) => {
+                                                setOpen(false);
+                                                navigate(`/notifications?id=${id}`);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -333,6 +339,10 @@ const NotificationCenter = () => {
                                             notification={notification}
                                             onRead={handleMarkAsRead}
                                             onDelete={handleDelete}
+                                            onClick={(id) => {
+                                                setOpen(false);
+                                                navigate(`/notifications?id=${id}`);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -340,6 +350,22 @@ const NotificationCenter = () => {
                         </TabsContent>
                     </ScrollArea>
                 </Tabs>
+
+                {/* View all footer */}
+                <div className="border-t px-4 py-2.5">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 gap-1.5"
+                        onClick={() => {
+                            setOpen(false);
+                            navigate('/notifications');
+                        }}
+                    >
+                        <ExternalLink className="h-3 w-3" />
+                        View all notifications
+                    </Button>
+                </div>
             </PopoverContent>
         </Popover>
     );

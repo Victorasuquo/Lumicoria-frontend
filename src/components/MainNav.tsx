@@ -11,7 +11,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  ListChecks
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -76,6 +77,7 @@ export default function MainNav() {
     { label: 'Chat', path: '/chat', icon: <FileText className="h-4 w-4" /> },
     { label: 'Projects', path: '/projects', icon: <Settings className="h-4 w-4" /> },
     { label: 'Documents', path: '/documents', icon: <FileText className="h-4 w-4" /> },
+    { label: 'Tasks', path: '/tasks', icon: <ListChecks className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
   ];
 

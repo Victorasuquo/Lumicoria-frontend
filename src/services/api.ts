@@ -265,14 +265,112 @@ export const documentApi = {
     await api.delete(`/documents/${id}`);
   },
 
-  analyzeDocument: async (id: string): Promise<any> => {
-    const response = await api.post<any>(`/documents/analyze`, { document_id: id });
+  extractDocument: async (id: string, config?: Record<string, any>): Promise<any> => {
+    const response = await api.post<any>(`/documents/${id}/extract`, config || null);
     return response.data;
   },
 
-  summarizeDocument: async (id: string): Promise<any> => {
-    const response = await api.post<any>(`/documents/summarize`, { document_id: id });
+  queryDocument: async (id: string, query: string): Promise<{
+    query: string;
+    response: string;
+    document_id: string;
+    document_name: string;
+    citations?: any[];
+    extracted_data?: Record<string, any>;
+  }> => {
+    const response = await api.post(`/documents/${id}/query`, { query });
     return response.data;
+  },
+
+  createTasksFromDocument: async (id: string, config?: {
+    max_tasks?: number;
+    focus_areas?: string[];
+    priority_threshold?: string;
+  }): Promise<{
+    document_id: string;
+    tasks_created: number;
+    tasks: any[];
+  }> => {
+    const response = await api.post(`/documents/${id}/create-tasks`, config || null);
+    return response.data;
+  },
+
+  getDocumentSummary: async (): Promise<{
+    total_count: number;
+    summary_by_status: any[];
+    summary_by_type: any[];
+  }> => {
+    const response = await api.get('/documents/summary');
+    return response.data;
+  },
+
+  searchDocuments: async (query?: string, status?: string, documentType?: string): Promise<Document[]> => {
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (status) params.append('status', status);
+    if (documentType) params.append('document_type', documentType);
+    const response = await api.get<Document[]>(`/documents/search?${params}`);
+    return response.data;
+  },
+};
+
+// Task API
+export interface TaskItem {
+  id: string;
+  name: string;
+  title?: string;
+  description?: string;
+  status: string;
+  priority?: string | number;
+  due_date?: string | null;
+  assigned_to?: string | null;
+  created_by: string;
+  organization_id: string;
+  document_id?: string | null;
+  agent_id?: string | null;
+  metadata?: Record<string, any>;
+  tags?: string[];
+  progress?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export const taskApi = {
+  getTasks: async (params?: {
+    skip?: number;
+    limit?: number;
+    status?: string;
+    priority?: string;
+  }): Promise<TaskItem[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip) searchParams.append('skip', String(params.skip));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.priority) searchParams.append('priority', params.priority);
+    const response = await api.get<TaskItem[]>(`/tasks/?${searchParams}`);
+    return response.data;
+  },
+
+  getTask: async (taskId: string): Promise<TaskItem> => {
+    const response = await api.get<TaskItem>(`/tasks/${taskId}`);
+    return response.data;
+  },
+
+  updateTask: async (taskId: string, data: {
+    title?: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    due_date?: string | null;
+    assigned_to?: string | null;
+    progress?: number;
+  }): Promise<TaskItem> => {
+    const response = await api.put<TaskItem>(`/tasks/${taskId}`, data);
+    return response.data;
+  },
+
+  deleteTask: async (taskId: string): Promise<void> => {
+    await api.delete(`/tasks/${taskId}`);
   },
 };
 
@@ -458,26 +556,65 @@ export interface StudentRequest {
   temperature?: number;
 }
 
+export interface StudentResponse {
+  id?: string;
+  response: Record<string, any>;
+  raw_response?: string;
+  processed_at: string;
+  model_used: string;
+  request_type: string;
+  citations?: Array<Record<string, any>>;
+  content?: string;
+  created_at?: string;
+}
+
 export const studentApi = {
-  getAssignmentHelp: async (request: StudentRequest): Promise<any> => {
-    const response = await api.post<any>('/student/assignment-help', request);
+  getAssignmentHelp: async (request: StudentRequest): Promise<StudentResponse> => {
+    const response = await api.post<StudentResponse>(
+      "/student/assignment-help",
+      request
+    );
     return response.data;
   },
 
-  getStudyPlan: async (request: StudentRequest): Promise<any> => {
-    const response = await api.post<any>('/student/study-plan', request);
+  getStudyPlan: async (request: StudentRequest): Promise<StudentResponse> => {
+    const response = await api.post<StudentResponse>(
+      "/student/study-plan",
+      request
+    );
     return response.data;
   },
 
-  explainConcept: async (request: StudentRequest): Promise<any> => {
-    const response = await api.post<any>('/student/explain-concept', request);
+  explainConcept: async (request: StudentRequest): Promise<StudentResponse> => {
+    const response = await api.post<StudentResponse>(
+      "/student/explain-concept",
+      request
+    );
     return response.data;
   },
 
-  conductResearch: async (request: StudentRequest): Promise<any> => {
-    const response = await api.post<any>('/student/research', request);
+  conductResearch: async (request: StudentRequest): Promise<StudentResponse> => {
+    const response = await api.post<StudentResponse>(
+      "/student/research",
+      request
+    );
     return response.data;
-  }
+  },
+
+  assist: async (request: StudentRequest): Promise<StudentResponse> => {
+    const response = await api.post<StudentResponse>("/student/assist", request);
+    return response.data;
+  },
+
+  getHistory: async (limit: number = 20, skip: number = 0): Promise<StudentResponse[]> => {
+    const response = await api.get<StudentResponse[]>("/student/history", {
+      params: { limit, skip },
+    });
+    return response.data;
+  },
+
+  followUp: (content: string, parentId: string, model?: string) =>
+    api.post<StudentResponse>('/student/follow-up', { content, parent_id: parentId, model }),
 };
 
 // Meeting agent API
