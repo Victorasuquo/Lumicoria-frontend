@@ -27,6 +27,7 @@ import Billing from "./pages/Billing";
 import Models from "./pages/Models";
 import About from "./pages/About";
 import Privacy from "./pages/Privacy";
+import Security from "./pages/Security";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Projects from "./pages/Projects";
@@ -135,6 +136,23 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Billing />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/security"
+            element={
+              <ProtectedRoute>
+                <Security />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/security/activity"
+            element={
+              <ProtectedRoute>
+                <Security />
               </ProtectedRoute>
             }
           />

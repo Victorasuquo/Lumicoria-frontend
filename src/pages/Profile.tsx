@@ -35,7 +35,7 @@ export default function Profile() {
     work_hours_end: '17:00',
     break_interval_minutes: 60,
     break_duration_minutes: 15,
-    preferred_ai_model: 'gpt-4',
+    preferred_ai_model: 'gemini',
   });
 
   useEffect(() => {
@@ -383,20 +383,42 @@ export default function Profile() {
 
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">AI Preferences</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="preferred_ai_model">Preferred AI Model</Label>
-                      <select
-                        id="preferred_ai_model"
-                        name="preferred_ai_model"
-                        value={settingsForm.preferred_ai_model}
-                        onChange={handleSettingsChange}
-                        disabled={isLoading}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2"
-                      >
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                        <option value="claude-2">Claude 2</option>
-                      </select>
+                    <Label>Preferred AI Model</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { value: 'gemini', label: 'Gemini 2.5 Flash', provider: 'Google', icon: '/images/integrations/gemini.png' },
+                        { value: 'gemini-pro', label: 'Gemini 2.5 Pro', provider: 'Google', icon: '/images/integrations/gemini.png' },
+                        { value: 'perplexity', label: 'Perplexity Sonar', provider: 'Perplexity', icon: '/images/integrations/perplexity.png' },
+                        { value: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI', icon: '/images/integrations/openai.jpg' },
+                        { value: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI', icon: '/images/integrations/openai.jpg' },
+                        { value: 'claude-sonnet', label: 'Claude Sonnet 4', provider: 'Anthropic', icon: '/images/integrations/anthropic.svg' },
+                        { value: 'claude-haiku', label: 'Claude Haiku 3.5', provider: 'Anthropic', icon: '/images/integrations/anthropic.svg' },
+                        { value: 'mistral-large', label: 'Mistral Large', provider: 'Mistral', icon: '/images/integrations/mistral.png' },
+                        { value: 'mistral-small', label: 'Mistral Small', provider: 'Mistral', icon: '/images/integrations/mistral.png' },
+                      ].map((model) => (
+                        <button
+                          key={model.value}
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => setSettingsForm(prev => ({ ...prev, preferred_ai_model: model.value }))}
+                          className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                            settingsForm.preferred_ai_model === model.value
+                              ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <img src={model.icon} alt={model.provider} className="w-7 h-7 rounded-lg object-contain flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className={`text-sm font-medium truncate ${settingsForm.preferred_ai_model === model.value ? 'text-purple-900' : 'text-gray-900'}`}>{model.label}</p>
+                            <p className="text-[11px] text-gray-400">{model.provider}</p>
+                          </div>
+                          {settingsForm.preferred_ai_model === model.value && (
+                            <div className="ml-auto w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
 

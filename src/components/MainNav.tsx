@@ -203,6 +203,12 @@ export default function MainNav() {
                   <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/security">Security</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/billing">Billing</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
                   <DropdownMenuItem onClick={handleLogout} className="px-4 py-2 rounded-lg mx-2 mb-2 cursor-pointer text-red-600 dark:text-red-400">
                     <LogOut className="mr-2 h-4 w-4" />

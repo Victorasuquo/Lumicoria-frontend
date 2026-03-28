@@ -1169,6 +1169,31 @@ const Chat: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Integration connectors toolbar */}
+                    <div className="flex items-center gap-1 px-1 overflow-x-auto scrollbar-none">
+                      <span className="text-[10px] text-gray-300 font-medium uppercase tracking-wider whitespace-nowrap mr-1">Connect</span>
+                      {[
+                        { key: 'google-docs', label: 'Google Docs', icon: '/images/integrations/google-docs.png' },
+                        { key: 'google-sheets', label: 'Sheets', icon: '/images/integrations/google-sheets.png' },
+                        { key: 'google-drive', label: 'Drive', icon: '/images/integrations/google-drive.png' },
+                        { key: 'google-calendar', label: 'Calendar', icon: '/images/integrations/google-calendar.svg' },
+                        { key: 'gmail', label: 'Gmail', icon: '/images/integrations/gmail.svg' },
+                        { key: 'slack', label: 'Slack', icon: '/images/integrations/slack.png' },
+                        { key: 'notion', label: 'Notion', icon: '/images/integrations/notion.png' },
+                        { key: 'salesforce', label: 'Salesforce', icon: '/images/integrations/salesforce.png' },
+                      ].map((svc) => (
+                        <button
+                          key={svc.key}
+                          type="button"
+                          title={svc.label}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-gray-200/60 bg-white/70 backdrop-blur-sm text-[11px] text-gray-500 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-700 transition-all whitespace-nowrap flex-shrink-0"
+                        >
+                          <img src={svc.icon} alt={svc.label} className="w-4 h-4 rounded object-contain" />
+                          <span className="hidden sm:inline">{svc.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
                     {/* Main input box */}
                     <div className="relative bg-white/80 backdrop-blur-xl border border-white/60 shadow-lg shadow-gray-900/5 rounded-2xl overflow-visible">
 

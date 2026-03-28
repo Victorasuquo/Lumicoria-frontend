@@ -1313,5 +1313,84 @@ export const activityApi = {
   },
 };
 
+// Security API
+export interface SecurityOverview {
+  two_factor_enabled: boolean;
+  email_verified: boolean;
+  last_login?: string;
+  login_count: number;
+  failed_login_attempts: number;
+  last_failed_login?: string;
+  last_password_change?: string;
+  active_sessions: number;
+  account_created?: string;
+}
+
+export interface LoginEvent {
+  id: string;
+  timestamp: string;
+  ip_address?: string;
+  device?: string;
+  location?: string;
+  status: string;
+  method: string;
+  activity_type: string;
+  description: string;
+}
+
+export interface LoginActivityResponse {
+  events: LoginEvent[];
+  total: number;
+  limit: number;
+  skip: number;
+}
+
+export interface SessionInfo {
+  session_id: string;
+  device: string;
+  ip_address?: string;
+  location?: string;
+  last_active: string;
+  is_current: boolean;
+  created_at: string;
+}
+
+export const securityApi = {
+  getOverview: async (): Promise<SecurityOverview> => {
+    const response = await api.get<SecurityOverview>('/security/overview');
+    return response.data;
+  },
+
+  getActivity: async (limit = 20, skip = 0): Promise<LoginActivityResponse> => {
+    const response = await api.get<LoginActivityResponse>('/security/activity', {
+      params: { limit, skip },
+    });
+    return response.data;
+  },
+
+  getSessions: async (): Promise<SessionInfo[]> => {
+    const response = await api.get<SessionInfo[]>('/security/sessions');
+    return response.data;
+  },
+
+  revokeSession: async (sessionId: string): Promise<{ message: string }> => {
+    const response = await api.post(`/security/sessions/${sessionId}/revoke`);
+    return response.data;
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+    const response = await api.post('/security/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
+
+  revokeAllSessions: async (): Promise<{ message: string; new_refresh_token: string }> => {
+    const response = await api.post('/security/revoke-all-sessions');
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
