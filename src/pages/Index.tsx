@@ -4,6 +4,7 @@ import Features from '../components/Features';
 import Personas from '../components/Personas';
 import HowItWorks from '../components/HowItWorks';
 import AgentsUniverse from '../components/AgentsUniverse';
+import Integrations from '../components/Integrations';
 import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ const Index = () => {
       <Hero />
       <Features />
       <AgentsUniverse />
+      <Integrations />
       <AgentBuilder />
       <Personas />
       <HowItWorks />
