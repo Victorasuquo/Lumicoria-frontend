@@ -17,37 +17,40 @@ type CanvasNode = {
 };
 
 const flowNodes: CanvasNode[] = [
+  // ── Triggers ──
   {
     id: 'intake',
     name: 'Multi-Channel Intake',
     subtitle: 'Trigger',
     icon: '/images/lumicoria-logo-gradient.png',
     color: '#6366f1',
-    x: 30, y: 155,
+    x: 20, y: 155,
     children: [
       { id: 'sub-gmail', name: 'Gmail', icon: '/images/integrations/gmail.svg' },
       { id: 'sub-drive', name: 'Drive', icon: '/images/integrations/google-drive.png' },
     ],
   },
+  // ── Router ──
   {
     id: 'router',
     name: 'AI Router',
     subtitle: 'Intelligent Routing',
     icon: '/images/lumicoria-logo-primary.png',
     color: '#7c3aed',
-    x: 240, y: 155,
+    x: 210, y: 155,
     children: [
       { id: 'sub-gemini', name: 'Gemini', icon: '/images/integrations/gemini.png' },
       { id: 'sub-claude', name: 'Claude', icon: '/images/integrations/anthropic.svg' },
     ],
   },
+  // ── Agents (middle column) ──
   {
     id: 'doc-agent',
     name: 'Document Agent',
     subtitle: 'Extract & Summarize',
     icon: '/images/integrations/google-docs.png',
     color: '#2563eb',
-    x: 470, y: 50,
+    x: 420, y: 30,
   },
   {
     id: 'meeting-agent',
@@ -55,7 +58,7 @@ const flowNodes: CanvasNode[] = [
     subtitle: 'Schedule & Brief',
     icon: '/images/integrations/google-meet.png',
     color: '#059669',
-    x: 470, y: 190,
+    x: 420, y: 175,
   },
   {
     id: 'creative-agent',
@@ -63,15 +66,24 @@ const flowNodes: CanvasNode[] = [
     subtitle: 'Draft & Design',
     icon: '/images/integrations/notion.png',
     color: '#d97706',
-    x: 470, y: 330,
+    x: 420, y: 330,
   },
+  // ── Outputs (staggered Y positions for curved wires) ──
   {
     id: 'out-notion',
     name: 'Notion',
     subtitle: 'Knowledge Base',
     icon: '/images/integrations/notion.png',
     color: '#374151',
-    x: 700, y: 50,
+    x: 660, y: 25,
+  },
+  {
+    id: 'out-sheets',
+    name: 'Google Sheets',
+    subtitle: 'Data Export',
+    icon: '/images/integrations/google-sheets.png',
+    color: '#16a34a',
+    x: 660, y: 125,
   },
   {
     id: 'out-calendar',
@@ -79,27 +91,48 @@ const flowNodes: CanvasNode[] = [
     subtitle: 'Auto Schedule',
     icon: '/images/integrations/google-calendar.svg',
     color: '#2563eb',
-    x: 700, y: 190,
+    x: 660, y: 225,
   },
   {
     id: 'out-slack',
     name: 'Slack',
-    subtitle: 'Team Notify',
+    subtitle: 'Notify Team',
     icon: '/images/integrations/slack.png',
-    color: '#7c3aed',
-    x: 700, y: 330,
+    color: '#611f69',
+    x: 660, y: 325,
+  },
+  // ── Final convergence ──
+  {
+    id: 'final-email',
+    name: 'Email Summary',
+    subtitle: 'Daily Digest',
+    icon: '/images/integrations/gmail.svg',
+    color: '#ea4335',
+    x: 870, y: 170,
   },
 ];
 
 type Wire = { from: string; to: string; label?: string };
 const wires: Wire[] = [
+  // Intake → Router
   { from: 'intake', to: 'router' },
+  // Router fans out to 3 agents
   { from: 'router', to: 'doc-agent', label: 'Docs' },
   { from: 'router', to: 'meeting-agent', label: 'Meetings' },
   { from: 'router', to: 'creative-agent', label: 'Creative' },
+  // Document Agent → 2 outputs
   { from: 'doc-agent', to: 'out-notion' },
+  { from: 'doc-agent', to: 'out-sheets' },
+  // Meeting Agent → 3 outputs (cross-connects)
   { from: 'meeting-agent', to: 'out-calendar' },
+  { from: 'meeting-agent', to: 'out-slack' },
+  // Creative Agent → Slack
   { from: 'creative-agent', to: 'out-slack' },
+  // All outputs converge → Email Summary
+  { from: 'out-notion', to: 'final-email' },
+  { from: 'out-sheets', to: 'final-email' },
+  { from: 'out-calendar', to: 'final-email' },
+  { from: 'out-slack', to: 'final-email' },
 ];
 
 const NODE_W = 140;
@@ -131,8 +164,8 @@ const AgentBuilder = () => {
     setPositions(prev => ({
       ...prev,
       [dragging]: {
-        x: Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, 800)),
-        y: Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, 420)),
+        x: Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, 920)),
+        y: Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, 460)),
       },
     }));
   }, [dragging, dragOffset]);
@@ -162,7 +195,7 @@ const AgentBuilder = () => {
     return `M ${s.x} ${s.y} C ${s.x + dx} ${s.y}, ${e.x - dx} ${e.y}, ${e.x} ${e.y}`;
   };
 
-  const dotDurations = [2.2, 2.6, 1.9, 2.4, 2.0, 2.3, 1.8];
+  const dotDurations = [2.2, 2.6, 1.9, 2.4, 2.0, 2.3, 1.8, 2.1, 1.7, 2.5, 2.8, 2.3, 1.6, 2.7, 1.9, 2.1, 2.4];
 
   return (
     <section id="agent-builder" className="py-20 bg-white overflow-hidden">
@@ -340,7 +373,7 @@ const AgentBuilder = () => {
               Production Workflow Preview
             </h3>
             <div className="flex flex-col sm:flex-row items-center justify-between">
-              <div className="flex items-center mb-4 sm:mb-0">
+              <div className="flex items-center mb-4 sm:mb-0 flex-wrap gap-y-2">
                 {[flowNodes[0], flowNodes[1]].map((node, i) => (
                   <React.Fragment key={i}>
                     {i > 0 && <ArrowRight size={16} className="mx-1.5 text-gray-300" />}
@@ -351,7 +384,7 @@ const AgentBuilder = () => {
                 ))}
                 <ArrowRight size={16} className="mx-1.5 text-gray-300" />
                 <div className="flex gap-1">
-                  {[flowNodes[2], flowNodes[3], flowNodes[4]].map((node, i) => (
+                  {flowNodes.slice(2, 5).map((node, i) => (
                     <div key={i} className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" style={{ border: `1.5px solid ${node.color}60` }}>
                       <img src={node.icon} alt={node.name} className="w-[18px] h-[18px] rounded object-contain" />
                     </div>
@@ -359,11 +392,15 @@ const AgentBuilder = () => {
                 </div>
                 <ArrowRight size={16} className="mx-1.5 text-gray-300" />
                 <div className="flex -space-x-1.5">
-                  {flowNodes.slice(5).map((node, i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center" style={{ zIndex: 5 - i }}>
+                  {flowNodes.slice(5, 9).map((node, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center" style={{ zIndex: 10 - i }}>
                       <img src={node.icon} alt={node.name} className="w-4 h-4 rounded object-contain" />
                     </div>
                   ))}
+                </div>
+                <ArrowRight size={16} className="mx-1.5 text-gray-300" />
+                <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" style={{ border: '1.5px solid #ea433560' }}>
+                  <img src="/images/integrations/gmail.svg" alt="Email Summary" className="w-[18px] h-[18px] rounded object-contain" />
                 </div>
               </div>
 
