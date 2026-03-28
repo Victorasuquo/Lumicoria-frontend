@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 470" fill="none">
+  <!-- Lid - all corners smoothly curved -->
+  <rect x="70" y="0" width="600" height="408" rx="18" ry="18" fill="#0d0d0d"/>
+
+  <!-- Screen area (white) -->
+  <rect x="82" y="22" width="576" height="364" rx="6" fill="white"/>
+
+  <!-- Camera notch pill -->
+  <rect x="345" y="4" width="50" height="14" rx="7" fill="#1a1a1a"/>
+  <!-- Camera lens -->
+  <circle cx="370" cy="11" r="4.5" fill="#111" stroke="#3a3a3a" stroke-width="0.8"/>
+  <circle cx="370" cy="11" r="2" fill="#0d1a0d"/>
+  <circle cx="369" cy="10" r="0.7" fill="#666" opacity="0.4"/>
+  <!-- Indicator -->
+  <circle cx="377" cy="11" r="0.8" fill="#333"/>
+
+  <!-- Hinge area -->
+  <path d="M90 408 Q90 416 100 416 L640 416 Q650 416 650 408" fill="#0d0d0d"/>
+
+  <!-- Base - smooth aluminium -->
+  <path d="M4 432 Q0 432 0 436 L0 440 Q0 448 8 448 L732 448 Q740 448 740 440 L740 436 Q740 432 736 432 Z" fill="#c0c0c0"/>
+  <!-- Base top highlight -->
+  <path d="M4 432 L736 432 Q740 432 740 436 L740 434 Q740 432 736 432 Z" fill="#d4d4d4"/>
+  <!-- Base bottom edge -->
+  <path d="M8 446 L732 446 Q740 446 740 448 L0 448 Q0 446 8 446 Z" fill="#a0a0a0"/>
+
+  <!-- Hinge connector -->
+  <path d="M100 416 L640 416 Q645 416 645 420 L645 432 L95 432 L95 420 Q95 416 100 416 Z" fill="#b8b8b8"/>
+  <!-- Hinge notch -->
+  <rect x="320" y="416" width="100" height="6" rx="3" fill="#a8a8a8"/>
+  <!-- Hinge shadow line -->
+  <rect x="95" y="430" width="550" height="2" rx="1" fill="#aaa"/>
+</svg>
