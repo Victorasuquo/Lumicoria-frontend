@@ -1392,5 +1392,165 @@ export const securityApi = {
   },
 };
 
+// ── Agent Studio API ──
+
+export interface StudioComponent {
+  id: string;
+  name: string;
+  type: 'input' | 'processor' | 'output' | 'integration' | 'condition' | 'loop' | 'transform';
+  category: 'document' | 'wellbeing' | 'vision' | 'meeting' | 'creative' | 'student' | 'general';
+  description: string;
+  config_schema: Record<string, any>;
+  input_schema: Record<string, any>;
+  output_schema: Record<string, any>;
+  icon: string;
+  version: string;
+  is_beta: boolean;
+  requires_auth: boolean;
+}
+
+export interface ComponentInstance {
+  id: string;
+  component_id: string;
+  name: string;
+  config: Record<string, any>;
+  position: { x: number; y: number };
+  connections: { target: string }[];
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  components: ComponentInstance[];
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  version: string;
+  is_public: boolean;
+  tags: string[];
+}
+
+export interface WorkflowSummary {
+  total: number;
+  public_count: number;
+  private_count: number;
+  by_status: Record<string, number>;
+}
+
+export interface ExecutionResponse {
+  execution_id: string;
+  workflow_id: string;
+  status: 'running' | 'completed' | 'failed' | 'canceled';
+  started_at: string;
+  completed_at?: string;
+  results?: Record<string, any>;
+}
+
+export interface ExecutionStatus {
+  execution_id: string;
+  workflow_id: string;
+  status: string;
+  started_at: string;
+  completed_at?: string;
+  node_statuses: Record<string, {
+    name: string;
+    status: 'idle' | 'processing' | 'completed' | 'error';
+    execution_order: number;
+    has_result: boolean;
+  }>;
+}
+
+export const agentStudioApi = {
+  // Components
+  getComponents: async (category?: string, type?: string): Promise<StudioComponent[]> => {
+    const params: Record<string, string> = {};
+    if (category) params.category = category;
+    if (type) params.type = type;
+    const response = await api.get('/agent-studio/components', { params });
+    return response.data;
+  },
+
+  getComponent: async (componentId: string): Promise<StudioComponent> => {
+    const response = await api.get(`/agent-studio/components/${componentId}`);
+    return response.data;
+  },
+
+  // Workflows
+  getWorkflows: async (): Promise<Workflow[]> => {
+    const response = await api.get('/agent-studio/workflows');
+    return response.data;
+  },
+
+  getWorkflow: async (workflowId: string): Promise<Workflow> => {
+    const response = await api.get(`/agent-studio/workflows/${workflowId}`);
+    return response.data;
+  },
+
+  getWorkflowSummary: async (): Promise<WorkflowSummary> => {
+    const response = await api.get('/agent-studio/workflows/summary');
+    return response.data;
+  },
+
+  createWorkflow: async (data: {
+    name: string;
+    description: string;
+    components: ComponentInstance[];
+    is_public?: boolean;
+    tags?: string[];
+  }): Promise<Workflow> => {
+    const response = await api.post('/agent-studio/workflows', data);
+    return response.data;
+  },
+
+  updateWorkflow: async (workflowId: string, data: {
+    name?: string;
+    description?: string;
+    components?: ComponentInstance[];
+    is_public?: boolean;
+    tags?: string[];
+  }): Promise<Workflow> => {
+    const response = await api.put(`/agent-studio/workflows/${workflowId}`, data);
+    return response.data;
+  },
+
+  deleteWorkflow: async (workflowId: string): Promise<void> => {
+    await api.delete(`/agent-studio/workflows/${workflowId}`);
+  },
+
+  validateWorkflow: async (workflowId: string): Promise<{ valid: boolean; errors: string[] }> => {
+    const response = await api.post(`/agent-studio/workflows/${workflowId}/validate`);
+    return response.data;
+  },
+
+  deployWorkflow: async (workflowId: string): Promise<{ agent_id: string; status: string }> => {
+    const response = await api.post(`/agent-studio/workflows/${workflowId}/deploy`);
+    return response.data;
+  },
+
+  // Execution
+  executeWorkflow: async (workflowId: string, inputData: Record<string, any>): Promise<ExecutionResponse> => {
+    const response = await api.post('/workflows/execute', {
+      workflow_id: workflowId,
+      input_data: inputData,
+    });
+    return response.data;
+  },
+
+  getExecution: async (executionId: string): Promise<ExecutionResponse> => {
+    const response = await api.get(`/workflows/executions/${executionId}`);
+    return response.data;
+  },
+
+  getExecutionStatus: async (executionId: string): Promise<ExecutionStatus> => {
+    const response = await api.get(`/workflows/executions/${executionId}/status`);
+    return response.data;
+  },
+
+  cancelExecution: async (executionId: string): Promise<void> => {
+    await api.delete(`/workflows/executions/${executionId}`);
+  },
+};
+
 // Export the api instance for custom requests
 export default api;

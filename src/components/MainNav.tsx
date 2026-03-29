@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  ListChecks
+  ListChecks,
+  Blocks
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -79,6 +80,7 @@ export default function MainNav() {
     { label: 'Documents', path: '/documents', icon: <FileText className="h-4 w-4" /> },
     { label: 'Tasks', path: '/tasks', icon: <ListChecks className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
+    { label: 'Agent Builder', path: '/agent-builder', icon: <Blocks className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
@@ -131,7 +133,7 @@ export default function MainNav() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap",
                     location.pathname === item.path
                       ? "bg-gray-900/10 dark:bg-white/10 text-gray-900 dark:text-white"
                       : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-white/5"
