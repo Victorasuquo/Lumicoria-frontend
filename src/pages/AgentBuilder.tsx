@@ -20,7 +20,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  Plus, Loader2, CheckCircle, Sparkles,
+  Plus, Loader2, CheckCircle, Sparkles, Save,
   FileText, Camera, Mic, Type, Brain, Search, Eye,
   Languages, BarChart3, Scissors, ListChecks,
   Quote, Clock, Zap, Calendar, Rocket, Heart,
@@ -316,6 +316,27 @@ const AgentBuilder = () => {
     return ids.map(id => AVAILABLE_COMPONENTS.find(c => c.id === id)).filter(Boolean) as ComponentDef[];
   };
 
+  // Build payload helper
+  const buildPayload = (statusOverride?: string) => ({
+    name: agentName.trim(),
+    description: agentDescription.trim() || `${agentName} agent`,
+    agent_type: selectedTemplate === 'custom' ? 'document' : selectedTemplate,
+    capabilities: selectedCapabilities,
+    configuration: {
+      components: {
+        inputs: pipelineInputs,
+        processors: pipelineProcessors,
+        outputs: pipelineOutputs,
+      },
+    },
+    tags: [...tags, selectedTemplate].filter(Boolean),
+    metadata: {
+      created_from: 'agent_builder',
+      template: selectedTemplate,
+    },
+    ...(statusOverride ? { status: statusOverride, state: { status: statusOverride } } : {}),
+  });
+
   // Create agent
   const handleCreateAgent = async () => {
     if (!agentName.trim()) {
@@ -329,24 +350,7 @@ const AgentBuilder = () => {
 
     setCreating(true);
     try {
-      const payload = {
-        name: agentName.trim(),
-        description: agentDescription.trim() || `${agentName} agent`,
-        agent_type: selectedTemplate === 'custom' ? 'document' : selectedTemplate,
-        capabilities: selectedCapabilities,
-        configuration: {
-          components: {
-            inputs: pipelineInputs,
-            processors: pipelineProcessors,
-            outputs: pipelineOutputs,
-          },
-        },
-        tags: [...tags, selectedTemplate].filter(Boolean),
-        metadata: {
-          created_from: 'agent_builder',
-          template: selectedTemplate,
-        },
-      };
+      const payload = buildPayload();
 
       let agent;
       if (isEditMode && editingAgentId) {
@@ -364,6 +368,37 @@ const AgentBuilder = () => {
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Save as draft
+  const [savingDraft, setSavingDraft] = useState(false);
+  const handleSaveDraft = async () => {
+    if (!agentName.trim()) {
+      toast({ title: "Name required", description: "Please give your agent a name.", variant: "destructive" });
+      return;
+    }
+
+    setSavingDraft(true);
+    try {
+      const payload = buildPayload('draft');
+
+      if (isEditMode && editingAgentId) {
+        await agentApi.updateAgent(editingAgentId, payload);
+        toast({ title: "Draft saved", description: `"${agentName}" saved as draft.` });
+      } else {
+        const agent = await agentApi.createAgent(payload);
+        // Switch to edit mode so subsequent saves update instead of creating new
+        setIsEditMode(true);
+        setEditingAgentId(agent.id || (agent as any)._id);
+        toast({ title: "Draft saved", description: `"${agentName}" saved as draft.` });
+      }
+      await loadMyAgents();
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || 'Failed to save draft';
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -423,8 +458,12 @@ const AgentBuilder = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <p className="text-sm text-gray-500">Loading agent...</p>
+          <img
+            src="/images/lumicoria-logo-gradient.png"
+            alt="Loading"
+            className="h-12 w-12 rounded-2xl animate-pulse"
+          />
+          <p className="text-sm text-gray-400">Loading agent...</p>
         </div>
       </div>
     );
@@ -441,13 +480,22 @@ const AgentBuilder = () => {
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Create your own AI agent — no code required</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowMyAgents(!showMyAgents)}
             >
               My Agents {myAgents.length > 0 && <Badge variant="secondary" className="ml-1.5 text-xs">{myAgents.length}</Badge>}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveDraft}
+              disabled={savingDraft || !agentName.trim()}
+            >
+              {savingDraft ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
+              Save Draft
             </Button>
             <Button
               size="sm"
@@ -480,38 +528,48 @@ const AgentBuilder = () => {
                   </button>
                 </div>
                 {loadingAgents ? (
-                  <div className="flex items-center justify-center py-8 text-gray-400">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  <div className="flex items-center justify-center py-8">
+                    <img src="/images/lumicoria-logo-gradient.png" alt="Loading" className="h-10 w-10 rounded-2xl animate-pulse" />
                   </div>
                 ) : myAgents.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-6">No agents yet. Create your first one below.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {myAgents.map((agent: any) => (
-                      <div
-                        key={agent.id || agent._id}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/agents`)}
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                          <Zap className="h-4 w-4 text-indigo-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{agent.name}</p>
-                          <p className="text-xs text-gray-400 truncate">{agent.agent_type || agent.type || 'agent'}</p>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className={`ml-auto text-[10px] flex-shrink-0 ${
-                            (agent.status === 'active' || agent.status === 'deployed')
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
+                    {myAgents.map((agent: any) => {
+                      const aid = agent.id || agent._id;
+                      const agentStatus = agent.status || agent.state?.status || 'active';
+                      return (
+                        <div
+                          key={aid}
+                          className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                          onClick={() =>
+                            agentStatus === 'draft'
+                              ? navigate(`/agent-builder?edit=${aid}`)
+                              : navigate(`/agents/my-agents/${aid}`)
+                          }
                         >
-                          {agent.status || 'draft'}
-                        </Badge>
-                      </div>
-                    ))}
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <Zap className="h-4 w-4 text-indigo-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{agent.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{agent.agent_type || agent.type || 'agent'}</p>
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className={`ml-auto text-[10px] flex-shrink-0 ${
+                              agentStatus === 'active' || agentStatus === 'deployed'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : agentStatus === 'draft'
+                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                : 'bg-gray-100 text-gray-500'
+                            }`}
+                          >
+                            {agentStatus}
+                          </Badge>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

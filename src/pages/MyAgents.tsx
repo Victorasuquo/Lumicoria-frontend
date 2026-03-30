@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  Search, Plus, Loader2, Star, BarChart3,
+  Search, Plus, Star, BarChart3,
   FileText, Mic, Heart, Eye, Sparkles, Brain,
   Zap,
 } from 'lucide-react';
@@ -110,6 +110,7 @@ const MyAgents = () => {
   const totalAgents = agents.length;
   const activeCount = agents.filter(a => (a.status || a.state?.status) === 'active' || (a.status || a.state?.status) === 'deployed').length;
   const pausedCount = agents.filter(a => (a.status || a.state?.status) === 'inactive').length;
+  const draftCount = agents.filter(a => (a.status || a.state?.status) === 'draft').length;
   const totalUsage = agents.reduce((sum, a) => sum + (a.usage_count || a.usage_statistics?.total_runs || 0), 0);
 
   const getTypeConfig = (agentType: string) => {
@@ -153,7 +154,7 @@ const MyAgents = () => {
             {[
               { label: 'Total', value: totalAgents, icon: <Zap className="h-4 w-4 text-indigo-500" /> },
               { label: 'Active', value: activeCount, icon: <div className="w-2 h-2 rounded-full bg-green-500" /> },
-              { label: 'Paused', value: pausedCount, icon: <div className="w-2 h-2 rounded-full bg-yellow-500" /> },
+              { label: 'Draft', value: draftCount, icon: <div className="w-2 h-2 rounded-full bg-yellow-500" /> },
               { label: 'Total Runs', value: totalUsage, icon: <BarChart3 className="h-4 w-4 text-gray-400" /> },
             ].map(stat => (
               <div key={stat.label} className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -191,7 +192,14 @@ const MyAgents = () => {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src="/images/lumicoria-logo-gradient.png"
+                alt="Loading"
+                className="h-12 w-12 rounded-2xl animate-pulse"
+              />
+              <p className="text-sm text-gray-400">Loading agents...</p>
+            </div>
           </div>
         ) : filteredAgents.length === 0 ? (
           <div className="text-center py-20">
@@ -237,7 +245,10 @@ const MyAgents = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: idx * 0.04 }}
                     className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => navigate(`/agents/my-agents/${agentId}`)}
+                    onClick={() => status === 'draft'
+                      ? navigate(`/agent-builder?edit=${agentId}`)
+                      : navigate(`/agents/my-agents/${agentId}`)
+                    }
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
@@ -297,12 +308,21 @@ const MyAgents = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleToggleStatus(agent)}
-                          className="text-xs text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                        >
-                          {status === 'active' || status === 'deployed' ? 'Pause' : 'Activate'}
-                        </button>
+                        {status === 'draft' ? (
+                          <button
+                            onClick={() => navigate(`/agent-builder?edit=${agentId}`)}
+                            className="text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 transition-colors font-medium"
+                          >
+                            Continue Editing
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleStatus(agent)}
+                            className="text-xs text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            {status === 'active' || status === 'deployed' ? 'Pause' : 'Activate'}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(agentId, agent.name)}
                           className="text-xs text-gray-400 hover:text-red-500 transition-colors"

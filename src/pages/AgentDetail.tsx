@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   ArrowLeft, Star, BarChart3, Clock, Calendar, Tag,
   FileText, Mic, Heart, Eye, Sparkles, Brain, Zap,
-  Play, Pause, Trash2, Settings, Copy, CheckCircle2,
+  Play, Pause, Trash2, Settings, Copy, CheckCircle2, Pencil,
   Activity, TrendingUp, Timer, Users, ChevronRight,
   Loader2, AlertCircle,
 } from 'lucide-react';
@@ -109,7 +109,14 @@ const AgentDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src="/images/lumicoria-logo-gradient.png"
+            alt="Loading"
+            className="h-12 w-12 rounded-2xl animate-pulse"
+          />
+          <p className="text-sm text-gray-400">Loading agent...</p>
+        </div>
       </div>
     );
   }
@@ -184,16 +191,26 @@ const AgentDetail = () => {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleStatus}
-                disabled={toggling}
-                className="gap-1.5"
-              >
-                {toggling ? <Loader2 className="h-4 w-4 animate-spin" /> : isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isActive ? 'Pause' : 'Activate'}
-              </Button>
+              {agentStatus === 'draft' ? (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => navigate(`/agent-builder?edit=${agentId}`)}
+                >
+                  <Pencil className="h-4 w-4" /> Continue Editing
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleStatus}
+                  disabled={toggling}
+                  className="gap-1.5"
+                >
+                  {toggling ? <Loader2 className="h-4 w-4 animate-spin" /> : isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isActive ? 'Pause' : 'Activate'}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
