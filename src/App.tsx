@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import AgentsUniverse from "./pages/AgentsUniverse";
 import LiveStudio from "./pages/LiveStudio";
 import AgentBuilder from "./pages/AgentBuilder";
+import MyAgents from "./pages/MyAgents";
+import AgentDetail from "./pages/AgentDetail";
 import NewWellbeing from "./pages/NewWellbeing";
 import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
@@ -78,6 +80,8 @@ const AppRoutes = () => {
           <Route path="/agents" element={<AgentsUniverse />} />
           <Route path="/live-studio" element={<LiveStudio />} />
           <Route path="/agent-builder" element={<AgentBuilder />} />
+          <Route path="/agents/my-agents" element={<ProtectedRoute><MyAgents /></ProtectedRoute>} />
+          <Route path="/agents/my-agents/:agentId" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
           <Route path="/wellbeing" element={<NewWellbeing />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/models" element={<Models />} />
