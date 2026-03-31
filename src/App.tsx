@@ -35,6 +35,8 @@ import Contact from "./pages/Contact";
 import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
 import Tasks from "./pages/Tasks";
+import IntegrationsHub from "./pages/IntegrationsHub";
+import IntegrationDetail from "./pages/IntegrationDetail";
 
 // Agent pages — lazy loaded
 const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
@@ -193,6 +195,23 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Tasks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/integrations"
+            element={
+              <ProtectedRoute>
+                <IntegrationsHub />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/integrations/:type"
+            element={
+              <ProtectedRoute>
+                <IntegrationDetail />
               </ProtectedRoute>
             }
           />

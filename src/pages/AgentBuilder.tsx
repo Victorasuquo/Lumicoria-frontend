@@ -20,7 +20,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  Plus, Loader2, CheckCircle, Sparkles, Save,
+  Plus, Loader2, CheckCircle, Sparkles, Save, Play,
   FileText, Camera, Mic, Type, Brain, Search, Eye,
   Languages, BarChart3, Scissors, ListChecks,
   Quote, Clock, Zap, Calendar, Rocket, Heart,
@@ -424,28 +424,139 @@ const AgentBuilder = () => {
 
   const totalComponents = pipelineInputs.length + pipelineProcessors.length + pipelineOutputs.length;
 
+  // ── Test panel state ──
+  const [testInput, setTestInput] = useState('');
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+
+  const handleTestAgent = async (agentId: string) => {
+    if (!testInput.trim()) {
+      toast({ title: 'Input required', description: 'Please enter test input.', variant: 'destructive' });
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await agentApi.testAgent(agentId, testInput.trim());
+      setTestResult(result);
+    } catch (err: any) {
+      setTestResult({ success: false, error: err?.response?.data?.detail || 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleDeploy = async (agentId: string) => {
+    setDeploying(true);
+    try {
+      await agentApi.updateAgent(agentId, { status: 'active', state: { status: 'active' } });
+      toast({ title: 'Agent deployed', description: 'Your agent is now active.' });
+      navigate(`/agents/my-agents/${agentId}`);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to deploy agent.', variant: 'destructive' });
+    } finally {
+      setDeploying(false);
+    }
+  };
+
   // ── Success screen ──
   if (createdAgent) {
+    const createdId = createdAgent.id || createdAgent._id;
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-10 max-w-md w-full text-center shadow-sm"
+          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-10 max-w-xl w-full shadow-sm"
         >
-          <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="h-7 w-7 text-green-600" />
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle className="h-7 w-7 text-green-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{isEditMode ? 'Agent Updated' : 'Agent Created'}</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-1 text-sm">{createdAgent.name || agentName}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs">
+              {selectedCapabilities.length} capabilities &middot; {totalComponents} components
+            </p>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{isEditMode ? 'Agent Updated' : 'Agent Created'}</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-1 text-sm">{createdAgent.name || agentName}</p>
-          <p className="text-gray-400 dark:text-gray-500 text-xs mb-8">
-            {selectedCapabilities.length} capabilities &middot; {totalComponents} components
-          </p>
+
+          {/* Test Panel */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 mb-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-indigo-500" /> Test Your Agent
+            </h3>
+            <Textarea
+              placeholder="Enter test input to see your agent work live..."
+              value={testInput}
+              onChange={e => setTestInput(e.target.value)}
+              rows={3}
+              className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 resize-none mb-3"
+            />
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white w-full"
+              onClick={() => handleTestAgent(createdId)}
+              disabled={testing || !testInput.trim()}
+            >
+              {testing ? (
+                <>
+                  <img src="/images/lumicoria-logo-gradient.png" alt="" className="h-4 w-4 rounded animate-spin mr-2" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-1.5" /> Run Test
+                </>
+              )}
+            </Button>
+
+            {/* Test Results */}
+            {testResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-4 rounded-lg p-4 ${
+                  testResult.success
+                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                    : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  {testResult.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <X className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className={`text-xs font-medium ${testResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {testResult.success ? 'Success' : 'Failed'}
+                    {testResult.execution_time_ms && ` · ${testResult.execution_time_ms}ms`}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                  {testResult.success
+                    ? typeof testResult.result === 'string'
+                      ? testResult.result
+                      : testResult.result?.text || testResult.result?.summary || testResult.result?.response || JSON.stringify(testResult.result, null, 2)
+                    : testResult.error}
+                </div>
+              </motion.div>
+            )}
+          </div>
+
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={handleReset}>
               Create Another
             </Button>
-            <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => navigate('/agents/my-agents')}>
+            <Button
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => handleDeploy(createdId)}
+              disabled={deploying}
+            >
+              {deploying ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Rocket className="h-4 w-4 mr-1.5" />}
+              Deploy Agent
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate('/agents/my-agents')}>
               View Agents
             </Button>
           </div>

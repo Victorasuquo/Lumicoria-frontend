@@ -474,7 +474,17 @@ export const agentApi = {
 
   deleteAgent: async (id: string): Promise<void> => {
     await api.delete(`/agents/${id}`);
-  }
+  },
+
+  testAgent: async (id: string, input: string): Promise<any> => {
+    const response = await api.post(`/agents/${id}/test`, { input });
+    return response.data;
+  },
+
+  chatWithAgent: async (id: string, message: string): Promise<any> => {
+    const response = await api.post(`/agents/${id}/chat`, { message });
+    return response.data;
+  },
 };
 
 // Wellbeing API
@@ -1549,6 +1559,136 @@ export const agentStudioApi = {
 
   cancelExecution: async (executionId: string): Promise<void> => {
     await api.delete(`/workflows/executions/${executionId}`);
+  },
+};
+
+// ── Integration API ───────────────────────────────────────────────────────────
+
+export interface IntegrationItem {
+  id: string;
+  name: string;
+  type: string;
+  organization_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at?: string;
+  status: string;
+  config?: Record<string, any>;
+  sync_status?: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
+export interface IntegrationCatalogItem {
+  type: string;
+  name: string;
+  description: string;
+  icon: string;
+  available_actions: string[];
+  is_configured: boolean;
+  status: string;
+  category: string;
+}
+
+export interface IntegrationCatalogDetail extends IntegrationCatalogItem {
+  credential_fields: Array<{
+    key: string;
+    label: string;
+    type: string;
+  }>;
+}
+
+export interface IntegrationHealth {
+  status?: string;
+  last_sync?: string;
+  error_rate: number;
+  recent_errors: number;
+  active_webhooks: number;
+  webhook_success_rate: number;
+}
+
+export interface IntegrationActionResult {
+  success: boolean;
+  result?: Record<string, any>;
+  error?: string;
+}
+
+export const integrationApi = {
+  getCatalog: async (): Promise<IntegrationCatalogItem[]> => {
+    const response = await api.get<IntegrationCatalogItem[]>('/integrations/catalog');
+    return response.data;
+  },
+
+  getCatalogDetail: async (type: string): Promise<IntegrationCatalogDetail> => {
+    const response = await api.get<IntegrationCatalogDetail>(`/integrations/catalog/${type}`);
+    return response.data;
+  },
+
+  connect: async (data: {
+    type: string;
+    name: string;
+    credentials: Record<string, any>;
+    config?: Record<string, any>;
+    metadata?: Record<string, any>;
+  }): Promise<IntegrationItem> => {
+    const response = await api.post<IntegrationItem>('/integrations/connect', data);
+    return response.data;
+  },
+
+  disconnect: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post(`/integrations/${id}/disconnect`);
+    return response.data;
+  },
+
+  reconnect: async (id: string, credentials: Record<string, any>): Promise<IntegrationItem> => {
+    const response = await api.post<IntegrationItem>(`/integrations/${id}/reconnect`, credentials);
+    return response.data;
+  },
+
+  executeAction: async (id: string, action: string, data?: Record<string, any>): Promise<IntegrationActionResult> => {
+    const response = await api.post<IntegrationActionResult>(`/integrations/${id}/execute`, { action, data: data || {} });
+    return response.data;
+  },
+
+  getActions: async (id: string): Promise<{ integration_id: string; type: string; actions: string[] }> => {
+    const response = await api.get(`/integrations/${id}/actions`);
+    return response.data;
+  },
+
+  getHealth: async (id: string): Promise<IntegrationHealth> => {
+    const response = await api.get<IntegrationHealth>(`/integrations/${id}/health`);
+    return response.data;
+  },
+
+  triggerSync: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post(`/integrations/${id}/sync`);
+    return response.data;
+  },
+
+  list: async (type?: string, status?: string): Promise<IntegrationItem[]> => {
+    const params: Record<string, string> = {};
+    if (type) params.type = type;
+    if (status) params.status = status;
+    const response = await api.get<IntegrationItem[]>('/integrations/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<IntegrationItem> => {
+    const response = await api.get<IntegrationItem>(`/integrations/${id}`);
+    return response.data;
+  },
+
+  update: async (id: string, data: Record<string, any>): Promise<IntegrationItem> => {
+    const response = await api.put<IntegrationItem>(`/integrations/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/integrations/${id}`);
+  },
+
+  getStats: async (): Promise<Record<string, any>> => {
+    const response = await api.get('/integrations/stats/overview');
+    return response.data;
   },
 };
 

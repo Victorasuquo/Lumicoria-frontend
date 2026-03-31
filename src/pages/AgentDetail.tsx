@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import {
   ArrowLeft, Star, BarChart3, Clock, Calendar, Tag,
   FileText, Mic, Heart, Eye, Sparkles, Brain, Zap,
   Play, Pause, Trash2, Settings, Copy, CheckCircle2, Pencil,
   Activity, TrendingUp, Timer, Users, ChevronRight,
-  Loader2, AlertCircle,
+  Loader2, AlertCircle, Rocket, X, Send,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { agentApi } from '@/services/api';
@@ -61,6 +62,13 @@ const AgentDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [testInput, setTestInput] = useState('');
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatting, setChatting] = useState(false);
 
   useEffect(() => {
     if (agentId) loadAgent();
@@ -103,6 +111,53 @@ const AgentDetail = () => {
       navigate('/agents/my-agents');
     } catch {
       toast({ title: 'Error', description: 'Failed to remove agent.', variant: 'destructive' });
+    }
+  };
+
+  const handleTestAgent = async () => {
+    if (!testInput.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await agentApi.testAgent(agentId!, testInput.trim());
+      setTestResult(result);
+    } catch (err: any) {
+      setTestResult({ success: false, error: err?.response?.data?.detail || 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleChat = async () => {
+    if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
+    setChatMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setChatInput('');
+    setChatting(true);
+    try {
+      const result = await agentApi.chatWithAgent(agentId!, userMsg);
+      const response = result.response;
+      const text = typeof response === 'string'
+        ? response
+        : response?.text || response?.summary || response?.response || JSON.stringify(response, null, 2);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: text }]);
+    } catch (err: any) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err?.response?.data?.detail || 'Failed to get response'}` }]);
+    } finally {
+      setChatting(false);
+    }
+  };
+
+  const handleDeploy = async () => {
+    setDeploying(true);
+    try {
+      await agentApi.updateAgent(agentId!, { status: 'active', state: { status: 'active' } });
+      setAgent((prev: any) => ({ ...prev, status: 'active', state: { ...prev.state, status: 'active' } }));
+      toast({ title: 'Agent deployed', description: 'Your agent is now active.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to deploy agent.', variant: 'destructive' });
+    } finally {
+      setDeploying(false);
     }
   };
 
@@ -192,13 +247,25 @@ const AgentDetail = () => {
 
             <div className="flex items-center gap-2 shrink-0">
               {agentStatus === 'draft' ? (
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
-                  onClick={() => navigate(`/agent-builder?edit=${agentId}`)}
-                >
-                  <Pencil className="h-4 w-4" /> Continue Editing
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={handleDeploy}
+                    disabled={deploying}
+                  >
+                    {deploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                    Deploy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => navigate(`/agent-builder?edit=${agentId}`)}
+                  >
+                    <Pencil className="h-4 w-4" /> Edit
+                  </Button>
+                </>
               ) : (
                 <Button
                   variant="outline"
@@ -360,6 +427,150 @@ const AgentDetail = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Test Agent */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
+            >
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-indigo-500" /> Test Agent
+              </h2>
+              <Textarea
+                placeholder="Enter test input to see your agent respond..."
+                value={testInput}
+                onChange={e => setTestInput(e.target.value)}
+                rows={3}
+                className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 resize-none mb-3"
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={handleTestAgent}
+                  disabled={testing || !testInput.trim()}
+                >
+                  {testing ? (
+                    <>
+                      <img src="/images/lumicoria-logo-gradient.png" alt="" className="h-4 w-4 rounded animate-spin mr-2" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-1.5" /> Run Test
+                    </>
+                  )}
+                </Button>
+                {agentStatus === 'draft' && (
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={handleDeploy}
+                    disabled={deploying}
+                  >
+                    {deploying ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Rocket className="h-4 w-4 mr-1.5" />}
+                    Deploy Agent
+                  </Button>
+                )}
+              </div>
+
+              {testResult && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-4 rounded-lg p-4 ${
+                    testResult.success
+                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                      : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {testResult.success ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500" />
+                    )}
+                    <span className={`text-xs font-medium ${testResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                      {testResult.success ? 'Success' : 'Failed'}
+                      {testResult.execution_time_ms && ` · ${testResult.execution_time_ms}ms`}
+                      {testResult.agent_type && ` · ${testResult.agent_type}`}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                    {testResult.success
+                      ? typeof testResult.result === 'string'
+                        ? testResult.result
+                        : testResult.result?.text || testResult.result?.summary || testResult.result?.response || JSON.stringify(testResult.result, null, 2)
+                      : testResult.error}
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* Chat with Agent */}
+            {(agentStatus === 'active' || agentStatus === 'deployed') && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
+              >
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-indigo-500" /> Chat with Agent
+                </h2>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 mb-3 max-h-80 overflow-y-auto min-h-[120px]">
+                  {chatMessages.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-8">Send a message to start chatting with your agent</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {chatMessages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
+                            msg.role === 'user'
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                          }`}>
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {chatting && (
+                        <div className="flex justify-start">
+                          <div className="bg-white dark:bg-gray-700 rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-600">
+                            <img src="/images/lumicoria-logo-gradient.png" alt="" className="h-5 w-5 rounded animate-pulse" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Type a message..."
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    rows={1}
+                    className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 resize-none flex-1"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleChat();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white self-end"
+                    onClick={handleChat}
+                    disabled={chatting || !chatInput.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Sidebar (1 col) */}

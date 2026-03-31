@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   ListChecks,
-  Blocks
+  Blocks,
+  Plug
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -81,6 +82,7 @@ export default function MainNav() {
     { label: 'Tasks', path: '/tasks', icon: <ListChecks className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
     { label: 'Agent Builder', path: '/agent-builder', icon: <Blocks className="h-4 w-4" /> },
+    { label: 'Integrations', path: '/integrations', icon: <Plug className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
