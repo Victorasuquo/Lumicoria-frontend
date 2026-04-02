@@ -82,7 +82,6 @@ export default function MainNav() {
     { label: 'Tasks', path: '/tasks', icon: <ListChecks className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
     { label: 'Agent Builder', path: '/agent-builder', icon: <Blocks className="h-4 w-4" /> },
-    { label: 'Integrations', path: '/integrations', icon: <Plug className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
@@ -212,6 +211,12 @@ export default function MainNav() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
                     <Link to="/billing">Billing</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/integrations" className="flex items-center gap-2">
+                      <Plug className="h-4 w-4" />
+                      Integrations
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
                   <DropdownMenuItem onClick={handleLogout} className="px-4 py-2 rounded-lg mx-2 mb-2 cursor-pointer text-red-600 dark:text-red-400">

@@ -37,6 +37,7 @@ import Notifications from "./pages/Notifications";
 import Tasks from "./pages/Tasks";
 import IntegrationsHub from "./pages/IntegrationsHub";
 import IntegrationDetail from "./pages/IntegrationDetail";
+import OAuthCallback from "./pages/OAuthCallback";
 
 // Agent pages — lazy loaded
 const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
@@ -84,7 +85,7 @@ const AppRoutes = () => {
           <Route path="/agent-builder" element={<AgentBuilder />} />
           <Route path="/agents/my-agents" element={<ProtectedRoute><MyAgents /></ProtectedRoute>} />
           <Route path="/agents/my-agents/:agentId" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
-          <Route path="/wellbeing" element={<NewWellbeing />} />
+          <Route path="/wellbeing" element={<ProtectedRoute><NewWellbeing /></ProtectedRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/models" element={<Models />} />
           <Route path="/about" element={<About />} />
@@ -215,6 +216,8 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+          {/* OAuth callback — no ProtectedRoute (opened as popup, no auth context) */}
+          <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />
 
           {/* Agent Pages */}
           <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />

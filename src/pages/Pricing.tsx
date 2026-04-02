@@ -101,7 +101,7 @@ const Pricing = () => {
     }, []);
 
     const getDisplayPrice = (plan: PlanInfo): string => {
-        if (!plan.price_monthly) return 'Custom';
+        if (plan.price_monthly === null || plan.price_monthly === undefined) return 'Custom';
         if (plan.price_monthly === 0) return '$0';
         if (billingCycle === 'yearly') {
             const yearly = Math.round(plan.price_monthly * 12 * 0.8);

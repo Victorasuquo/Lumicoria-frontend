@@ -490,48 +490,122 @@ export const agentApi = {
 // Wellbeing API
 export interface WellbeingMetric {
   id: string;
-  type: string;
+  user_id: string;
+  organization_id: string;
+  metric_type: string;
   value: number;
   timestamp: string;
-  user_id: string;
+  metadata?: Record<string, any>;
+  source: string;
 }
 
 export interface WellbeingGoal {
   id: string;
-  title: string;
-  target: number;
-  current: number;
-  deadline: string;
   user_id: string;
-  created_at: string;
-  updated_at?: string;
+  organization_id: string;
+  goal_type: string;
+  target_value: number;
+  current_value: number;
+  start_date: string;
+  end_date: string;
+  status: string;
+  progress: number;
+  metadata?: Record<string, any>;
 }
 
 export interface WellbeingRecommendation {
   id: string;
-  type: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
+  user_id: string;
+  organization_id: string;
+  recommendation_type: string;
+  content: string;
+  priority: number;
+  created_at: string;
+  expires_at: string;
+  metadata?: Record<string, any>;
+}
+
+export interface BreakRecommendation {
+  break_type: string;
+  duration_minutes: number;
+  reason: string;
+  suggested_activities: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface WellbeingStats {
+  user_id: string;
+  period_start: string;
+  period_end: string;
+  average_mood: number;
+  average_energy: number;
+  average_stress: number;
+  average_sleep: number;
+  total_records: number;
+  mood_trend: number[];
+  energy_trend: number[];
+  stress_trend: number[];
+  sleep_trend: number[];
+}
+
+export interface WellbeingRecord {
+  user_id: string;
+  timestamp: string;
+  mood_score: number;
+  energy_level: number;
+  stress_level: number;
+  sleep_hours: number;
+  notes?: string;
+  activities: string[];
+  tags: string[];
+}
+
+export interface WellbeingAnalytics {
+  time_range: string;
+  total_metrics: number;
+  total_activities: number;
+  metrics_summary: Record<string, {
+    count: number;
+    avg: number;
+    min: number;
+    max: number;
+    trend: number[];
+  }>;
+  recent_activities: Array<{
+    type: string;
+    duration: number;
+    timestamp: string;
+  }>;
 }
 
 export const wellbeingApi = {
-  getMetrics: async (): Promise<WellbeingMetric[]> => {
-    const response = await api.get<WellbeingMetric[]>('/wellbeing/metrics');
+  getMetrics: async (params?: { metric_type?: string; start_date?: string; end_date?: string }): Promise<WellbeingMetric[]> => {
+    const response = await api.get<WellbeingMetric[]>('/wellbeing/metrics', { params });
     return response.data;
   },
 
-  submitMetric: async (data: Partial<WellbeingMetric>): Promise<WellbeingMetric> => {
+  submitMetric: async (data: { metric_type: string; value: number; source: string; metadata?: Record<string, any> }): Promise<WellbeingMetric> => {
     const response = await api.post<WellbeingMetric>('/wellbeing/metrics', data);
     return response.data;
   },
 
-  getGoals: async (): Promise<WellbeingGoal[]> => {
-    const response = await api.get<WellbeingGoal[]>('/wellbeing/goals');
+  getMetricsSummary: async (params?: { metric_type?: string; start_date?: string; end_date?: string }): Promise<any> => {
+    const response = await api.get('/wellbeing/metrics/summary', { params });
     return response.data;
   },
 
-  createGoal: async (data: Partial<WellbeingGoal>): Promise<WellbeingGoal> => {
+  getGoals: async (status?: string): Promise<WellbeingGoal[]> => {
+    const response = await api.get<WellbeingGoal[]>('/wellbeing/goals', { params: status ? { status } : {} });
+    return response.data;
+  },
+
+  createGoal: async (data: { goal_type: string; target_value: number; start_date: string; end_date: string; metadata?: Record<string, any> }): Promise<WellbeingGoal> => {
     const response = await api.post<WellbeingGoal>('/wellbeing/goals', data);
+    return response.data;
+  },
+
+  updateGoal: async (goalId: string, data: Record<string, any>): Promise<WellbeingGoal> => {
+    const response = await api.put<WellbeingGoal>(`/wellbeing/goals/${goalId}`, data);
     return response.data;
   },
 
@@ -540,10 +614,35 @@ export const wellbeingApi = {
     return response.data;
   },
 
-  getBreakRecommendation: async (): Promise<any> => {
-    const response = await api.get<any>('/wellbeing/break-recommendation');
+  getBreakRecommendation: async (): Promise<BreakRecommendation> => {
+    const response = await api.get<BreakRecommendation>('/wellbeing/break-recommendation');
     return response.data;
-  }
+  },
+
+  recordActivity: async (data: { activity_type: string; duration_minutes: number; metadata?: Record<string, any> }): Promise<any> => {
+    const response = await api.post('/wellbeing/activity', null, { params: data });
+    return response.data;
+  },
+
+  getAnalytics: async (timeRange?: string): Promise<WellbeingAnalytics> => {
+    const response = await api.get<WellbeingAnalytics>('/wellbeing/analytics', { params: { time_range: timeRange || '7d' } });
+    return response.data;
+  },
+
+  getStatus: async (): Promise<Record<string, number>> => {
+    const response = await api.get<Record<string, number>>('/wellbeing/status');
+    return response.data;
+  },
+
+  getStats: async (timeRange?: string): Promise<WellbeingStats> => {
+    const response = await api.get<WellbeingStats>('/wellbeing/stats', { params: { time_range: timeRange || '7d' } });
+    return response.data;
+  },
+
+  getHistory: async (timeRange?: string): Promise<WellbeingRecord[]> => {
+    const response = await api.get<WellbeingRecord[]>('/wellbeing/history', { params: { time_range: timeRange || '7d' } });
+    return response.data;
+  },
 };
 
 // Student agent API
@@ -1688,6 +1787,24 @@ export const integrationApi = {
 
   getStats: async (): Promise<Record<string, any>> => {
     const response = await api.get('/integrations/stats/overview');
+    return response.data;
+  },
+
+  // ── OAuth flow ─────────────────────────────────────────────────────────
+
+  /** Get the OAuth authorization URL for a provider (opens in popup). */
+  getOAuthUrl: async (provider: string): Promise<{ auth_url: string; state: string }> => {
+    const response = await api.get(`/integrations/oauth/${provider}/authorize`);
+    return response.data;
+  },
+
+  /** Exchange the authorization code for tokens after OAuth callback. */
+  handleOAuthCallback: async (data: {
+    code: string;
+    state: string;
+    provider: string;
+  }): Promise<IntegrationItem> => {
+    const response = await api.post<IntegrationItem>('/integrations/oauth/callback', data);
     return response.data;
   },
 };

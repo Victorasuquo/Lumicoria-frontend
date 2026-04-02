@@ -18,6 +18,9 @@ import {
   IntegrationActionResult,
 } from '@/services/api';
 
+// Providers that use OAuth popup flow (not credential paste)
+const OAUTH_PROVIDERS = new Set(['google_workspace', 'slack', 'notion', 'salesforce']);
+
 // ── Status config ────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> = {
@@ -79,7 +82,88 @@ export default function IntegrationDetail() {
     }
   };
 
-  const handleConnect = async () => {
+  // ── OAuth popup flow (Google, Slack, Notion) ───────────────────────────
+  const handleOAuthConnect = async () => {
+    if (!type) return;
+    setConnecting(true);
+    try {
+      // 1. Get the auth URL from backend
+      const { auth_url, state } = await integrationApi.getOAuthUrl(type);
+
+      // 2. Open popup
+      const width = 600, height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const popup = window.open(
+        auth_url,
+        'oauth_popup',
+        `width=${width},height=${height},left=${left},top=${top},popup=yes`,
+      );
+
+      if (!popup) {
+        toast({ title: 'Popup blocked', description: 'Please allow popups for this site.', variant: 'destructive' });
+        setConnecting(false);
+        return;
+      }
+
+      // 3. Listen for the callback postMessage from OAuthCallback.tsx
+      const handler = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type !== 'oauth_callback') return;
+        window.removeEventListener('message', handler);
+
+        if (event.data.error) {
+          toast({
+            title: 'Authentication failed',
+            description: event.data.error_description || event.data.error,
+            variant: 'destructive',
+          });
+          setConnecting(false);
+          return;
+        }
+
+        // 4. Exchange the code for tokens via backend
+        try {
+          const result = await integrationApi.handleOAuthCallback({
+            code: event.data.code,
+            state: event.data.state,
+            provider: type,
+          });
+          setUserIntegration(result);
+          toast({ title: 'Connected!', description: `${catalogInfo?.name} is now connected.` });
+        } catch (e: any) {
+          toast({
+            title: 'Connection failed',
+            description: e?.response?.data?.detail || e.message || 'Token exchange failed.',
+            variant: 'destructive',
+          });
+        } finally {
+          setConnecting(false);
+        }
+      };
+      window.addEventListener('message', handler);
+
+      // Fallback: if popup is closed without completing, reset state
+      const pollTimer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollTimer);
+          window.removeEventListener('message', handler);
+          setConnecting(false);
+        }
+      }, 500);
+
+    } catch (e: any) {
+      toast({
+        title: 'OAuth error',
+        description: e?.response?.data?.detail || e.message || 'Could not start authentication.',
+        variant: 'destructive',
+      });
+      setConnecting(false);
+    }
+  };
+
+  // ── Credential paste flow (Salesforce, Stripe) ────────────────────────
+  const handleCredentialConnect = async () => {
     if (!catalogInfo || !type) return;
 
     const missingFields = (catalogInfo.credential_fields || []).filter(
@@ -112,6 +196,14 @@ export default function IntegrationDetail() {
       });
     } finally {
       setConnecting(false);
+    }
+  };
+
+  const handleConnect = () => {
+    if (type && OAUTH_PROVIDERS.has(type)) {
+      handleOAuthConnect();
+    } else {
+      handleCredentialConnect();
     }
   };
 
@@ -256,6 +348,20 @@ export default function IntegrationDetail() {
                         {disconnecting ? 'Disconnecting...' : 'Disconnect'}
                       </Button>
                     </>
+                  ) : type && OAUTH_PROVIDERS.has(type) ? (
+                    <Button
+                      size="sm"
+                      onClick={handleOAuthConnect}
+                      disabled={connecting}
+                      className="rounded-full bg-lumicoria-purple hover:bg-lumicoria-purple/90"
+                    >
+                      {connecting ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <PlugZap className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      {connecting ? 'Authenticating...' : `Connect ${catalogInfo.name}`}
+                    </Button>
                   ) : (
                     <Button
                       size="sm"
@@ -272,9 +378,9 @@ export default function IntegrationDetail() {
           </div>
         </motion.div>
 
-        {/* ── Credentials Form (slide-down) ────────────────────── */}
+        {/* ── Credentials Form (slide-down) — only for non-OAuth providers ── */}
         <AnimatePresence>
-          {showCredentials && !isConnected && (
+          {showCredentials && !isConnected && type && !OAUTH_PROVIDERS.has(type) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -325,7 +431,7 @@ export default function IntegrationDetail() {
 
                 <div className="flex items-center gap-3 mt-6">
                   <Button
-                    onClick={handleConnect}
+                    onClick={handleCredentialConnect}
                     disabled={connecting}
                     className="rounded-full bg-lumicoria-purple hover:bg-lumicoria-purple/90"
                   >
@@ -364,7 +470,7 @@ export default function IntegrationDetail() {
               `}
             >
               {tab === 'overview' && 'Overview'}
-              {tab === 'actions' && `Actions (${catalogInfo.available_actions.length})`}
+              {tab === 'actions' && `Actions (${(catalogInfo.available_actions || []).length})`}
               {tab === 'settings' && 'Settings'}
             </button>
           ))}
@@ -414,7 +520,7 @@ export default function IntegrationDetail() {
               <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Capabilities</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {catalogInfo.available_actions.slice(0, 8).map((action) => (
+                  {(catalogInfo.available_actions || []).slice(0, 8).map((action) => (
                     <div
                       key={action}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50/80 border border-gray-100"
@@ -428,7 +534,7 @@ export default function IntegrationDetail() {
                     </div>
                   ))}
                 </div>
-                {catalogInfo.available_actions.length === 0 && (
+                {(catalogInfo.available_actions || []).length === 0 && (
                   <p className="text-sm text-gray-400 italic">Coming soon — this integration is under development.</p>
                 )}
               </div>
@@ -456,13 +562,13 @@ export default function IntegrationDetail() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3"
             >
-              {catalogInfo.available_actions.length === 0 ? (
+              {(catalogInfo.available_actions || []).length === 0 ? (
                 <div className="text-center py-12 rounded-2xl border border-gray-200/60 bg-white/80">
                   <Settings2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">No actions available yet for this integration.</p>
                 </div>
               ) : (
-                catalogInfo.available_actions.map((action) => (
+                (catalogInfo.available_actions || []).map((action) => (
                   <ActionRow
                     key={action}
                     action={action}
@@ -668,10 +774,7 @@ function getDefaultDetail(type: string): IntegrationCatalogDetail {
       ],
       is_configured: false,
       status: 'not_connected',
-      credential_fields: [
-        { key: 'credentials_json', label: 'Service Account JSON', type: 'file' },
-        { key: 'delegated_email', label: 'Delegated Email (optional)', type: 'email' },
-      ],
+      credential_fields: [], // OAuth — no manual fields
     },
     slack: {
       type: 'slack',
@@ -685,11 +788,7 @@ function getDefaultDetail(type: string): IntegrationCatalogDetail {
       ],
       is_configured: false,
       status: 'not_connected',
-      credential_fields: [
-        { key: 'bot_token', label: 'Bot Token (xoxb-...)', type: 'password' },
-        { key: 'app_token', label: 'App Token (xapp-...)', type: 'password' },
-        { key: 'signing_secret', label: 'Signing Secret', type: 'password' },
-      ],
+      credential_fields: [], // OAuth — no manual fields
     },
     notion: {
       type: 'notion',
@@ -703,10 +802,7 @@ function getDefaultDetail(type: string): IntegrationCatalogDetail {
       ],
       is_configured: false,
       status: 'not_connected',
-      credential_fields: [
-        { key: 'api_key', label: 'Internal Integration Token', type: 'password' },
-        { key: 'workspace_id', label: 'Workspace ID (optional)', type: 'text' },
-      ],
+      credential_fields: [], // OAuth — no manual fields
     },
     salesforce: {
       type: 'salesforce',
@@ -714,15 +810,13 @@ function getDefaultDetail(type: string): IntegrationCatalogDetail {
       description: 'CRM contacts, leads, opportunities — manage your sales pipeline.',
       icon: '/images/integrations/salesforce.png',
       category: 'crm',
-      available_actions: [],
+      available_actions: [
+        'get_contacts', 'create_contact', 'get_leads', 'create_lead',
+        'get_opportunities', 'create_opportunity', 'search_records',
+      ],
       is_configured: false,
       status: 'not_connected',
-      credential_fields: [
-        { key: 'client_id', label: 'Consumer Key', type: 'text' },
-        { key: 'client_secret', label: 'Consumer Secret', type: 'password' },
-        { key: 'instance_url', label: 'Instance URL', type: 'url' },
-        { key: 'refresh_token', label: 'Refresh Token', type: 'password' },
-      ],
+      credential_fields: [], // OAuth — no manual fields
     },
     stripe: {
       type: 'stripe',
