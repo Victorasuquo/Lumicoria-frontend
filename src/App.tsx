@@ -61,6 +61,9 @@ const SocialMediaAgent = lazy(() => import("./pages/agents/SocialMediaAgent"));
 const TranslationAgent = lazy(() => import("./pages/agents/TranslationAgent"));
 const CustomerServiceAgent = lazy(() => import("./pages/agents/CustomerServiceAgent"));
 
+// Documentation — lazy loaded
+const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
+
 const AgentPageFallback = () => (
   <div className="min-h-screen bg-[#FAFBFC] flex items-center justify-center">
     <div className="flex flex-col items-center gap-3">
@@ -240,6 +243,9 @@ const AppRoutes = () => {
           <Route path="/agents/social-media" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense></ProtectedRoute>} />
           <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
           <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />
+
+          {/* Documentation (public) */}
+          <Route path="/docs/*" element={<Suspense fallback={<AgentPageFallback />}><DocsLayout /></Suspense>} />
 
           {/* Catch-all Route */}
           <Route path="*" element={<NotFound />} />
