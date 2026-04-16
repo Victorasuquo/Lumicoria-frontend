@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
@@ -64,6 +64,12 @@ const CustomerServiceAgent = lazy(() => import("./pages/agents/CustomerServiceAg
 // Documentation — lazy loaded
 const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
 
+// Blog — lazy loaded
+const BlogListing = lazy(() => import("./pages/BlogListing"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const BlogEditor = lazy(() => import("./pages/BlogEditor"));
+const BlogMyPosts = lazy(() => import("./pages/BlogMyPosts"));
+
 const AgentPageFallback = () => (
   <div className="min-h-screen bg-[#FAFBFC] flex items-center justify-center">
     <div className="flex flex-col items-center gap-3">
@@ -75,186 +81,98 @@ const AgentPageFallback = () => (
 
 const queryClient = new QueryClient();
 
+/** Standard app shell: MainNav + content + Footer */
+const MainLayout = () => (
+  <div className="min-h-screen bg-gray-50 flex flex-col">
+    <MainNav />
+    <main className="flex-1 pt-16">
+      <Outlet />
+    </main>
+    <Footer />
+    <Toaster />
+    <Sonner />
+  </div>
+);
+
 const AppRoutes = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <MainNav />
-      <main className="flex-1 pt-16">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/agents" element={<AgentsUniverse />} />
-          <Route path="/live-studio" element={<LiveStudio />} />
-          <Route path="/agent-builder" element={<AgentBuilder />} />
-          <Route path="/agents/my-agents" element={<ProtectedRoute><MyAgents /></ProtectedRoute>} />
-          <Route path="/agents/my-agents/:agentId" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
-          <Route path="/wellbeing" element={<ProtectedRoute><NewWellbeing /></ProtectedRoute>} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/models" element={<Models />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/contact" element={<Contact />} />
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+    <Routes>
+      {/* Blog post page — standalone layout with BlogNav (no MainNav/Footer) */}
+      <Route path="/blog/:slug" element={<Suspense fallback={<AgentPageFallback />}><BlogPostPage /></Suspense>} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/documents"
-            element={
-              <ProtectedRoute>
-                <Documents />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/onboarding"
-            element={
-              <ProtectedRoute>
-                <Onboarding />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
+      {/* All other routes — MainNav + Footer layout */}
+      <Route element={<MainLayout />}>
+        {/* Public Routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/agents" element={<AgentsUniverse />} />
+        <Route path="/live-studio" element={<LiveStudio />} />
+        <Route path="/agent-builder" element={<AgentBuilder />} />
+        <Route path="/agents/my-agents" element={<ProtectedRoute><MyAgents /></ProtectedRoute>} />
+        <Route path="/agents/my-agents/:agentId" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
+        <Route path="/wellbeing" element={<ProtectedRoute><NewWellbeing /></ProtectedRoute>} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/models" element={<Models />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/contact" element={<Contact />} />
 
-          <Route
-            path="/billing"
-            element={
-              <ProtectedRoute>
-                <Billing />
-              </ProtectedRoute>
-            }
-          />
+        {/* Blog — inside MainLayout */}
+        <Route path="/blog" element={<Suspense fallback={<AgentPageFallback />}><BlogListing /></Suspense>} />
+        <Route path="/blog/my-posts" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BlogMyPosts /></Suspense></ProtectedRoute>} />
+        <Route path="/blog/write" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BlogEditor /></Suspense></ProtectedRoute>} />
+        <Route path="/blog/edit/:id" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BlogEditor /></Suspense></ProtectedRoute>} />
 
-          <Route
-            path="/security"
-            element={
-              <ProtectedRoute>
-                <Security />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/security/activity"
-            element={
-              <ProtectedRoute>
-                <Security />
-              </ProtectedRoute>
-            }
-          />
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-          <Route
-            path="/projects"
-            element={
-              <ProtectedRoute>
-                <Projects />
-              </ProtectedRoute>
-            }
-          />
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+        <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+        <Route path="/security/activity" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+        <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+        <Route path="/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
+        <Route path="/integrations/:type" element={<ProtectedRoute><IntegrationDetail /></ProtectedRoute>} />
+        <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />
 
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            }
-          />
+        {/* Agent Pages */}
+        <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/meeting" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingAssistant /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/meeting-fact-checker" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingFactChecker /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/vision" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><VisionAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/research" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/research-mentor" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchMentor /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/student" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><StudentAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/learning-coach" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LearningCoach /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/rag" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><RAGAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/data-analysis" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DataAnalysisAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/knowledge-graph" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><KnowledgeGraphAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/legal-document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LegalDocumentAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/ethics-bias" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><EthicsBiasAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/wellbeing" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WellbeingCoach /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/focus-flow" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><FocusFlowAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/workspace-ergonomics" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WorkspaceErgonomics /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/creative" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CreativeAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/social-media" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
+        <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />
 
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            }
-          />
+        {/* Documentation (public) */}
+        <Route path="/docs/*" element={<Suspense fallback={<AgentPageFallback />}><DocsLayout /></Suspense>} />
 
-          <Route
-            path="/tasks"
-            element={
-              <ProtectedRoute>
-                <Tasks />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/integrations"
-            element={
-              <ProtectedRoute>
-                <IntegrationsHub />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/integrations/:type"
-            element={
-              <ProtectedRoute>
-                <IntegrationDetail />
-              </ProtectedRoute>
-            }
-          />
-          {/* OAuth callback — no ProtectedRoute (opened as popup, no auth context) */}
-          <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />
-
-          {/* Agent Pages */}
-          <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/meeting" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingAssistant /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/meeting-fact-checker" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingFactChecker /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/vision" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><VisionAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/research" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/research-mentor" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><ResearchMentor /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/student" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><StudentAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/learning-coach" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LearningCoach /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/rag" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><RAGAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/data-analysis" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DataAnalysisAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/knowledge-graph" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><KnowledgeGraphAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/legal-document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><LegalDocumentAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/ethics-bias" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><EthicsBiasAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/wellbeing" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WellbeingCoach /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/focus-flow" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><FocusFlowAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/workspace-ergonomics" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WorkspaceErgonomics /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/creative" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CreativeAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/social-media" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
-          <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />
-
-          {/* Documentation (public) */}
-          <Route path="/docs/*" element={<Suspense fallback={<AgentPageFallback />}><DocsLayout /></Suspense>} />
-
-          {/* Catch-all Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-      <Footer />
-      <Toaster />
-      <Sonner />
-    </div>
+        {/* Catch-all Route */}
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
   );
 };
 

@@ -2137,5 +2137,210 @@ export const legalApi = {
   },
 };
 
+// ── Blog Types ─────────────────────────────────────────────────────
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  content: string;
+  excerpt?: string;
+  author_id: string;
+  author_type: "team" | "individual" | "ai_agent";
+  author_name: string;
+  author_avatar_url?: string;
+  author_title?: string;
+  cover_image_url?: string;
+  category?: string;
+  tags: string[];
+  status: "draft" | "published" | "archived";
+  collaborator_ids: string[];
+  featured: boolean;
+  view_count: number;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostList {
+  posts: BlogPost[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface BlogCategory {
+  category: string;
+  count: number;
+}
+
+export interface UploadResult {
+  key: string;
+  url: string;
+  content_type: string;
+  size: number;
+}
+
+// ── Upload API ─────────────────────────────────────────────────────
+
+export const uploadApi = {
+  upload: async (file: File, folder: string = "uploads"): Promise<UploadResult> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<UploadResult>(`/upload?folder=${encodeURIComponent(folder)}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+};
+
+// ── Blog API ───────────────────────────────────────────────────────
+
+export const blogApi = {
+  list: async (params?: {
+    page?: number;
+    page_size?: number;
+    category?: string;
+    tag?: string;
+    search?: string;
+    featured?: boolean;
+  }): Promise<BlogPostList> => {
+    const response = await api.get<BlogPostList>("/blog", { params });
+    return response.data;
+  },
+
+  getBySlug: async (slug: string): Promise<BlogPost> => {
+    const response = await api.get<BlogPost>(`/blog/${slug}`);
+    return response.data;
+  },
+
+  getCategories: async (): Promise<BlogCategory[]> => {
+    const response = await api.get<BlogCategory[]>("/blog/categories");
+    return response.data;
+  },
+
+  getMyPosts: async (params?: {
+    page?: number;
+    page_size?: number;
+  }): Promise<BlogPostList> => {
+    const response = await api.get<BlogPostList>("/blog/my-posts", { params });
+    return response.data;
+  },
+
+  create: async (data: {
+    title: string;
+    subtitle?: string;
+    content: string;
+    excerpt?: string;
+    cover_image_url?: string;
+    category?: string;
+    tags?: string[];
+    status?: "draft" | "published";
+    author_type?: "team" | "individual" | "ai_agent";
+    featured?: boolean;
+  }): Promise<BlogPost> => {
+    const response = await api.post<BlogPost>("/blog", data);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: {
+      title?: string;
+      subtitle?: string;
+      content?: string;
+      excerpt?: string;
+      cover_image_url?: string;
+      category?: string;
+      tags?: string[];
+      status?: "draft" | "published" | "archived";
+      featured?: boolean;
+    }
+  ): Promise<BlogPost> => {
+    const response = await api.put<BlogPost>(`/blog/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/blog/${id}`);
+  },
+
+  addCollaborator: async (postId: string, userId: string): Promise<BlogPost> => {
+    const response = await api.post<BlogPost>(`/blog/${postId}/collaborators`, {
+      user_id: userId,
+    });
+    return response.data;
+  },
+
+  aiGenerate: async (data: {
+    topic: string;
+    category?: string;
+    auto_publish?: boolean;
+    cover_image_url?: string;
+  }): Promise<BlogPost> => {
+    const response = await api.post<BlogPost>("/blog/ai-generate", data);
+    return response.data;
+  },
+};
+
+// ── Comment Types ──────────────────────────────────────────────────
+
+export interface BlogComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar_url?: string;
+  content: string;
+  mentions: { type: string; id: string; name: string }[];
+  parent_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogCommentList {
+  comments: BlogComment[];
+  total: number;
+}
+
+export interface BlogAnalytics {
+  post_id: string;
+  title: string;
+  view_count: number;
+  comment_count: number;
+  published_at?: string;
+}
+
+// ── Comment API ────────────────────────────────────────────────────
+
+export const commentApi = {
+  list: async (postId: string): Promise<BlogCommentList> => {
+    const response = await api.get<BlogCommentList>(`/blog/${postId}/comments`);
+    return response.data;
+  },
+
+  create: async (
+    postId: string,
+    data: {
+      content: string;
+      mentions?: { type: string; id: string; name: string }[];
+      parent_id?: string;
+    }
+  ): Promise<BlogComment> => {
+    const response = await api.post<BlogComment>(`/blog/${postId}/comments`, data);
+    return response.data;
+  },
+
+  delete: async (postId: string, commentId: string): Promise<void> => {
+    await api.delete(`/blog/${postId}/comments/${commentId}`);
+  },
+
+  getAnalytics: async (postId: string): Promise<BlogAnalytics> => {
+    const response = await api.get<BlogAnalytics>(`/blog/${postId}/analytics`);
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
