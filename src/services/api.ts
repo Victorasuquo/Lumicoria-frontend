@@ -726,32 +726,210 @@ export const studentApi = {
     api.post<StudentResponse>('/student/follow-up', { content, parent_id: parentId, model }),
 };
 
-// Meeting agent API
+// Meeting agent API — types
+export interface MeetingParticipant {
+  name: string;
+  role?: string;
+  email?: string;
+}
+
+export interface MeetingMetadata {
+  id?: string;
+  title?: string;
+  date?: string;
+  duration?: string;
+  type: 'general' | 'status_update' | 'planning' | 'brainstorming' | 'decision_making' | 'problem_solving' | 'review' | 'team_building' | 'client';
+  participants?: (string | MeetingParticipant)[];
+}
+
+export interface MeetingContext {
+  project?: string;
+  previous_meeting?: string;
+  goals?: string[];
+  team?: string;
+  organization?: string;
+}
+
+export interface MeetingRequest {
+  transcript: string;
+  metadata: MeetingMetadata;
+  context?: MeetingContext;
+  model?: string;
+}
+
+export interface MeetingActionItem {
+  task: string;
+  assignee: string;
+  deadline: string;
+}
+
+export interface MeetingResponse {
+  meeting_id: string;
+  summary: string;
+  action_items: MeetingActionItem[];
+  decisions: string[];
+  key_points: string[];
+  follow_ups: string[];
+  processed_at: string;
+  model_used: string;
+  questions?: string[];
+  concerns?: string[];
+  raw_response?: string;
+  citations?: Record<string, any>[];
+  // Export fields (optional, present on export endpoints)
+  notion_url?: string;
+  notion_export_status?: string;
+  google_doc_url?: string;
+  google_doc_id?: string;
+  google_export_status?: string;
+}
+
+// ── Meeting Library & Draft types ─────────────────────────────────
+export interface MeetingLibraryItem {
+  id: string;
+  title: string | null;
+  meeting_type: string;
+  summary: string | null;
+  action_items: MeetingActionItem[];
+  decisions: string[];
+  key_points: string[];
+  follow_ups: string[];
+  model_used: string | null;
+  meeting_date: string | null;
+  duration: string | null;
+  participants: string[];
+  source: string;
+  processed_at: string | null;
+  created_at: string;
+}
+
+export interface MeetingLibraryDetail extends MeetingLibraryItem {
+  transcript: string;
+  raw_response: string | null;
+  questions: string[];
+  concerns: string[];
+  context: Record<string, any>;
+  tags: string[];
+}
+
+export interface MeetingLibraryList {
+  total: number;
+  page: number;
+  limit: number;
+  meetings: MeetingLibraryItem[];
+}
+
+export interface MeetingDraftRequest {
+  transcript: string;
+  title?: string;
+  meeting_type?: string;
+  participants?: string[];
+  context?: Record<string, any>;
+}
+
+export interface MeetingDraftResponse {
+  id: string;
+  transcript: string;
+  title: string | null;
+  meeting_type: string | null;
+  participants: string[];
+  context: Record<string, any>;
+  updated_at: string;
+}
+
 export const meetingApi = {
-  processMeeting: async (data: any): Promise<any> => {
-    const response = await api.post<any>('/meeting/process', data);
+  process: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/process', data);
     return response.data;
   },
 
-  uploadMeetingRecording: async (file: File, metadata: any): Promise<any> => {
+  upload: async (file: File, metadata?: string, context?: string, model?: string): Promise<MeetingResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    Object.keys(metadata).forEach(key => {
-      formData.append(key, metadata[key]);
-    });
+    if (metadata) formData.append('metadata', metadata);
+    if (context) formData.append('context', context);
+    if (model) formData.append('model', model);
 
-    const response = await api.post<any>('/meeting/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const response = await api.post<MeetingResponse>('/meeting/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },
 
-  generateStatusUpdate: async (data: any): Promise<any> => {
-    const response = await api.post<any>('/meeting/status-update', data);
+  statusUpdate: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/status-update', data);
     return response.data;
-  }
+  },
+
+  planning: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/planning', data);
+    return response.data;
+  },
+
+  decision: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/decision', data);
+    return response.data;
+  },
+
+  client: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/client', data);
+    return response.data;
+  },
+
+  brainstorming: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/brainstorming', data);
+    return response.data;
+  },
+
+  problemSolving: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/problem-solving', data);
+    return response.data;
+  },
+
+  exportToNotion: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/export-to-notion', data);
+    return response.data;
+  },
+
+  exportToGoogleWorkspace: async (data: MeetingRequest): Promise<MeetingResponse> => {
+    const response = await api.post<MeetingResponse>('/meeting/export-to-google-workspace', data);
+    return response.data;
+  },
+
+  // ── Library (Postgres persistence) ──────────────────────────────
+  getLibrary: async (params?: { page?: number; limit?: number; meeting_type?: string; search?: string }): Promise<MeetingLibraryList> => {
+    const response = await api.get<MeetingLibraryList>('/meeting/library', { params });
+    return response.data;
+  },
+
+  getMeeting: async (meetingId: string): Promise<MeetingLibraryDetail> => {
+    const response = await api.get<MeetingLibraryDetail>(`/meeting/library/${meetingId}`);
+    return response.data;
+  },
+
+  deleteMeeting: async (meetingId: string): Promise<void> => {
+    await api.delete(`/meeting/library/${meetingId}`);
+  },
+
+  // ── Draft (auto-save transcript) ────────────────────────────────
+  saveDraft: async (data: MeetingDraftRequest): Promise<MeetingDraftResponse> => {
+    const response = await api.put<MeetingDraftResponse>('/meeting/draft', data);
+    return response.data;
+  },
+
+  getDraft: async (): Promise<MeetingDraftResponse | null> => {
+    try {
+      const response = await api.get<MeetingDraftResponse>('/meeting/draft');
+      return response.data;
+    } catch (err: any) {
+      if (err.response?.status === 404) return null;
+      throw err;
+    }
+  },
+
+  deleteDraft: async (): Promise<void> => {
+    await api.delete('/meeting/draft');
+  },
 };
 
 // Chat API — Lumicoria Chat with intent routing
@@ -1339,6 +1517,43 @@ export const focusFlowApi = {
 
 // ─── Meeting Fact Checker API ───────────────────────────────────────────────
 
+export interface FactCheckSessionItem {
+  id: string;
+  title: string;
+  participants: string[];
+  summary: string | null;
+  verification_stats: Record<string, any>;
+  total_claims: number;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+}
+
+export interface FactCheckClaimItem {
+  id: string;
+  content: string;
+  speaker: string;
+  claim_type: string;
+  verification_status: string;
+  confidence: number;
+  severity: string;
+  citations: string[];
+  corrections: string[];
+  summary: string | null;
+  created_at: string;
+}
+
+export interface FactCheckSessionDetail extends FactCheckSessionItem {
+  claims: FactCheckClaimItem[];
+}
+
+export interface FactCheckSessionList {
+  total: number;
+  page: number;
+  limit: number;
+  sessions: FactCheckSessionItem[];
+}
+
 export const meetingFactCheckerApi = {
   verifyClaim: async (data: any): Promise<any> => {
     const response = await api.post('/meeting-fact-checker/verify-claim', data);
@@ -1367,6 +1582,19 @@ export const meetingFactCheckerApi = {
   getClaimSeverities: async (): Promise<string[]> => {
     const response = await api.get<string[]>('/meeting-fact-checker/claim-severities');
     return response.data;
+  },
+
+  // ── Library (Postgres persistence) ────────────────────────────
+  getSessions: async (params?: { page?: number; limit?: number }): Promise<FactCheckSessionList> => {
+    const response = await api.get<FactCheckSessionList>('/meeting-fact-checker/sessions', { params });
+    return response.data;
+  },
+  getSession: async (sessionId: string): Promise<FactCheckSessionDetail> => {
+    const response = await api.get<FactCheckSessionDetail>(`/meeting-fact-checker/sessions/${sessionId}`);
+    return response.data;
+  },
+  deleteSession: async (sessionId: string): Promise<void> => {
+    await api.delete(`/meeting-fact-checker/sessions/${sessionId}`);
   },
 };
 
@@ -1805,6 +2033,106 @@ export const integrationApi = {
     provider: string;
   }): Promise<IntegrationItem> => {
     const response = await api.post<IntegrationItem>('/integrations/oauth/callback', data);
+    return response.data;
+  },
+};
+
+// ─── Legal Document API ─────────────────────────────────────────────────────
+
+export interface LegalDocumentResponse {
+  results: Record<string, any>;
+  metadata: Record<string, any>;
+}
+
+export const legalApi = {
+  /** General-purpose legal document analysis. */
+  analyze: async (data: {
+    data: Record<string, any>;
+    mode?: string;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/analyze', data);
+    return response.data;
+  },
+
+  /** Extract clauses, obligations, and deadlines. */
+  extractClauses: async (data: {
+    data: Record<string, any>;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+    include_metadata?: boolean;
+    highlight_obligations?: boolean;
+    extract_dates?: boolean;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/analyze/clauses', data);
+    return response.data;
+  },
+
+  /** Identify and categorize risks. */
+  analyzeRisks: async (data: {
+    data: Record<string, any>;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+    risk_threshold?: number;
+    include_recommendations?: boolean;
+    categorize_risks?: boolean;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/analyze/risks', data);
+    return response.data;
+  },
+
+  /** Compare two document versions. */
+  compareVersions: async (data: {
+    data: Record<string, any>;
+    old_version: string;
+    new_version: string;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+    track_changes?: boolean;
+    summarize_changes?: boolean;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/compare/versions', data);
+    return response.data;
+  },
+
+  /** Generate plain-language summary of a legal document. */
+  plainLanguage: async (data: {
+    data: Record<string, any>;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+    simplify_terms?: boolean;
+    include_examples?: boolean;
+    maintain_legal_accuracy?: boolean;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/summarize/plain', data);
+    return response.data;
+  },
+
+  /** Check regulatory compliance. */
+  checkCompliance: async (data: {
+    data: Record<string, any>;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+    model?: string;
+    jurisdiction?: string;
+    industry_specific?: boolean;
+    include_citations?: boolean;
+  }): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>('/legal/check/compliance', data);
+    return response.data;
+  },
+
+  /** Get legal document analytics. */
+  getAnalytics: async (timeRange?: string): Promise<Record<string, any>> => {
+    const response = await api.get('/legal/analytics', {
+      params: { time_range: timeRange || '7d' },
+    });
     return response.data;
   },
 };
