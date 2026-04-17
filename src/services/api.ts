@@ -2342,5 +2342,122 @@ export const commentApi = {
   },
 };
 
+// ── Vision API ────────────────────────────────────────────────────
+
+export interface VisionAnalysis {
+  id: string;
+  description: string;
+  structured_analysis: {
+    detected_objects?: string[];
+    detected_text?: string[];
+    scene_type?: string;
+    people_count?: number;
+    colors?: string[];
+    themes?: string[];
+    raw_description?: string;
+  };
+  image_url?: string;
+  processed_at: string;
+  model_used?: string;
+  citations?: Array<{ text?: string; url?: string; title?: string }>;
+  analysis_type: string;
+}
+
+export interface VisionHistoryItem {
+  id: string;
+  analysis_type: string;
+  description: string;
+  image_url?: string;
+  created_at: string;
+  summary: string;
+}
+
+export interface VisionStats {
+  total_scans: number;
+  objects_found: number;
+  text_extracted: number;
+  avg_processing_time: number;
+}
+
+export interface VisualQAResponse {
+  answer: string;
+  analysis_id: string;
+  question: string;
+  answered_at: string;
+}
+
+export interface VisionAnalysisDetail {
+  _id: string;
+  user_id: string;
+  analysis_type: string;
+  source: string;
+  filename?: string;
+  image_url?: string;
+  description: string;
+  structured_analysis: VisionAnalysis["structured_analysis"];
+  model_used?: string;
+  citations?: VisionAnalysis["citations"];
+  objects_count: number;
+  text_count: number;
+  processed_at: string;
+  created_at: string;
+  conversations: Array<{ question: string; answer: string; answered_at: string }>;
+}
+
+export const visionApi = {
+  analyze: async (file: File, options?: { prompt?: string; analysis_tasks?: string[] }): Promise<VisionAnalysis> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (options) {
+      formData.append("options", JSON.stringify(options));
+    }
+    const response = await api.post<VisionAnalysis>("/vision/analyze", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  analyzeUrl: async (url: string, options?: { prompt?: string }): Promise<VisionAnalysis> => {
+    const response = await api.post<VisionAnalysis>("/vision/analyze-url", { url, options });
+    return response.data;
+  },
+
+  ocr: async (file: File): Promise<VisionAnalysis> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<VisionAnalysis>("/vision/ocr", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  query: async (analysisId: string, question: string): Promise<VisualQAResponse> => {
+    const response = await api.post<VisualQAResponse>("/vision/query", {
+      analysis_id: analysisId,
+      question,
+    });
+    return response.data;
+  },
+
+  getHistory: async (params?: { limit?: number; skip?: number; analysis_type?: string }): Promise<VisionHistoryItem[]> => {
+    const response = await api.get<VisionHistoryItem[]>("/vision/history", { params });
+    return response.data;
+  },
+
+  getDetail: async (analysisId: string): Promise<VisionAnalysisDetail> => {
+    const response = await api.get<VisionAnalysisDetail>(`/vision/history/${analysisId}`);
+    return response.data;
+  },
+
+  getStats: async (): Promise<VisionStats> => {
+    const response = await api.get<VisionStats>("/vision/stats");
+    return response.data;
+  },
+
+  deleteAnalysis: async (analysisId: string): Promise<void> => {
+    await api.delete(`/vision/history/${analysisId}`);
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
