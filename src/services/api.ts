@@ -1404,6 +1404,24 @@ export const researchMentorApi = {
     const response = await api.post('/research-mentor/synthesize', data);
     return response.data;
   },
+  getHistory: async (limit = 20, skip = 0, mode?: string): Promise<any> => {
+    const params: any = { limit, skip };
+    if (mode) params.mode = mode;
+    const response = await api.get('/research-mentor/history', { params });
+    return response.data;
+  },
+  getDetail: async (sessionId: string): Promise<any> => {
+    const response = await api.get(`/research-mentor/history/${sessionId}`);
+    return response.data;
+  },
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/research-mentor/stats');
+    return response.data;
+  },
+  deleteSession: async (sessionId: string): Promise<any> => {
+    const response = await api.delete(`/research-mentor/history/${sessionId}`);
+    return response.data;
+  },
 };
 
 // ─── Ethics & Bias API ──────────────────────────────────────────────────────
