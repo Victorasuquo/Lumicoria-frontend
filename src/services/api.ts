@@ -389,6 +389,7 @@ export interface ResearchRequest {
 }
 
 export interface ResearchResponse {
+  id?: string;
   findings: {
     executive_summary?: string;
     key_findings?: string[];
@@ -404,6 +405,21 @@ export interface ResearchResponse {
   query: string;
   sub_questions?: string[];
   citations?: Array<{ url?: string; title?: string; text?: string }>;
+}
+
+export interface ResearchHistoryItem {
+  id: string;
+  query: string;
+  research_type: string;
+  depth: string;
+  sources_count: number;
+  created_at: string;
+}
+
+export interface ResearchStats {
+  total_researches: number;
+  total_sources: number;
+  research_types: Record<string, number>;
 }
 
 export const researchApi = {
@@ -435,6 +451,25 @@ export const researchApi = {
   comprehensive: async (data: ResearchRequest): Promise<ResearchResponse> => {
     const response = await api.post<ResearchResponse>('/research/comprehensive', { ...data, depth: 'deep' });
     return response.data;
+  },
+
+  getHistory: async (limit = 20, skip = 0): Promise<ResearchHistoryItem[]> => {
+    const response = await api.get<ResearchHistoryItem[]>('/research/history', { params: { limit, skip } });
+    return response.data;
+  },
+
+  getDetail: async (id: string): Promise<ResearchResponse> => {
+    const response = await api.get<ResearchResponse>(`/research/history/${id}`);
+    return response.data;
+  },
+
+  getStats: async (): Promise<ResearchStats> => {
+    const response = await api.get<ResearchStats>('/research/stats');
+    return response.data;
+  },
+
+  deleteResearch: async (id: string): Promise<void> => {
+    await api.delete(`/research/history/${id}`);
   },
 };
 

@@ -1,35 +1,35 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Globe, Search, BookOpen, FileText, Clock,
-  CheckCircle2, ExternalLink, Star, ChevronRight, Loader2,
-  Copy, AlertTriangle,
+  CheckCircle2, ExternalLink, ChevronRight, Loader2,
+  Copy, AlertTriangle, Trash2, GitCompareArrows, Layers, Lightbulb,
+  Download, FileDown,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { researchApi, ResearchResponse } from "@/services/api";
+import { researchApi, ResearchResponse, ResearchHistoryItem, ResearchStats } from "@/services/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const researchModes = [
   { id: "web", label: "Web Research", icon: Globe, apiMethod: "query" as const },
+  { id: "topic", label: "Topic", icon: Lightbulb, apiMethod: "topic" as const },
   { id: "academic", label: "Academic", icon: BookOpen, apiMethod: "literatureReview" as const },
   { id: "factcheck", label: "Fact Check", icon: AlertTriangle, apiMethod: "factCheck" as const },
+  { id: "compare", label: "Compare Sources", icon: GitCompareArrows, apiMethod: "compareSources" as const },
+  { id: "deep", label: "Deep Research", icon: Layers, apiMethod: "comprehensive" as const },
 ];
 
-const typeColors: Record<string, string> = {
-  Academic: "bg-blue-50 text-blue-600 border-blue-200",
-  Industry: "bg-emerald-50 text-emerald-600 border-emerald-200",
-  Report: "bg-violet-50 text-violet-600 border-violet-200",
-  Web: "bg-amber-50 text-amber-600 border-amber-200",
+const typeLabels: Record<string, string> = {
+  general: "Web",
+  topic_research: "Topic",
+  literature_review: "Academic",
+  fact_checking: "Fact Check",
+  source_comparison: "Compare",
+  comprehensive: "Deep",
 };
-
-interface HistoryItem {
-  query: string;
-  date: string;
-  sources: number;
-  status: string;
-}
 
 const ResearchAgent: React.FC = () => {
   const [query, setQuery] = useState("");
@@ -38,8 +38,22 @@ const ResearchAgent: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(-1);
   const [result, setResult] = useState<ResearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [stats, setStats] = useState({ researches: 0, sources: 0, reports: 0 });
+  const [history, setHistory] = useState<ResearchHistoryItem[]>([]);
+  const [stats, setStats] = useState<ResearchStats>({ total_researches: 0, total_sources: 0, research_types: {} });
+
+  // Load history + stats on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [h, s] = await Promise.all([researchApi.getHistory(), researchApi.getStats()]);
+        setHistory(h);
+        setStats(s);
+      } catch {
+        // silent — history/stats are non-critical
+      }
+    };
+    load();
+  }, []);
 
   const handleResearch = useCallback(async () => {
     if (!query.trim() || isSearching) return;
@@ -53,7 +67,6 @@ const ResearchAgent: React.FC = () => {
       const mode = researchModes.find((m) => m.id === activeMode);
       const method = mode?.apiMethod || "query";
 
-      // Simulate step progression while waiting for API
       const stepTimer = setInterval(() => {
         setCurrentStep((prev) => (prev < 2 ? prev + 1 : prev));
       }, 2000);
@@ -64,27 +77,13 @@ const ResearchAgent: React.FC = () => {
       });
 
       clearInterval(stepTimer);
-      setCurrentStep(3); // Done
+      setCurrentStep(3);
       setResult(response);
 
-      // Update stats
-      const sourceCount = response.findings?.sources?.length || response.citations?.length || 0;
-      setStats((prev) => ({
-        researches: prev.researches + 1,
-        sources: prev.sources + sourceCount,
-        reports: prev.reports + 1,
-      }));
-
-      // Add to history
-      setHistory((prev) => [
-        {
-          query: query.trim(),
-          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          sources: sourceCount,
-          status: "Complete",
-        },
-        ...prev.slice(0, 9),
-      ]);
+      // Refresh history + stats from DB
+      const [h, s] = await Promise.all([researchApi.getHistory(), researchApi.getStats()]);
+      setHistory(h);
+      setStats(s);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || "Research failed");
       setCurrentStep(-1);
@@ -100,30 +99,248 @@ const ResearchAgent: React.FC = () => {
     }
   };
 
-  const handleHistoryClick = (q: string) => {
-    setQuery(q);
+  const handleHistoryClick = async (item: ResearchHistoryItem) => {
+    try {
+      const detail = await researchApi.getDetail(item.id);
+      setResult(detail);
+      setQuery(item.query);
+      setCurrentStep(3);
+    } catch {
+      // If fetch fails just populate the query
+      setQuery(item.query);
+    }
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await researchApi.deleteResearch(id);
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      const s = await researchApi.getStats();
+      setStats(s);
+    } catch {
+      // silent
+    }
   };
 
   const copyText = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  // Extract sources from result
-  const sources = result?.findings?.sources || [];
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close export menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const getExportFilename = () => {
+    const slug = (result?.query || "research").slice(0, 40).replace(/[^a-zA-Z0-9]+/g, "_");
+    return `Lumicoria_Research_${slug}`;
+  };
+
+  const exportAsText = () => {
+    if (!rawResponse) return;
+    const blob = new Blob([rawResponse], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${getExportFilename()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  };
+
+  const exportAsPDF = async () => {
+    if (!rawResponse) return;
+    setShowExportMenu(false);
+    const { default: jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+    let y = 20;
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    const titleLines = doc.splitTextToSize(result?.query || "Research Report", maxWidth);
+    doc.text(titleLines, margin, y);
+    y += titleLines.length * 8 + 4;
+
+    // Meta line
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Model: ${result?.model_used || "—"}  |  Type: ${result?.research_type || "—"}  |  ${new Date().toLocaleDateString()}`, margin, y);
+    y += 8;
+    doc.setTextColor(0, 0, 0);
+
+    // Divider
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    // Body — strip markdown syntax for clean PDF
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const cleanText = rawResponse
+      .replace(/#{1,6}\s+/g, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1");
+    const bodyLines = doc.splitTextToSize(cleanText, maxWidth);
+
+    for (const line of bodyLines) {
+      if (y > doc.internal.pageSize.getHeight() - 15) {
+        doc.addPage();
+        y = 15;
+      }
+      doc.text(line, margin, y);
+      y += 5;
+    }
+
+    // Citations
+    if (citations.length > 0) {
+      if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 15; }
+      y += 4;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Sources", margin, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 180);
+      for (const c of citations) {
+        if (y > doc.internal.pageSize.getHeight() - 10) { doc.addPage(); y = 15; }
+        const label = c.title || c.url || "Source";
+        const cLines = doc.splitTextToSize(`• ${label}`, maxWidth);
+        doc.text(cLines, margin, y);
+        y += cLines.length * 4.5 + 1;
+      }
+    }
+
+    doc.save(`${getExportFilename()}.pdf`);
+  };
+
+  const exportAsDocx = async () => {
+    if (!rawResponse) return;
+    setShowExportMenu(false);
+    const docx = await import("docx");
+    const { saveAs } = await import("file-saver");
+
+    const children: any[] = [];
+
+    // Title
+    children.push(
+      new docx.Paragraph({
+        children: [new docx.TextRun({ text: result?.query || "Research Report", bold: true, size: 32 })],
+        spacing: { after: 200 },
+      })
+    );
+
+    // Meta
+    children.push(
+      new docx.Paragraph({
+        children: [
+          new docx.TextRun({
+            text: `Model: ${result?.model_used || "—"}  |  Type: ${result?.research_type || "—"}  |  ${new Date().toLocaleDateString()}`,
+            size: 18,
+            color: "888888",
+          }),
+        ],
+        spacing: { after: 300 },
+      })
+    );
+
+    // Body — split by lines, detect markdown headings
+    for (const line of rawResponse.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        children.push(new docx.Paragraph({ spacing: { after: 100 } }));
+        continue;
+      }
+
+      const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        children.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: headingMatch[2], bold: true, size: level === 1 ? 28 : level === 2 ? 24 : 22 })],
+            spacing: { before: 200, after: 100 },
+          })
+        );
+      } else {
+        // Strip inline markdown
+        const clean = trimmed
+          .replace(/\*\*([^*]+)\*\*/g, "$1")
+          .replace(/\*([^*]+)\*/g, "$1")
+          .replace(/`([^`]+)`/g, "$1");
+        const isBullet = /^[-•*]\s/.test(clean);
+        children.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: isBullet ? clean.replace(/^[-•*]\s/, "") : clean, size: 22 })],
+            bullet: isBullet ? { level: 0 } : undefined,
+            spacing: { after: 60 },
+          })
+        );
+      }
+    }
+
+    // Citations section
+    if (citations.length > 0) {
+      children.push(
+        new docx.Paragraph({
+          children: [new docx.TextRun({ text: "Sources", bold: true, size: 26 })],
+          spacing: { before: 300, after: 100 },
+        })
+      );
+      for (const c of citations) {
+        children.push(
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: c.title || c.url || "Source", size: 20 }),
+              ...(c.url ? [new docx.TextRun({ text: `  ${c.url}`, size: 18, color: "4466CC" })] : []),
+            ],
+            bullet: { level: 0 },
+            spacing: { after: 40 },
+          })
+        );
+      }
+    }
+
+    const doc = new docx.Document({
+      sections: [{ properties: {}, children }],
+    });
+
+    const blob = await docx.Packer.toBlob(doc);
+    saveAs(blob, `${getExportFilename()}.docx`);
+  };
+
   const citations = result?.citations || [];
   const keyFindings = result?.findings?.key_findings || [];
-  const executiveSummary = result?.findings?.executive_summary || "";
   const subQuestions = result?.sub_questions || [];
+  const rawResponse = result?.raw_response || "";
 
   return (
     <AgentPageLayout agentName="Research Agent" tagline="Deep-dive into any topic" icon={Globe} gradient="from-blue-500 to-indigo-600">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Researches", value: stats.researches.toString(), icon: Search, color: "text-blue-500" },
-          { label: "Sources Analyzed", value: stats.sources.toString(), icon: Globe, color: "text-indigo-500" },
-          { label: "Reports Generated", value: stats.reports.toString(), icon: FileText, color: "text-emerald-500" },
-          { label: "Model", value: result?.model_used?.split("-")[0] || "—", icon: Clock, color: "text-amber-500" },
+          { label: "Researches", value: stats.total_researches.toString(), icon: Search, color: "text-blue-500" },
+          { label: "Sources Found", value: stats.total_sources.toString(), icon: Globe, color: "text-indigo-500" },
+          { label: "Reports", value: stats.total_researches.toString(), icon: FileText, color: "text-emerald-500" },
+          { label: "Model", value: result?.model_used || "—", icon: Clock, color: "text-amber-500" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2"><s.icon size={14} className={s.color} /><span className="text-xs text-gray-400">{s.label}</span></div>
@@ -152,7 +369,6 @@ const ResearchAgent: React.FC = () => {
             {isSearching ? "Researching..." : "Research"}
           </Button>
         </div>
-        {/* Mode Tabs */}
         <div className="flex gap-2">
           {researchModes.map((mode) => (
             <button
@@ -205,99 +421,144 @@ const ResearchAgent: React.FC = () => {
             </div>
           )}
 
-          {/* Executive Summary */}
-          {executiveSummary && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">Executive Summary</h3>
-                <button onClick={() => copyText(executiveSummary)} className="text-gray-300 hover:text-gray-500 transition-colors">
-                  <Copy size={14} />
-                </button>
+          {/* Research Report Content */}
+          {rawResponse ? (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="bg-gradient-to-br from-blue-50 via-indigo-50/60 to-sky-50 border border-blue-100/60 rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-blue-100/40 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900">Research Report</h3>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => copyText(rawResponse)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/60 transition-colors" title="Copy to clipboard">
+                      <Copy size={14} />
+                    </button>
+                    <div className="relative" ref={exportRef}>
+                      <button
+                        onClick={() => setShowExportMenu((v) => !v)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/60 transition-colors"
+                        title="Export report"
+                      >
+                        <Download size={14} />
+                      </button>
+                      <AnimatePresence>
+                        {showExportMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                            transition={{ duration: 0.12 }}
+                            className="absolute right-0 top-9 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 min-w-[160px]"
+                          >
+                            <button onClick={exportAsPDF} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors">
+                              <FileDown size={13} className="text-red-400" /> Export as PDF
+                            </button>
+                            <button onClick={exportAsDocx} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors">
+                              <FileText size={13} className="text-blue-400" /> Export as DOCX
+                            </button>
+                            <button onClick={exportAsText} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors">
+                              <FileDown size={13} className="text-gray-400" /> Export as Markdown
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 max-h-[600px] overflow-y-auto prose prose-sm max-w-none text-[13px] leading-relaxed
+                      prose-headings:text-gray-900 prose-headings:font-semibold
+                      prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                      prose-p:text-gray-700 prose-p:mb-3
+                      prose-li:text-gray-700 prose-li:marker:text-blue-400
+                      prose-strong:text-gray-900
+                      prose-code:text-indigo-700 prose-code:bg-indigo-100/60 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+                      prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                      prose-blockquote:border-blue-300 prose-blockquote:text-gray-600 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:px-3
+                      prose-hr:border-blue-100
+                      prose-table:text-xs
+                      prose-th:text-gray-800 prose-th:bg-blue-50/70
+                      prose-td:text-gray-600">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {rawResponse}
+                  </ReactMarkdown>
+                </div>
               </div>
-              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{executiveSummary}</p>
+            </motion.div>
+          ) : !isSearching ? (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-center">
+              <Globe size={24} className="text-gray-200 mx-auto mb-2" />
+              <p className="text-xs text-gray-400">Enter a query to start researching</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-center">
+              <Loader2 size={24} className="text-blue-400 mx-auto mb-2 animate-spin" />
+              <p className="text-xs text-gray-400">Searching across the web...</p>
+            </div>
+          )}
+
+          {/* Sources / Citations */}
+          {citations.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-50">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Sources <span className="text-gray-400 font-normal">· {citations.length}</span>
+                </h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {citations.map((c, i) => {
+                  let hostname = "";
+                  try { if (c.url) hostname = new URL(c.url).hostname; } catch { /* invalid url */ }
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="p-3 hover:bg-gray-50/30 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[10px] font-medium shrink-0">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-medium text-gray-700 truncate">{c.title || hostname || `Source ${i + 1}`}</h4>
+                          {c.url && <p className="text-[10px] text-gray-400 truncate">{c.url}</p>}
+                        </div>
+                        {c.url && (
+                          <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-500 shrink-0">
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                      {c.text && <p className="text-[11px] text-gray-500 mt-1 pl-7 line-clamp-2">{c.text}</p>}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </motion.div>
           )}
 
-          {/* Results — sources from API */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-50">
-              <h3 className="text-sm font-semibold text-gray-900">
-                Research Results {sources.length > 0 && <span className="text-gray-400 font-normal">· {sources.length} sources</span>}
-              </h3>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {sources.length === 0 && !isSearching && (
-                <div className="p-8 text-center">
-                  <Globe size={24} className="text-gray-200 mx-auto mb-2" />
-                  <p className="text-xs text-gray-400">Enter a query to start researching</p>
-                </div>
-              )}
-              {isSearching && sources.length === 0 && (
-                <div className="p-8 text-center">
-                  <Loader2 size={24} className="text-blue-400 mx-auto mb-2 animate-spin" />
-                  <p className="text-xs text-gray-400">Searching across the web...</p>
-                </div>
-              )}
-              {sources.map((r, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="p-4 hover:bg-gray-50/30 transition-colors">
-                  <div className="flex items-start justify-between mb-1">
-                    <h4 className="text-sm font-medium text-gray-800 flex-1">{r.title || `Source ${i + 1}`}</h4>
-                    {r.url && (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-500 shrink-0 ml-2 mt-0.5">
-                        <ExternalLink size={12} />
-                      </a>
-                    )}
-                  </div>
-                  {r.snippet && <p className="text-xs text-gray-500 leading-relaxed mb-2">{r.snippet}</p>}
-                  <div className="flex items-center gap-2">
-                    {r.url && <span className="text-[10px] text-gray-400">{new URL(r.url).hostname}</span>}
-                    {r.type && (
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${typeColors[r.type] || typeColors.Web}`}>
-                        {r.type}
-                      </Badge>
-                    )}
-                    {r.credibility && (
-                      <div className="flex items-center gap-1 ml-auto">
-                        <Star size={10} className="text-amber-400" />
-                        <span className="text-[10px] text-gray-400">{r.credibility}%</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-              {/* Show citations if no sources but citations exist */}
-              {sources.length === 0 && citations.map((c, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="p-4 hover:bg-gray-50/30 transition-colors">
-                  <div className="flex items-start justify-between mb-1">
-                    <h4 className="text-sm font-medium text-gray-800 flex-1">{c.title || `Citation ${i + 1}`}</h4>
-                    {c.url && (
-                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-500 shrink-0 ml-2 mt-0.5">
-                        <ExternalLink size={12} />
-                      </a>
-                    )}
-                  </div>
-                  {c.text && <p className="text-xs text-gray-500 leading-relaxed mb-2">{c.text}</p>}
-                  {c.url && <span className="text-[10px] text-gray-400">{new URL(c.url).hostname}</span>}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sub-questions */}
+          {/* Related Questions */}
           {subQuestions.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Related Questions</h3>
-              <div className="space-y-2">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl bg-gradient-to-br from-purple-50 via-fuchsia-50/60 to-violet-50 border border-purple-100/60 shadow-sm overflow-hidden"
+            >
+              <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                  <Lightbulb size={12} className="text-white" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900">Related Questions</h3>
+              </div>
+              <div className="px-3 pb-3 space-y-1.5">
                 {subQuestions.map((q, i) => (
-                  <button
+                  <motion.button
                     key={i}
-                    onClick={() => handleHistoryClick(q)}
-                    className="w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    onClick={() => setQuery(q)}
+                    className="w-full text-left flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-white/50 hover:bg-white/80 border border-purple-100/40 hover:border-purple-200 transition-all group"
                   >
-                    <Search size={12} className="text-gray-300 group-hover:text-blue-500 shrink-0" />
-                    <span className="text-xs text-gray-600 group-hover:text-gray-800">{q}</span>
-                    <ChevronRight size={12} className="text-gray-200 ml-auto shrink-0" />
-                  </button>
+                    <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-[10px] font-semibold shrink-0 mt-0.5 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 text-xs text-gray-700 leading-relaxed group-hover:text-gray-900 prose prose-sm prose-strong:text-purple-700 prose-strong:font-semibold max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{q}</ReactMarkdown>
+                    </span>
+                    <ChevronRight size={13} className="text-purple-200 group-hover:text-purple-500 shrink-0 mt-0.5 transition-colors" />
+                  </motion.button>
                 ))}
               </div>
             </motion.div>
@@ -307,32 +568,21 @@ const ResearchAgent: React.FC = () => {
         {/* Right: Key Findings + History */}
         <div className="lg:col-span-2 space-y-6">
           {/* Key Findings */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Key Findings</h3>
-            <div className="space-y-2">
-              {keyFindings.length === 0 && (
-                <p className="text-xs text-gray-400">Findings will appear here after research</p>
-              )}
-              {keyFindings.map((f, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-gray-600">{f}</p>
-                </motion.div>
-              ))}
+          {keyFindings.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Key Findings</h3>
+              <div className="space-y-2">
+                {keyFindings.map((f, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-600">{f}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Generate Report */}
-          {result?.raw_response && (
-            <Button
-              onClick={() => copyText(result.raw_response || "")}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white h-9 text-xs"
-            >
-              <Copy size={14} className="mr-2" />Copy Full Report
-            </Button>
           )}
 
-          {/* Recent Queries */}
+          {/* Recent Queries — from MongoDB */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-50"><h3 className="text-sm font-semibold text-gray-900">Recent Queries</h3></div>
             <div className="divide-y divide-gray-50">
@@ -341,18 +591,28 @@ const ResearchAgent: React.FC = () => {
                   <p className="text-xs text-gray-400">No queries yet</p>
                 </div>
               )}
-              {history.map((h, i) => (
+              {history.map((h) => (
                 <div
-                  key={i}
-                  onClick={() => handleHistoryClick(h.query)}
-                  className="p-3 flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer transition-colors"
+                  key={h.id}
+                  onClick={() => handleHistoryClick(h)}
+                  className="p-3 flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer transition-colors group"
                 >
                   <Search size={14} className="text-gray-300 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-700 truncate">{h.query}</p>
-                    <p className="text-[10px] text-gray-400">{h.date} · {h.sources} sources</p>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(h.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {" · "}{h.sources_count} sources
+                      {" · "}<span className="text-blue-400">{typeLabels[h.research_type] || h.research_type}</span>
+                    </p>
                   </div>
-                  <ChevronRight size={12} className="text-gray-300" />
+                  <button
+                    onClick={(e) => handleDelete(h.id, e)}
+                    className="text-gray-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <ChevronRight size={12} className="text-gray-300 shrink-0" />
                 </div>
               ))}
             </div>
