@@ -1375,6 +1375,61 @@ export const onboardingApi = {
 
 // ─── Research Mentor API ────────────────────────────────────────────────────
 
+// ─── Learning Coach API ────────────────────────────────────────────────────
+
+export const learningCoachApi = {
+  analyze: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/analyze', data);
+    return response.data;
+  },
+  createLearningPath: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/create/learning-path', data);
+    return response.data;
+  },
+  generateQuiz: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/generate/quiz', data);
+    return response.data;
+  },
+  explainConcept: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/explain/concept', data);
+    return response.data;
+  },
+  trackProgress: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/track/progress', data);
+    return response.data;
+  },
+  recommendResources: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/recommend/resources', data);
+    return response.data;
+  },
+  adaptLearning: async (data: any): Promise<any> => {
+    const response = await api.post('/learning-coach/adapt/learning', data);
+    return response.data;
+  },
+  getAnalytics: async (timeRange = '7d'): Promise<any> => {
+    const response = await api.get('/learning-coach/analytics', { params: { time_range: timeRange } });
+    return response.data;
+  },
+  getHistory: async (limit = 20, skip = 0, mode?: string): Promise<any> => {
+    const params: any = { limit, skip };
+    if (mode) params.mode = mode;
+    const response = await api.get('/learning-coach/history', { params });
+    return response.data;
+  },
+  getDetail: async (sessionId: string): Promise<any> => {
+    const response = await api.get(`/learning-coach/history/${sessionId}`);
+    return response.data;
+  },
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/learning-coach/stats');
+    return response.data;
+  },
+  deleteSession: async (sessionId: string): Promise<any> => {
+    const response = await api.delete(`/learning-coach/history/${sessionId}`);
+    return response.data;
+  },
+};
+
 export const researchMentorApi = {
   analyzeProblem: async (data: any): Promise<any> => {
     const response = await api.post('/research-mentor/analyze-problem', data);
