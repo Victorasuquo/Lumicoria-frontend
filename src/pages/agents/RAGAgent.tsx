@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Database, Search, FileText, Globe, StickyNote, Upload,
-  Type, Layers, ChevronRight, Star, Trash2,
+  Type, Layers, ChevronRight, Star, Trash2, Clock,
   X, Loader2, AlertCircle, CheckCircle2, Plus, Send, Eye,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { chatApi, documentApi, DocumentItem } from "@/services/api";
+import { chatApi, ragApi, documentApi, DocumentItem } from "@/services/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -96,6 +96,10 @@ const RAGAgent: React.FC = () => {
   const [ragSources, setRagSources] = useState<any[]>([]);
   const [isAskingRag, setIsAskingRag] = useState(false);
 
+  // Persistent history from MongoDB
+  const [ragHistory, setRagHistory] = useState<any[]>([]);
+  const [ragStats, setRagStats] = useState<any>(null);
+
   // Document preview
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -106,6 +110,51 @@ const RAGAgent: React.FC = () => {
   const [previewType, setPreviewType] = useState<"pdf" | "text">("pdf");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── Load persistent history + stats from MongoDB ────────────────────── */
+  const loadRagHistory = useCallback(async () => {
+    try {
+      const data = await ragApi.getHistory(20, 0);
+      setRagHistory(data);
+    } catch (err) {
+      console.error("Failed to load RAG history:", err);
+    }
+  }, []);
+
+  const loadRagStats = useCallback(async () => {
+    try {
+      const data = await ragApi.getStats();
+      setRagStats(data);
+    } catch (err) {
+      console.error("Failed to load RAG stats:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRagHistory();
+    loadRagStats();
+  }, [loadRagHistory, loadRagStats]);
+
+  const handleLoadRagSession = useCallback(async (sessionId: string) => {
+    try {
+      const data = await ragApi.getDetail(sessionId);
+      setRagAnswer(data.response || "");
+      setRagSources(data.sources || []);
+      setQuery(data.query || "");
+    } catch (err) {
+      console.error("Failed to load session:", err);
+    }
+  }, []);
+
+  const handleDeleteRagSession = useCallback(async (sessionId: string) => {
+    try {
+      await ragApi.deleteSession(sessionId);
+      setRagHistory(prev => prev.filter(h => h.id !== sessionId));
+      loadRagStats();
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    }
+  }, [loadRagStats]);
 
   /* ── Open document preview ────────────────────────────────────────────── */
   const openDocumentPreview = useCallback(async (doc: { document_id?: string; title?: string; source?: string; page_number?: number; bbox?: any; page_width?: number; page_height?: number; content?: string; mime_type?: string }) => {
@@ -214,18 +263,10 @@ const RAGAgent: React.FC = () => {
     setRagSources([]);
     setSearchResults([]);
     try {
-      const BASE = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api/v1";
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(`${BASE}/rag/ask`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
-          query: query.trim(),
-          include_sources: activeFilter === "all" ? undefined : [activeFilter],
-        }),
+      const data = await ragApi.ask({
+        query: query.trim(),
+        include_sources: activeFilter === "all" ? undefined : [activeFilter],
       });
-      if (!res.ok) throw new Error(`RAG query failed: ${res.status}`);
-      const data = await res.json();
       setRagAnswer(data.response || "");
       setRagSources(data.sources || []);
 
@@ -236,12 +277,16 @@ const RAGAgent: React.FC = () => {
         ].slice(0, 10);
         return updated;
       });
+
+      // Refresh persistent history
+      loadRagHistory();
+      loadRagStats();
     } catch (err: any) {
-      setError(err?.message || "RAG query failed");
+      setError(err?.response?.data?.detail || err?.message || "RAG query failed");
     } finally {
       setIsAskingRag(false);
     }
-  }, [query, activeFilter]);
+  }, [query, activeFilter, loadRagHistory, loadRagStats]);
 
   /* ── File upload ──────────────────────────────────────────────────────── */
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -344,8 +389,8 @@ const RAGAgent: React.FC = () => {
         {[
           { label: "Documents", value: isLoadingDocs ? "…" : String(docCount), icon: FileText, color: "text-purple-500" },
           { label: "Chunks Indexed", value: isLoadingDocs ? "…" : chunkCount > 1000 ? `${(chunkCount / 1000).toFixed(1)}K` : String(chunkCount), icon: Layers, color: "text-fuchsia-500" },
-          { label: "Queries", value: String(recentQueries.length), icon: Search, color: "text-blue-500" },
-          { label: "Results Found", value: String(searchResults.length), icon: Star, color: "text-emerald-500" },
+          { label: "Queries", value: String(ragStats?.total_sessions || recentQueries.length), icon: Search, color: "text-blue-500" },
+          { label: "Avg. Sources", value: ragStats?.avg_context_used != null ? String(ragStats.avg_context_used) : String(searchResults.length), icon: Star, color: "text-emerald-500" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2"><s.icon size={14} className={s.color} /><span className="text-xs text-gray-400">{s.label}</span></div>
@@ -738,6 +783,50 @@ const RAGAgent: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* RAG Stats */}
+          {ragStats && ragStats.total_sessions > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">RAG Stats</h3>
+              <div className="text-xs text-gray-500 space-y-1">
+                <p>Total queries: <span className="font-medium text-gray-700">{ragStats.total_sessions}</span></p>
+                <p>Avg. sources used: <span className="font-medium text-gray-700">{ragStats.avg_context_used}</span></p>
+                <p>Avg. response time: <span className="font-medium text-gray-700">{ragStats.avg_processing_time}s</span></p>
+              </div>
+            </div>
+          )}
+
+          {/* Persistent History */}
+          {ragHistory.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Session History</h3>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {ragHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                    onClick={() => handleLoadRagSession(item.id)}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-purple-200 text-purple-500">
+                        {item.sources_count || 0} sources
+                      </Badge>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteRagSession(item.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 size={10} className="text-red-400" />
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-gray-600 line-clamp-2">{item.query || "Query"}</p>
+                    <p className="text-[9px] text-gray-400 mt-1 flex items-center gap-1">
+                      <Clock size={8} /> {new Date(item.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* PDF Document Preview */}

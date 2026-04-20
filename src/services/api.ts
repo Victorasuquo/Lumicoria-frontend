@@ -1377,6 +1377,31 @@ export const onboardingApi = {
 
 // ─── Learning Coach API ────────────────────────────────────────────────────
 
+// ─── RAG API ───────────────────────────────────────────────────────────────
+
+export const ragApi = {
+  ask: async (data: { query: string; conversation_id?: string; save_to_context?: boolean; include_sources?: string[] }): Promise<any> => {
+    const response = await api.post('/rag/ask', data);
+    return response.data;
+  },
+  getHistory: async (limit = 20, skip = 0): Promise<any> => {
+    const response = await api.get('/rag/history', { params: { limit, skip } });
+    return response.data;
+  },
+  getDetail: async (sessionId: string): Promise<any> => {
+    const response = await api.get(`/rag/history/${sessionId}`);
+    return response.data;
+  },
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/rag/stats');
+    return response.data;
+  },
+  deleteSession: async (sessionId: string): Promise<any> => {
+    const response = await api.delete(`/rag/history/${sessionId}`);
+    return response.data;
+  },
+};
+
 export const learningCoachApi = {
   analyze: async (data: any): Promise<any> => {
     const response = await api.post('/learning-coach/analyze', data);
