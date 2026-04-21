@@ -1019,6 +1019,32 @@ export interface DocumentItem {
   chunk_count?: number;
   mime_type?: string;
   file_url?: string;
+  source_url?: string;
+  s3_key?: string;
+  size_bytes?: number;
+  status?: string;
+  filename?: string;
+  original_filename?: string;
+}
+
+export interface DocumentPresignedUrl {
+  url: string;
+  document_id: string;
+  filename: string;
+  original_filename?: string | null;
+  mime_type?: string;
+  title?: string;
+  source?: string;
+  source_url?: string | null;
+}
+
+export interface DocumentContent {
+  document_id: string;
+  title?: string;
+  mime_type?: string;
+  source?: string;
+  chunk_count: number;
+  content: string;
 }
 
 export const chatApi = {
@@ -1085,6 +1111,16 @@ export const chatApi = {
 
   deleteDocument: async (documentId: string): Promise<void> => {
     await api.delete(`/chat/documents/${documentId}`);
+  },
+
+  getDocumentFileUrl: async (documentId: string): Promise<DocumentPresignedUrl> => {
+    const response = await api.get<DocumentPresignedUrl>(`/chat/documents/${documentId}/presigned-url`);
+    return response.data;
+  },
+
+  getDocumentContent: async (documentId: string): Promise<DocumentContent> => {
+    const response = await api.get<DocumentContent>(`/chat/documents/${documentId}/content`);
+    return response.data;
   },
 
   // ── Context ───────────────────────────────────────────────────

@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Configure pdf.js worker — use CDN to avoid Vite cache version mismatches
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+// Bundle the pdf.js worker via Vite so the version always matches react-pdf's
+// pdfjs-dist — cdnjs 404s on recent pdfjs versions.
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export interface CitationHighlight {
   pageNumber: number;

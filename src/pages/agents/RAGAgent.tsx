@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import {
   Database, Search, FileText, Globe, StickyNote, Upload,
   Type, Layers, ChevronRight, Star, Trash2, Clock,
-  X, Loader2, AlertCircle, CheckCircle2, Plus, Send, Eye,
+  X, Loader2, AlertCircle, CheckCircle2, Plus, Send, Eye, Download,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { chatApi, ragApi, documentApi, DocumentItem } from "@/services/api";
+import { chatApi, ragApi, DocumentItem } from "@/services/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -108,6 +108,9 @@ const RAGAgent: React.FC = () => {
   const [previewTitle, setPreviewTitle] = useState("");
   const [previewContent, setPreviewContent] = useState(""); // for non-PDF previews
   const [previewType, setPreviewType] = useState<"pdf" | "text">("pdf");
+  const [previewDownloadUrl, setPreviewDownloadUrl] = useState<string>("");
+  const [previewDownloadName, setPreviewDownloadName] = useState<string>("");
+  const [previewIsBinary, setPreviewIsBinary] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,48 +160,115 @@ const RAGAgent: React.FC = () => {
   }, [loadRagStats]);
 
   /* ── Open document preview ────────────────────────────────────────────── */
-  const openDocumentPreview = useCallback(async (doc: { document_id?: string; title?: string; source?: string; page_number?: number; bbox?: any; page_width?: number; page_height?: number; content?: string; mime_type?: string }) => {
+  const isTextMime = (mime: string): boolean => {
+    if (!mime) return false;
+    if (mime.startsWith("text/")) return true;
+    if (mime === "application/json") return true;
+    if (mime === "application/xml") return true;
+    return false;
+  };
+
+  const openDocumentPreview = useCallback(async (doc: { document_id?: string; title?: string; source?: string; page_number?: number; bbox?: any; page_width?: number; page_height?: number; content?: string; mime_type?: string; source_url?: string }) => {
     const docId = doc.document_id;
     const title = doc.title || "Document";
-    const isPdf = doc.mime_type?.includes("pdf") || doc.source === "upload";
 
-    if (docId && isPdf) {
-      try {
-        const { url } = await documentApi.getPresignedUrl(docId);
-        setPreviewUrl(url);
-        setPreviewPage(doc.page_number || 1);
-        setPreviewHighlights(doc.bbox ? [{
-          pageNumber: doc.page_number || 1,
-          bbox: doc.bbox,
-          pageWidth: doc.page_width,
-          pageHeight: doc.page_height,
-        }] : []);
-        setPreviewTitle(title);
-        setPreviewType("pdf");
-        setPreviewOpen(true);
-      } catch {
-        // If presigned URL fails, fall back to text preview
-        setPreviewContent(doc.content || "Could not load document preview.");
+    // Reset preview state
+    setPreviewDownloadUrl("");
+    setPreviewDownloadName("");
+    setPreviewIsBinary(false);
+
+    if (!docId) {
+      if (doc.source === "web" && doc.source_url) {
+        window.open(doc.source_url, "_blank");
+      } else {
+        setPreviewContent(doc.content || "No content available.");
         setPreviewTitle(title);
         setPreviewType("text");
         setPreviewOpen(true);
       }
-    } else if (doc.source === "web" && doc.title) {
-      // For URLs, open in new tab
-      window.open(doc.title, "_blank");
-    } else {
-      // Text/note preview
-      setPreviewContent(doc.content || "No content available.");
+      return;
+    }
+
+    let info: Awaited<ReturnType<typeof chatApi.getDocumentFileUrl>> | null = null;
+    try {
+      info = await chatApi.getDocumentFileUrl(docId);
+    } catch {
+      setPreviewContent(doc.content || "Could not load document preview.");
       setPreviewTitle(title);
       setPreviewType("text");
       setPreviewOpen(true);
+      return;
     }
+
+    const mime = info.mime_type || doc.mime_type || "";
+    const source = info.source || doc.source || "";
+    const downloadName = info.original_filename || info.filename || title;
+
+    // Web / URL sources → open the original URL in a new tab
+    if (source === "web" && info.source_url) {
+      window.open(info.source_url, "_blank");
+      return;
+    }
+
+    // PDF → dedicated viewer
+    if (mime.includes("pdf")) {
+      setPreviewUrl(info.url);
+      setPreviewPage(doc.page_number || 1);
+      setPreviewHighlights(doc.bbox ? [{
+        pageNumber: doc.page_number || 1,
+        bbox: doc.bbox,
+        pageWidth: doc.page_width,
+        pageHeight: doc.page_height,
+      }] : []);
+      setPreviewTitle(title);
+      setPreviewType("pdf");
+      setPreviewOpen(true);
+      return;
+    }
+
+    // Text-like → fetch raw bytes from MinIO
+    if (isTextMime(mime)) {
+      try {
+        const res = await fetch(info.url);
+        const text = await res.text();
+        setPreviewContent(text || doc.content || "No content available.");
+      } catch {
+        setPreviewContent(doc.content || "Could not load document preview.");
+      }
+      setPreviewDownloadUrl(info.url);
+      setPreviewDownloadName(downloadName);
+      setPreviewTitle(title);
+      setPreviewType("text");
+      setPreviewOpen(true);
+      return;
+    }
+
+    // Binary (docx, xlsx, pptx, etc.) → show extracted text from Weaviate + download link
+    try {
+      const data = await chatApi.getDocumentContent(docId);
+      setPreviewContent(
+        data.content?.trim()
+          ? data.content
+          : "No extracted text yet — the document may still be processing. Use the download button to view the original."
+      );
+    } catch {
+      setPreviewContent("Preview unavailable. Use the download button to view the original file.");
+    }
+    setPreviewDownloadUrl(info.url);
+    setPreviewDownloadName(downloadName);
+    setPreviewIsBinary(true);
+    setPreviewTitle(title);
+    setPreviewType("text");
+    setPreviewOpen(true);
   }, []);
 
   const closePreview = useCallback(() => {
     setPreviewOpen(false);
     setPreviewUrl("");
     setPreviewContent("");
+    setPreviewDownloadUrl("");
+    setPreviewDownloadName("");
+    setPreviewIsBinary(false);
   }, []);
 
   /* ── Load documents on mount ──────────────────────────────────────────── */
@@ -623,13 +693,31 @@ const RAGAgent: React.FC = () => {
                     <FileText size={16} className="text-gray-300 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-700 truncate">{displayTitle(doc.title, doc.source)}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${sourceColors[doc.source] || "bg-gray-50 text-gray-500"}`}>
                           {sourceLabels[doc.source] || doc.source}
                         </Badge>
-                        {doc.chunk_count && (
-                          <span className="text-[10px] text-gray-400">{doc.chunk_count} chunks</span>
+                        {doc.status === "processing" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                            <Loader2 size={9} className="animate-spin" />
+                            Processing
+                          </span>
                         )}
+                        {doc.status === "error" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded" title="Processing failed">
+                            <AlertCircle size={9} />
+                            Error
+                          </span>
+                        )}
+                        {doc.status === "ready" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                            <CheckCircle2 size={9} />
+                            Ready
+                          </span>
+                        )}
+                        {doc.chunk_count ? (
+                          <span className="text-[10px] text-gray-400">{doc.chunk_count} chunks</span>
+                        ) : null}
                         <span className="text-[10px] text-gray-300">
                           {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ""}
                         </span>
@@ -862,10 +950,30 @@ const RAGAgent: React.FC = () => {
                   <FileText size={14} className="text-purple-500 shrink-0" />
                   <span className="text-sm font-medium text-gray-700 truncate">{previewTitle}</span>
                 </div>
-                <button onClick={closePreview} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                  <X size={16} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {previewDownloadUrl && (
+                    <a
+                      href={previewDownloadUrl}
+                      download={previewDownloadName || undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-purple-600 hover:bg-purple-100 transition-colors"
+                      title="Download original file"
+                    >
+                      <Download size={14} />
+                      <span>Download</span>
+                    </a>
+                  )}
+                  <button onClick={closePreview} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
+              {previewIsBinary && (
+                <div className="px-5 py-2 text-[11px] text-amber-700 bg-amber-50 border-b border-amber-100 shrink-0">
+                  Showing extracted text only — use Download to open the original file.
+                </div>
+              )}
               <div className="flex-1 overflow-auto p-5">
                 <pre className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed font-sans">{previewContent}</pre>
               </div>
