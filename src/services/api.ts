@@ -1047,6 +1047,28 @@ export interface DocumentContent {
   content: string;
 }
 
+export type XlsxSheet = {
+  name: string;
+  headers: (string | number | null)[];
+  rows: (string | null)[][];
+  truncated?: boolean;
+};
+
+// Discriminated union returned by GET /chat/documents/{id}/preview.
+// Matches the shape built in backend/api/v1/endpoints/lumicoria_chat.py.
+export type DocumentPreviewDescriptor = {
+  document_id: string;
+  canonical_document_id: string;
+  type: "pdf" | "image" | "html" | "xlsx" | "markdown" | "text" | "code" | "download";
+  mime_type: string;
+  title?: string | null;
+  filename?: string | null;
+  source_url?: string | null;
+  url?: string;                 // pdf | image | html | xlsx | download
+  data?: string | { sheets: XlsxSheet[] };   // markdown | text | code | (inline xlsx)
+  language?: string;            // code
+};
+
 export const chatApi = {
   // ── Chat ──────────────────────────────────────────────────────
   sendMessage: async (data: ChatRequest): Promise<ChatResponseData> => {
@@ -1120,6 +1142,16 @@ export const chatApi = {
 
   getDocumentContent: async (documentId: string): Promise<DocumentContent> => {
     const response = await api.get<DocumentContent>(`/chat/documents/${documentId}/content`);
+    return response.data;
+  },
+
+  getDocumentPreview: async (documentId: string): Promise<DocumentPreviewDescriptor> => {
+    const response = await api.get<DocumentPreviewDescriptor>(`/chat/documents/${documentId}/preview`);
+    return response.data;
+  },
+
+  cancelDocumentIngest: async (documentId: string): Promise<{ status: string; document_id: string }> => {
+    const response = await api.post(`/chat/documents/${documentId}/cancel`);
     return response.data;
   },
 

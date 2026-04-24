@@ -6,15 +6,16 @@ import { Input } from "@/components/ui/input";
 import {
   Database, Search, FileText, Globe, StickyNote, Upload,
   Type, Layers, ChevronRight, Star, Trash2, Clock,
-  X, Loader2, AlertCircle, CheckCircle2, Plus, Send, Eye, Download,
+  X, Loader2, AlertCircle, CheckCircle2, Plus, Send, Eye,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { chatApi, ragApi, DocumentItem } from "@/services/api";
+import { chatApi, ragApi, DocumentItem, DocumentPreviewDescriptor } from "@/services/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import DocumentPreview, { CitationHighlight } from "@/components/DocumentPreview";
+import { CitationHighlight } from "@/components/DocumentPreview";
+import PreviewRenderer from "@/components/preview/PreviewRenderer";
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 /** Clean up titles that are raw IDs like "chat_e07c3a7f-..." or UUIDs */
@@ -100,17 +101,12 @@ const RAGAgent: React.FC = () => {
   const [ragHistory, setRagHistory] = useState<any[]>([]);
   const [ragStats, setRagStats] = useState<any>(null);
 
-  // Document preview
+  // Document preview — new unified descriptor-driven flow.
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewDescriptor, setPreviewDescriptor] =
+    useState<DocumentPreviewDescriptor | null>(null);
   const [previewPage, setPreviewPage] = useState(1);
   const [previewHighlights, setPreviewHighlights] = useState<CitationHighlight[]>([]);
-  const [previewTitle, setPreviewTitle] = useState("");
-  const [previewContent, setPreviewContent] = useState(""); // for non-PDF previews
-  const [previewType, setPreviewType] = useState<"pdf" | "text">("pdf");
-  const [previewDownloadUrl, setPreviewDownloadUrl] = useState<string>("");
-  const [previewDownloadName, setPreviewDownloadName] = useState<string>("");
-  const [previewIsBinary, setPreviewIsBinary] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,59 +156,55 @@ const RAGAgent: React.FC = () => {
   }, [loadRagStats]);
 
   /* ── Open document preview ────────────────────────────────────────────── */
-  const isTextMime = (mime: string): boolean => {
-    if (!mime) return false;
-    if (mime.startsWith("text/")) return true;
-    if (mime === "application/json") return true;
-    if (mime === "application/xml") return true;
-    return false;
-  };
-
   const openDocumentPreview = useCallback(async (doc: { document_id?: string; title?: string; source?: string; page_number?: number; bbox?: any; page_width?: number; page_height?: number; content?: string; mime_type?: string; source_url?: string }) => {
     const docId = doc.document_id;
     const title = doc.title || "Document";
 
-    // Reset preview state
-    setPreviewDownloadUrl("");
-    setPreviewDownloadName("");
-    setPreviewIsBinary(false);
-
+    // No backing registry row (e.g. chat-embedded snippet) → open external
+    // link if any, else drop a synthetic text descriptor so we still show
+    // the content inline.
     if (!docId) {
       if (doc.source === "web" && doc.source_url) {
         window.open(doc.source_url, "_blank");
-      } else {
-        setPreviewContent(doc.content || "No content available.");
-        setPreviewTitle(title);
-        setPreviewType("text");
-        setPreviewOpen(true);
+        return;
       }
-      return;
-    }
-
-    let info: Awaited<ReturnType<typeof chatApi.getDocumentFileUrl>> | null = null;
-    try {
-      info = await chatApi.getDocumentFileUrl(docId);
-    } catch {
-      setPreviewContent(doc.content || "Could not load document preview.");
-      setPreviewTitle(title);
-      setPreviewType("text");
+      setPreviewDescriptor({
+        document_id: "",
+        canonical_document_id: "",
+        type: "text",
+        mime_type: doc.mime_type || "text/plain",
+        title,
+        data: doc.content || "No content available.",
+      });
       setPreviewOpen(true);
       return;
     }
 
-    const mime = info.mime_type || doc.mime_type || "";
-    const source = info.source || doc.source || "";
-    const downloadName = info.original_filename || info.filename || title;
-
-    // Web / URL sources → open the original URL in a new tab
-    if (source === "web" && info.source_url) {
-      window.open(info.source_url, "_blank");
+    // Fetch the discriminated-union descriptor; the renderer dispatches.
+    let descriptor: DocumentPreviewDescriptor;
+    try {
+      descriptor = await chatApi.getDocumentPreview(docId);
+    } catch {
+      setPreviewDescriptor({
+        document_id: docId,
+        canonical_document_id: docId,
+        type: "text",
+        mime_type: doc.mime_type || "text/plain",
+        title,
+        data: doc.content || "Could not load document preview.",
+      });
+      setPreviewOpen(true);
       return;
     }
 
-    // PDF → dedicated viewer
-    if (mime.includes("pdf")) {
-      setPreviewUrl(info.url);
+    // Web-source shortcut: jump straight to the original URL.
+    if (descriptor.source_url && doc.source === "web") {
+      window.open(descriptor.source_url, "_blank");
+      return;
+    }
+
+    // Carry PDF citation context for the viewer.
+    if (descriptor.type === "pdf") {
       setPreviewPage(doc.page_number || 1);
       setPreviewHighlights(doc.bbox ? [{
         pageNumber: doc.page_number || 1,
@@ -220,55 +212,19 @@ const RAGAgent: React.FC = () => {
         pageWidth: doc.page_width,
         pageHeight: doc.page_height,
       }] : []);
-      setPreviewTitle(title);
-      setPreviewType("pdf");
-      setPreviewOpen(true);
-      return;
+    } else {
+      setPreviewPage(1);
+      setPreviewHighlights([]);
     }
 
-    // Text-like → fetch raw bytes from MinIO
-    if (isTextMime(mime)) {
-      try {
-        const res = await fetch(info.url);
-        const text = await res.text();
-        setPreviewContent(text || doc.content || "No content available.");
-      } catch {
-        setPreviewContent(doc.content || "Could not load document preview.");
-      }
-      setPreviewDownloadUrl(info.url);
-      setPreviewDownloadName(downloadName);
-      setPreviewTitle(title);
-      setPreviewType("text");
-      setPreviewOpen(true);
-      return;
-    }
-
-    // Binary (docx, xlsx, pptx, etc.) → show extracted text from Weaviate + download link
-    try {
-      const data = await chatApi.getDocumentContent(docId);
-      setPreviewContent(
-        data.content?.trim()
-          ? data.content
-          : "No extracted text yet — the document may still be processing. Use the download button to view the original."
-      );
-    } catch {
-      setPreviewContent("Preview unavailable. Use the download button to view the original file.");
-    }
-    setPreviewDownloadUrl(info.url);
-    setPreviewDownloadName(downloadName);
-    setPreviewIsBinary(true);
-    setPreviewTitle(title);
-    setPreviewType("text");
+    setPreviewDescriptor(descriptor);
     setPreviewOpen(true);
   }, []);
 
   const closePreview = useCallback(() => {
     setPreviewOpen(false);
-    setPreviewUrl("");
-    setPreviewContent("");
-    setPreviewDownloadUrl("");
-    setPreviewDownloadName("");
-    setPreviewIsBinary(false);
+    setPreviewDescriptor(null);
+    setPreviewHighlights([]);
   }, []);
 
   /* ── Load documents on mount ──────────────────────────────────────────── */
@@ -917,70 +873,18 @@ const RAGAgent: React.FC = () => {
           )}
         </div>
       </div>
-      {/* PDF Document Preview */}
-      {previewType === "pdf" && (
-        <DocumentPreview
-          documentUrl={previewUrl}
+      {/* Unified preview — dispatches by descriptor.type.  PDFs go through
+          the existing react-pdf viewer; everything else renders inside
+          PreviewRenderer's modal shell. */}
+      {previewDescriptor && (
+        <PreviewRenderer
+          descriptor={previewDescriptor}
           isOpen={previewOpen}
           onClose={closePreview}
           initialPage={previewPage}
           highlights={previewHighlights}
         />
       )}
-
-      {/* Text Preview Modal */}
-      <AnimatePresence>
-        {previewOpen && previewType === "text" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={closePreview}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-[90vw] max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-fuchsia-50 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText size={14} className="text-purple-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 truncate">{previewTitle}</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {previewDownloadUrl && (
-                    <a
-                      href={previewDownloadUrl}
-                      download={previewDownloadName || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-purple-600 hover:bg-purple-100 transition-colors"
-                      title="Download original file"
-                    >
-                      <Download size={14} />
-                      <span>Download</span>
-                    </a>
-                  )}
-                  <button onClick={closePreview} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-              {previewIsBinary && (
-                <div className="px-5 py-2 text-[11px] text-amber-700 bg-amber-50 border-b border-amber-100 shrink-0">
-                  Showing extracted text only — use Download to open the original file.
-                </div>
-              )}
-              <div className="flex-1 overflow-auto p-5">
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed font-sans">{previewContent}</pre>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </AgentPageLayout>
   );
 };
