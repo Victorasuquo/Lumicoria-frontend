@@ -2660,5 +2660,614 @@ export const visionApi = {
   },
 };
 
+// ─── Customer Service API ─────────────────────────────────────────────────
+
+/**
+ * Mirrors `backend/api/v1/endpoints/customer_service.py`.  All request
+ * routes use `request_type` to dispatch inside a single agent; the
+ * specialised endpoints below set it implicitly so callers don't have to.
+ */
+
+export type CustomerServiceRequestType =
+  | "generate_response"
+  | "analyze_feedback"
+  | "generate_faq"
+  | "create_template"
+  | "satisfaction_strategy";
+
+export interface CustomerServiceResponse {
+  response: Record<string, any>;
+  raw_response: string;
+  processed_at: string;
+  model_used: string;
+  request_type: string;
+}
+
+export interface CustomerServiceTemplate {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  variables: string[];
+  created_at: string;
+}
+
+export interface CustomerServiceAnalytics {
+  time_range: string;
+  total_requests: number;
+  average_response_time: number;
+  satisfaction_rate: number;
+  common_issues: { issue: string; count: number }[];
+  template_usage: Record<string, number>;
+  feedback_trends: { positive: number; neutral: number; negative: number };
+}
+
+export type CustomerServiceTimeRange = "1d" | "7d" | "30d" | "90d" | "1y";
+
+export const customerServiceApi = {
+  /** Generic request — content + request_type explicit. Used by AI Draft. */
+  process: async (
+    content: string,
+    request_type: CustomerServiceRequestType,
+    context?: Record<string, any>,
+    model?: string,
+  ): Promise<CustomerServiceResponse> => {
+    const response = await api.post<CustomerServiceResponse>(
+      "/customer-service/process",
+      { content, request_type, context, model },
+    );
+    return response.data;
+  },
+
+  analyzeFeedback: async (params: {
+    content: string;
+    categories?: string[];
+    include_sentiment?: boolean;
+    context?: Record<string, any>;
+    model?: string;
+  }): Promise<CustomerServiceResponse> => {
+    const response = await api.post<CustomerServiceResponse>(
+      "/customer-service/analyze-feedback",
+      {
+        content: params.content,
+        request_type: "analyze_feedback",
+        categories: params.categories,
+        include_sentiment: params.include_sentiment ?? true,
+        context: params.context,
+        model: params.model,
+      },
+    );
+    return response.data;
+  },
+
+  generateFaq: async (params: {
+    content: string;
+    topic: string;
+    target_audience?: string;
+    style?: string;
+    context?: Record<string, any>;
+    model?: string;
+  }): Promise<CustomerServiceResponse> => {
+    const response = await api.post<CustomerServiceResponse>(
+      "/customer-service/generate-faq",
+      {
+        content: params.content,
+        request_type: "generate_faq",
+        topic: params.topic,
+        target_audience: params.target_audience,
+        style: params.style ?? "professional",
+        context: params.context,
+        model: params.model,
+      },
+    );
+    return response.data;
+  },
+
+  createTemplate: async (params: {
+    content: string;
+    template_category: string;
+    variables?: string[];
+    tone?: string;
+    context?: Record<string, any>;
+    model?: string;
+  }): Promise<CustomerServiceResponse> => {
+    const response = await api.post<CustomerServiceResponse>(
+      "/customer-service/create-template",
+      {
+        content: params.content,
+        request_type: "create_template",
+        template_category: params.template_category,
+        variables: params.variables,
+        tone: params.tone ?? "professional_friendly",
+        context: params.context,
+        model: params.model,
+      },
+    );
+    return response.data;
+  },
+
+  satisfactionStrategy: async (params: {
+    content: string;
+    focus_areas?: string[];
+    timeframe?: string;
+    priority_level?: string;
+    context?: Record<string, any>;
+    model?: string;
+  }): Promise<CustomerServiceResponse> => {
+    const response = await api.post<CustomerServiceResponse>(
+      "/customer-service/satisfaction-strategy",
+      {
+        content: params.content,
+        request_type: "satisfaction_strategy",
+        focus_areas: params.focus_areas,
+        timeframe: params.timeframe,
+        priority_level: params.priority_level ?? "medium",
+        context: params.context,
+        model: params.model,
+      },
+    );
+    return response.data;
+  },
+
+  listTemplates: async (
+    category?: string,
+  ): Promise<CustomerServiceTemplate[]> => {
+    const response = await api.get<CustomerServiceTemplate[]>(
+      "/customer-service/templates",
+      { params: category ? { category } : undefined },
+    );
+    return response.data;
+  },
+
+  getAnalytics: async (
+    time_range: CustomerServiceTimeRange = "7d",
+  ): Promise<CustomerServiceAnalytics> => {
+    const response = await api.get<CustomerServiceAnalytics>(
+      "/customer-service/analytics",
+      { params: { time_range } },
+    );
+    return response.data;
+  },
+
+  // ─── Tickets (operator-facing, auth required) ─────────────────────────
+
+  listTickets: async (params?: {
+    status?: string;
+    priority?: string;
+    category?: string;
+    channel?: string;
+    assigned_to_me?: boolean;
+    search?: string;
+    time_range?: CustomerServiceTimeRange;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ tickets: SupportTicket[]; total: number; limit: number; offset: number }> => {
+    const response = await api.get("/customer-service/tickets", { params });
+    return response.data;
+  },
+
+  getTicket: async (ticketId: string): Promise<SupportTicket> => {
+    const response = await api.get<SupportTicket>(`/customer-service/tickets/${ticketId}`);
+    return response.data;
+  },
+
+  createTicket: async (payload: {
+    customer_email: string;
+    customer_name?: string;
+    subject: string;
+    body: string;
+    priority?: "High" | "Medium" | "Low";
+    category?: string;
+    channel?: string;
+    meta?: Record<string, any>;
+  }): Promise<SupportTicket> => {
+    const response = await api.post<SupportTicket>("/customer-service/tickets", payload);
+    return response.data;
+  },
+
+  updateTicket: async (
+    ticketId: string,
+    fields: {
+      status?: string;
+      priority?: string;
+      category?: string;
+      assigned_user_id?: string | null;
+    },
+  ): Promise<SupportTicket> => {
+    const response = await api.patch<SupportTicket>(
+      `/customer-service/tickets/${ticketId}`,
+      fields,
+    );
+    return response.data;
+  },
+
+  deleteTicket: async (ticketId: string): Promise<void> => {
+    await api.delete(`/customer-service/tickets/${ticketId}`);
+  },
+
+  replyToTicket: async (
+    ticketId: string,
+    payload: { body: string; template_id?: string; transition_status?: string },
+  ): Promise<TicketReply> => {
+    const response = await api.post<TicketReply>(
+      `/customer-service/tickets/${ticketId}/reply`,
+      payload,
+    );
+    return response.data;
+  },
+
+  aiDraft: async (ticketId: string): Promise<{
+    ticket_id: string;
+    draft: string;
+    model_used?: string | null;
+    citations: Array<{
+      title?: string;
+      document_id?: string;
+      page_number?: number;
+      source?: string;
+    }>;
+    prior_tickets_used: Array<{ ticket_id?: string; subject?: string }>;
+    matching_template_id?: string | null;
+  }> => {
+    const response = await api.post(`/customer-service/tickets/${ticketId}/ai-draft`);
+    return response.data;
+  },
+
+  // ─── Templates CRUD ────────────────────────────────────────────────────
+
+  createTemplate: async (payload: {
+    name: string;
+    category: string;
+    body: string;
+    tone?: string;
+    description?: string;
+    variables?: string[];
+  }): Promise<CustomerServiceTemplate> => {
+    const response = await api.post<CustomerServiceTemplate>(
+      "/customer-service/templates",
+      payload,
+    );
+    return response.data;
+  },
+
+  updateTemplate: async (
+    templateId: string,
+    fields: Partial<{
+      name: string;
+      category: string;
+      body: string;
+      tone: string;
+      description: string;
+      variables: string[];
+    }>,
+  ): Promise<CustomerServiceTemplate> => {
+    const response = await api.patch<CustomerServiceTemplate>(
+      `/customer-service/templates/${templateId}`,
+      fields,
+    );
+    return response.data;
+  },
+
+  deleteTemplate: async (templateId: string): Promise<void> => {
+    await api.delete(`/customer-service/templates/${templateId}`);
+  },
+
+  markTemplateUsed: async (templateId: string): Promise<void> => {
+    await api.post(`/customer-service/templates/${templateId}/use`);
+  },
+
+  // ─── Branding ──────────────────────────────────────────────────────────
+
+  getBranding: async (): Promise<OrgBranding> => {
+    const response = await api.get<OrgBranding>("/customer-service/branding");
+    return response.data;
+  },
+
+  updateBranding: async (
+    payload: Partial<OrgBranding>,
+  ): Promise<OrgBranding> => {
+    const response = await api.put<OrgBranding>("/customer-service/branding", payload);
+    return response.data;
+  },
+
+  // ─── FAQ → Knowledge Base ────────────────────────────────────────────
+
+  saveFaqToKnowledgeBase: async (payload: {
+    topic: string;
+    content: string;
+    target_audience?: string;
+    tags?: string[];
+    publish_as_article?: boolean;
+    article_category?: string;
+  }): Promise<{
+    rag_document_id?: string | null;
+    rag_status?: string | null;
+    article?: SupportArticle | null;
+    topic: string;
+  }> => {
+    const response = await api.post(
+      "/customer-service/faq/save-to-knowledge-base",
+      payload,
+    );
+    return response.data;
+  },
+
+  // ─── Help-center articles (operator-side) ────────────────────────────
+
+  listArticles: async (params?: {
+    published?: boolean;
+    category?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ articles: SupportArticle[]; total: number; limit: number; offset: number }> => {
+    const response = await api.get("/customer-service/articles", { params });
+    return response.data;
+  },
+
+  getArticle: async (articleId: string): Promise<SupportArticle> => {
+    const response = await api.get<SupportArticle>(`/customer-service/articles/${articleId}`);
+    return response.data;
+  },
+
+  createArticle: async (payload: {
+    title: string;
+    body: string;
+    summary?: string;
+    category?: string;
+    tags?: string[];
+    published?: boolean;
+    featured?: boolean;
+  }): Promise<SupportArticle> => {
+    const response = await api.post<SupportArticle>("/customer-service/articles", payload);
+    return response.data;
+  },
+
+  updateArticle: async (
+    articleId: string,
+    fields: Partial<{
+      title: string;
+      body: string;
+      summary: string;
+      category: string;
+      tags: string[];
+      slug: string;
+      published: boolean;
+      featured: boolean;
+    }>,
+  ): Promise<SupportArticle> => {
+    const response = await api.patch<SupportArticle>(
+      `/customer-service/articles/${articleId}`,
+      fields,
+    );
+    return response.data;
+  },
+
+  deleteArticle: async (articleId: string): Promise<void> => {
+    await api.delete(`/customer-service/articles/${articleId}`);
+  },
+};
+
+// ─── Public (anonymous) portal API ──────────────────────────────────────
+// Used by the hosted support portal at /portal/:slug.  These endpoints
+// are mounted under /public/* on the backend and require NO auth.  We
+// build a fresh axios instance here so we don't accidentally attach
+// the Authorization header.
+
+const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1",
+  headers: { "Content-Type": "application/json" },
+  timeout: 30000,
+});
+
+export const customerServicePublicApi = {
+  getBranding: async (slug: string): Promise<PublicBranding> => {
+    const response = await publicApi.get<PublicBranding>(
+      `/public/portal/${encodeURIComponent(slug)}/branding`,
+    );
+    return response.data;
+  },
+
+  createTicket: async (
+    slug: string,
+    payload: {
+      customer_email: string;
+      customer_name?: string;
+      subject: string;
+      body: string;
+      priority?: "High" | "Medium" | "Low";
+      category?: string;
+      captcha_token?: string;
+    },
+  ): Promise<{ ticket_id: string; status: string; status_url: string; created_at: string }> => {
+    const response = await publicApi.post(
+      `/public/portal/${encodeURIComponent(slug)}/tickets`,
+      payload,
+    );
+    return response.data;
+  },
+
+  getTicketStatus: async (
+    slug: string,
+    ticketId: string,
+    email: string,
+  ): Promise<PublicTicketStatus> => {
+    const response = await publicApi.get<PublicTicketStatus>(
+      `/public/portal/${encodeURIComponent(slug)}/tickets/${encodeURIComponent(ticketId)}/status`,
+      { params: { email } },
+    );
+    return response.data;
+  },
+
+  postCustomerReply: async (
+    slug: string,
+    ticketId: string,
+    payload: { customer_email: string; body: string },
+  ): Promise<{ id: string; created_at: string }> => {
+    const response = await publicApi.post(
+      `/public/portal/${encodeURIComponent(slug)}/tickets/${encodeURIComponent(ticketId)}/replies`,
+      payload,
+    );
+    return response.data;
+  },
+
+  // ─── Help center (anonymous) ──────────────────────────────────────────
+
+  listHelpArticles: async (
+    slug: string,
+    params?: { category?: string; limit?: number },
+  ): Promise<{ branding: PublicBranding; articles: PublicSupportArticle[] }> => {
+    const response = await publicApi.get(
+      `/public/portal/${encodeURIComponent(slug)}/help`,
+      { params },
+    );
+    return response.data;
+  },
+
+  getHelpArticle: async (
+    slug: string,
+    articleSlug: string,
+  ): Promise<{ branding: PublicBranding; article: PublicSupportArticle }> => {
+    const response = await publicApi.get(
+      `/public/portal/${encodeURIComponent(slug)}/help/${encodeURIComponent(articleSlug)}`,
+    );
+    return response.data;
+  },
+
+  voteHelpArticle: async (
+    slug: string,
+    articleSlug: string,
+    helpful: boolean,
+  ): Promise<void> => {
+    await publicApi.post(
+      `/public/portal/${encodeURIComponent(slug)}/help/${encodeURIComponent(articleSlug)}/vote`,
+      null,
+      { params: { helpful } },
+    );
+  },
+};
+
+// ─── Customer Service types ─────────────────────────────────────────────
+
+export interface SupportTicket {
+  id: string;
+  organization_id: string;
+  customer_email: string;
+  customer_name?: string | null;
+  subject: string;
+  body: string;
+  priority: "High" | "Medium" | "Low";
+  status: "Open" | "In Progress" | "Resolved" | "Closed" | "Cancelled";
+  category?: string | null;
+  channel: string;
+  sentiment_score?: number | null;
+  assigned_user_id?: string | null;
+  submitter_user_id?: string | null;
+  meta?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string | null;
+  replies?: TicketReply[];
+}
+
+export interface TicketReply {
+  id: string;
+  ticket_id: string;
+  organization_id: string;
+  author_type: "operator" | "customer" | "agent_ai";
+  author_user_id?: string | null;
+  author_display_name?: string | null;
+  body: string;
+  template_id?: string | null;
+  ai_draft_meta?: Record<string, any> | null;
+  created_at: string;
+}
+
+export interface OrgBranding {
+  organization_id?: string;
+  slug: string;
+  display_name: string;
+  logo_url?: string | null;
+  primary_color: string;
+  accent_color: string;
+  hero_copy?: string | null;
+  support_email?: string | null;
+  sla_response_minutes: number;
+  captcha_enabled: boolean;
+  public_categories: string[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface PublicBranding {
+  slug: string;
+  display_name: string;
+  logo_url?: string | null;
+  primary_color: string;
+  accent_color: string;
+  hero_copy?: string | null;
+  support_email?: string | null;
+  sla_response_minutes: number;
+  captcha_enabled: boolean;
+  public_categories: string[];
+}
+
+export interface PublicTicketReplyView {
+  author_type: "operator" | "agent_ai";
+  author_display_name?: string | null;
+  body: string;
+  created_at: string;
+  is_ai: boolean;
+}
+
+export interface PublicTicketStatus {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  category?: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string | null;
+  replies: PublicTicketReplyView[];
+}
+
+export interface SupportArticle {
+  id: string;
+  organization_id?: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body: string;
+  category?: string | null;
+  tags: string[];
+  published: boolean;
+  featured: boolean;
+  view_count: number;
+  helpful_count: number;
+  not_helpful_count?: number;
+  rag_document_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  published_at?: string | null;
+}
+
+// Public-facing variant (operator-only fields stripped server-side).
+export interface PublicSupportArticle {
+  id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body: string;
+  category?: string | null;
+  tags: string[];
+  published: boolean;
+  featured: boolean;
+  view_count: number;
+  helpful_count: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  published_at?: string | null;
+}
+
 // Export the api instance for custom requests
 export default api;

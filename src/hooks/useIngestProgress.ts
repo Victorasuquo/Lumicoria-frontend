@@ -76,11 +76,15 @@ export function useIngestProgress(
     const baseURL =
       (import.meta.env.VITE_API_URL as string) ||
       "http://localhost:8000/api/v1";
-    const url = `${baseURL}/chat/documents/${documentId}/progress`;
+    // EventSource can't send custom headers, so the JWT rides as a query
+    // param that the backend's `get_current_user_sse` dependency reads.
+    const token = localStorage.getItem("accessToken");
+    const url =
+      `${baseURL}/chat/documents/${documentId}/progress` +
+      (token ? `?token=${encodeURIComponent(token)}` : "");
 
     const connect = () => {
       if (cancelled) return;
-      // `withCredentials` so the browser sends the auth cookie.
       es = new EventSource(url, { withCredentials: true });
 
       es.onopen = () => {

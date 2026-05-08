@@ -61,6 +61,12 @@ const SocialMediaAgent = lazy(() => import("./pages/agents/SocialMediaAgent"));
 const TranslationAgent = lazy(() => import("./pages/agents/TranslationAgent"));
 const CustomerServiceAgent = lazy(() => import("./pages/agents/CustomerServiceAgent"));
 
+// Public hosted support portal — NO ProtectedRoute, NO MainLayout (full-bleed, branded).
+const SupportPortal = lazy(() => import("./pages/portal/SupportPortal"));
+const SupportPortalStatus = lazy(() => import("./pages/portal/SupportPortalStatus"));
+const SupportPortalHelp = lazy(() => import("./pages/portal/SupportPortalHelp"));
+const SupportPortalArticle = lazy(() => import("./pages/portal/SupportPortalArticle"));
+
 // Documentation — lazy loaded
 const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
 
@@ -99,6 +105,12 @@ const AppRoutes = () => {
     <Routes>
       {/* Blog post page — standalone layout with BlogNav (no MainNav/Footer) */}
       <Route path="/blog/:slug" element={<Suspense fallback={<AgentPageFallback />}><BlogPostPage /></Suspense>} />
+
+      {/* Public hosted support portal — full-bleed, branded, NO MainLayout. */}
+      <Route path="/portal/:slug" element={<Suspense fallback={<AgentPageFallback />}><SupportPortal /></Suspense>} />
+      <Route path="/portal/:slug/status/:ticket_id" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalStatus /></Suspense>} />
+      <Route path="/portal/:slug/help" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalHelp /></Suspense>} />
+      <Route path="/portal/:slug/help/:article_slug" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalArticle /></Suspense>} />
 
       {/* All other routes — MainNav + Footer layout */}
       <Route element={<MainLayout />}>

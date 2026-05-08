@@ -5,8 +5,9 @@ import { meetingFactChecker } from "./meeting-fact-checker";
 import { researchAgent } from "./research-agent";
 import { visionAgent } from "./vision-agent";
 import { legalDocumentAgent } from "./legal-document";
+import { customerServiceAgent } from "./customer-service";
 
-// Add new agent doc imports here — one per agent, then add to the array below.
+// Add new agent doc imports here. One per agent, then add to the array below.
 
 export const agentDocs: AgentDocEntry[] = [
   documentAgent,
@@ -15,6 +16,7 @@ export const agentDocs: AgentDocEntry[] = [
   visionAgent,
   researchAgent,
   legalDocumentAgent,
+  customerServiceAgent,
   // Add more agents as docs are written
 ];
 

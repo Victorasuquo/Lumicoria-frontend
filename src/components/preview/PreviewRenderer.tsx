@@ -190,12 +190,14 @@ const HtmlFrame: React.FC<{ descriptor: DocumentPreviewDescriptor }> = ({
       <div className="p-6 text-sm text-zinc-500">Preview unavailable.</div>
     );
   }
-  // Sandboxed iframe: no scripts, no same-origin access, just render the HTML.
+  // Sandboxed iframe: allow-downloads lets download links inside the
+  // preview work; no scripts, no same-origin — preview content can't touch
+  // the app.
   return (
     <iframe
       src={descriptor.url}
       title={descriptor.title || descriptor.filename || "preview"}
-      sandbox=""
+      sandbox="allow-downloads"
       className="h-full w-full bg-white"
     />
   );

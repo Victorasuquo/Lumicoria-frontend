@@ -16,6 +16,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { CitationHighlight } from "@/components/DocumentPreview";
 import PreviewRenderer from "@/components/preview/PreviewRenderer";
+import DocumentProgressBadge from "@/components/DocumentProgressBadge";
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 /** Clean up titles that are raw IDs like "chat_e07c3a7f-..." or UUIDs */
@@ -245,6 +246,20 @@ const RAGAgent: React.FC = () => {
   }, [activeFilter]);
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  /* ── Safety-net polling ───────────────────────────────────────────────────
+   * SSE via `DocumentProgressBadge` handles the fast path; this slow
+   * interval only kicks in while at least one doc is `processing` and
+   * covers the case where SSE is blocked by a proxy or the stream was
+   * established before the worker published (cached-state replay handles
+   * that but let's be belt-and-braces). Stops automatically when nothing
+   * is in-flight. */
+  useEffect(() => {
+    const anyProcessing = documents.some((d) => d.status === "processing");
+    if (!anyProcessing) return;
+    const id = window.setInterval(() => { loadDocuments(); }, 15000);
+    return () => window.clearInterval(id);
+  }, [documents, loadDocuments]);
 
   /* ── Search ───────────────────────────────────────────────────────────── */
   const handleSearch = useCallback(async () => {
@@ -654,10 +669,10 @@ const RAGAgent: React.FC = () => {
                           {sourceLabels[doc.source] || doc.source}
                         </Badge>
                         {doc.status === "processing" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                            <Loader2 size={9} className="animate-spin" />
-                            Processing
-                          </span>
+                          <DocumentProgressBadge
+                            documentId={doc.document_id}
+                            onTerminal={() => loadDocuments()}
+                          />
                         )}
                         {doc.status === "error" && (
                           <span className="inline-flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded" title="Processing failed">
