@@ -4,7 +4,7 @@ export const customerServiceAgent: AgentDocEntry = {
   slug: "customer-service",
   name: "Customer Service Agent",
   tagline:
-    "An end to end customer support workspace with a public portal, knowledge base, and a draft engine that grounds replies in your own documents.",
+    "A complete customer support workspace with a branded public help page, a smart draft assistant, and a self serve knowledge base that grows with every reply.",
   icon: "Headphones",
   gradient: "from-indigo-500 to-blue-600",
   agentPath: "/agents/customer-service",
@@ -19,56 +19,55 @@ export const customerServiceAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text:
-            "The Customer Service Agent is a full operator workspace for handling inbound questions from your end users. It is built around four parts. A public portal that your customers can use without an account. An operator inbox where your team works tickets. A knowledge base that learns from every FAQ you publish. And a notification system that keeps everyone informed without flooding inboxes.",
+            "The Customer Service Agent gives your business a clean, professional way to handle customer questions. Your customers reach you through a single branded page that lives at your own short web address. Your team handles every request from one focused inbox. Replies get drafted in your voice, customers stay informed by email, and your team stays informed inside the app.",
         },
         {
           type: "paragraph",
           text:
-            "Each tenant on Lumicoria runs an isolated copy of this stack. Your tickets, templates, articles, and branding live under your organization id and never leak across tenants. A single share link such as app.lumicoria.ai/portal/your-slug is enough for a customer to file a ticket, watch its status, and reply to follow ups, all without registering an account on Lumicoria.",
+            "The result is a support experience that feels considered, not improvised. Customers know where to go when they have a question. Your team knows where to find every conversation. And the work of writing thoughtful replies gets faster the more you use the workspace.",
         },
         {
           type: "heading",
           level: 3,
-          text: "What ships in the box",
-          id: "what-ships",
+          text: "What it gives you",
+          id: "what-it-gives",
         },
         {
           type: "list",
           items: [
-            "A branded public portal at /portal/{slug} that you can share on your website, in email signatures, or via QR codes.",
-            "A help center at /portal/{slug}/help where customers can read articles you publish before they ever open a ticket.",
-            "An operator inbox with conversation threading, status filters, AI draft replies, quick reply templates, and analytics.",
-            "An email notification path for customers (confirmation when they file a ticket, reply emails when an operator responds).",
-            "An in app and web push path for operators (new ticket alerts, delivery confirmations).",
-            "Five canonical response templates that are seeded for every organization on first read.",
-            "An analytics endpoint that aggregates real ticket data over a chosen time window.",
-            "Multi tenant scoping enforced at the database, API, and frontend layers.",
+            "A branded public page where your customers can submit questions in seconds, no account needed.",
+            "A help center on the same page where customers can read answers to common questions before they file a request.",
+            "A focused inbox where your team works through requests, sees full conversation history, and replies in a few clicks.",
+            "A draft assistant that writes a suggested reply for any open request, ready for an operator to review and send.",
+            "Reusable reply templates so common cases get answered consistently and quickly.",
+            "Email confirmation to customers on every step, sent in your brand voice.",
+            "Real time alerts to your team whenever a new request arrives.",
+            "A simple analytics view that shows volume, response time, satisfaction, and the topics your customers ask about most.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Who it is for",
+          text: "Who it is built for",
           id: "who-its-for",
         },
         {
           type: "paragraph",
           text:
-            "Solo operators running a small product can use the agent on a personal account. The same flows scale to teams with shared inboxes once the underlying organization is configured for multiple operators. SaaS platforms reselling support to their own customers can run one organization per client and let each client own their own portal slug, branding, and ticket history.",
+            "This workspace is designed for any business that wants to give its customers a serious, branded support experience without standing up an enterprise help desk. It works for solo founders who want to look credible, for small support teams that want to move faster, and for companies that have outgrown shared inboxes but are not ready to commit to traditional ticketing systems with their cost and complexity.",
         },
         {
           type: "callout",
           variant: "tip",
           title: "Quick start",
           text:
-            "Open the agent at /agents/customer-service. Click Branding and set a slug, a display name, and your colors. Click Copy portal URL and open the link in an incognito window to see what your customers will see. The first ticket you submit lands in your operator inbox in under a second.",
+            "Open the Customer Service Agent. Click Branding, set your name, your colors, and your short web address. Click Copy portal URL and open the link in a new tab to preview what your customers will see. Submit a test request. It will appear in your inbox within seconds.",
         },
         {
           type: "live-link",
           label: "Open the Customer Service Agent",
           href: "/agents/customer-service",
-          description:
-            "The operator workspace. Requires an authenticated account with the customer service permission.",
+          description: "Your support workspace.",
         },
       ],
     },
@@ -76,89 +75,89 @@ export const customerServiceAgent: AgentDocEntry = {
     // ─────────────────────────────────────────────────────────────────
     {
       slug: "capabilities",
-      title: "Capabilities",
+      title: "What you can do",
       content: [
-        { type: "heading", level: 2, text: "What the agent can do", id: "capabilities" },
+        { type: "heading", level: 2, text: "Capabilities at a glance", id: "capabilities" },
         {
           type: "capabilities",
           items: [
             {
-              icon: "MessageSquare",
-              title: "Ticket lifecycle",
+              icon: "Globe",
+              title: "Branded public page",
               description:
-                "Create, list, filter, reply to, transition, soft delete. Each ticket carries a public id like TK-abc12345 that customers see in emails and on the status page.",
+                "Share one short web address with your customers. The page wears your colors, your logo, and your tone, and works equally well on a desktop, a phone, or as a link in an email signature.",
+            },
+            {
+              icon: "MessageSquare",
+              title: "Single focused inbox",
+              description:
+                "Every request lands in one place. Filter by status, priority, or category. Click into any request to see the full conversation, the customer profile, and a reply box that is always ready.",
             },
             {
               icon: "Sparkles",
-              title: "AI Draft with grounded citations",
+              title: "Smart draft suggestions",
               description:
-                "One click on a ticket assembles RAG chunks from your knowledge base, prior resolved tickets, and the best matching template, then asks the LLM to draft a reply. Sources are returned alongside the draft so the operator can verify before sending.",
+                "When you need help phrasing a reply, the workspace can draft one for you in your brand voice. Review the draft, edit a sentence or two, and send.",
             },
             {
               icon: "BookOpen",
-              title: "Knowledge base ingestion",
+              title: "Self serve help center",
               description:
-                "Generate an FAQ on a topic and click Save to Knowledge Base. The text flows through the same RAG pipeline that powers your documents, scoped to your organization. From that point on, every AI Draft for related questions retrieves it.",
-            },
-            {
-              icon: "Globe",
-              title: "Public help center",
-              description:
-                "Articles you publish appear at /portal/{slug}/help with the same branding as your support form. Visitors can read, search, and vote on articles. A single Publish on Help Center button turns a generated FAQ into a live article.",
+                "Publish answers to common questions on the same branded page. Customers find their answer themselves, you reduce inbound volume, and the people who do reach out are the ones who really need a human.",
             },
             {
               icon: "Palette",
-              title: "Tenant branding",
+              title: "Brand controls",
               description:
-                "Logo, primary color, accent color, hero copy, support email, response time SLA, and a list of public categories. The same record drives the portal, the help center, the email from name, and the email reply to address.",
+                "Choose your colors, your logo, your tagline, your published response time, and the topics your customers can pick from. Everything they see reflects your business.",
             },
             {
               icon: "Bell",
-              title: "Multi channel notifications",
+              title: "Smart notifications",
               description:
-                "Customers receive plain professional emails on submission and on every operator reply. Operators receive in app and web push notifications for new tickets, plus an in app delivery confirmation when a reply is sent. Operators are never emailed about new tickets.",
+                "Customers receive clean professional emails on submission and on every reply. Your team receives instant alerts in the app and as native browser notifications, so nothing important slips through.",
             },
             {
               icon: "BarChart3",
-              title: "Real analytics",
+              title: "Live analytics",
               description:
-                "Total requests, average first response time, satisfaction rate, common issue categories, template usage, and sentiment trends. All values are computed from real ticket and reply rows in Postgres over a chosen 1d, 7d, 30d, 90d, or 1y window.",
+                "See your volume, your average response time, your satisfaction rate, and the categories your customers ask about most. Switch the time range to see how your numbers move over a day, a week, a month, a quarter, or a year.",
             },
             {
               icon: "Shield",
-              title: "Production grade safety",
+              title: "Enterprise grade safety",
               description:
-                "All writes use parameterized SQLAlchemy. Public endpoints are rate limited via Redis. User content is sanitized with bleach before storage. Public status checks require the original submitter email so ticket ids cannot be enumerated.",
+                "Your data stays private to your business. Public submissions are protected against abuse. Customer information is handled with care at every step.",
             },
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Five canonical templates seeded for every organization",
+          text: "Reply templates that come ready to use",
           id: "default-templates",
         },
         {
           type: "paragraph",
           text:
-            "The first time an organization opens the templates list, the agent inserts five default templates. They are tagged is_default and you can edit, soft delete, or reset them at will. These five cover the most common reply patterns and let your operators be productive on day one.",
+            "Every workspace begins with a set of professionally written reply templates. They cover the patterns your team will use most often, so you can be productive on day one. You can use them as they are, edit them to match your voice more precisely, or write your own from scratch.",
         },
         {
           type: "list",
           items: [
-            "Acknowledge Inquiry. A polite acknowledgement that buys time while the operator investigates.",
-            "Request More Details. A structured prompt that asks the customer for the specifics most often missing from a first message.",
-            "Technical Resolution. A confirmation that a technical issue is fixed, with placeholders for what changed and what the customer should do next.",
-            "Billing Inquiry Response. A neutral, factual reply for billing questions with placeholders for the breakdown of the charge or credit.",
-            "Escalation Notice. A handoff message that informs the customer their ticket has been routed to a specialist and sets expectations for the next reply.",
+            "Acknowledge Inquiry. A polite first response that reassures the customer their request was received and is being looked at.",
+            "Request More Details. A friendly prompt that asks the customer for the specific information your team needs to investigate properly.",
+            "Technical Resolution. A clear confirmation that an issue has been fixed, with placeholders for what changed and what the customer should do next.",
+            "Billing Inquiry Response. A neutral, factual reply for billing questions, designed to address the issue without escalating tone.",
+            "Escalation Notice. A handoff message that tells the customer their request has been routed to a specialist and sets clear expectations for the next reply.",
           ],
         },
         {
           type: "callout",
           variant: "info",
-          title: "Templates as quick replies",
+          title: "Templates as one click replies",
           text:
-            "Every template appears as a clickable pill above the reply composer. One click inserts the body into the textarea so the operator can edit and send. Each click bumps the template usage_count, which then surfaces in analytics so you can tell which canned responses are pulling weight.",
+            "Each template appears as a clickable label above the reply box. One click drops the body into the reply, ready to personalize and send. The templates you use most often get tracked so you can see what is pulling weight.",
         },
       ],
     },
@@ -168,82 +167,65 @@ export const customerServiceAgent: AgentDocEntry = {
       slug: "setup-and-branding",
       title: "Setup and branding",
       content: [
-        { type: "heading", level: 2, text: "Configure your portal", id: "setup-and-branding" },
+        { type: "heading", level: 2, text: "Make the support page yours", id: "setup-and-branding" },
         {
           type: "paragraph",
           text:
-            "Before you share anything with customers, set up your portal branding. This single record drives the public portal, the help center, the email from name, and the link customers see at the bottom of their confirmation email. You only need to do this once per organization.",
+            "Before you share anything with customers, take a few minutes to set up your branding. The settings here drive every customer facing surface in the workspace, from the public page to the from name on the confirmation email. You only do this once.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Open the branding modal",
+          text: "Open Branding",
           id: "open-branding",
         },
         {
           type: "list",
           ordered: true,
           items: [
-            "From the operator workspace at /agents/customer-service, click the Branding button at the top right.",
-            "Fill in the URL slug. This is the public path, so use something short and recognisable. Allowed characters are a to z, 0 to 9, and the hyphen. The slug is unique across all organizations on Lumicoria.",
-            "Set the display name. This appears in the hero of the public portal, in the from name on customer emails, and as the signature.",
-            "Add a logo URL. SVG renders crispest. Any HTTPS URL works. The portal sizes the logo at roughly 40 pixels.",
-            "Pick a primary color and an accent color. The two combine into the gradient that fills the portal hero. The primary color is also the submit button color and the active category pill color.",
-            "Write a hero copy. The first line is rendered as the H1, additional lines render as supporting text below.",
-            "Set your SLA in minutes. The portal renders a sentence saying you typically reply within that many minutes. Be honest, customers see this before they ever open a ticket.",
-            "Optionally add a public support email. It appears in the trust strip beneath the hero and as the reply to address on customer emails.",
-            "List your public categories, comma separated, in snake case. These become the category pills on the public form and feed the AI Draft logic.",
-            "Click Save branding. The slug is locked at this point in the sense that it is now the share URL. You can change it later, but any links printed on business cards or QR codes will break.",
+            "From the workspace, click the Branding button at the top right.",
+            "Choose your short web address. Pick something short, recognisable, and stable. Customers will read this in emails and click on it, so it should reflect your business name.",
+            "Set your display name. This appears in the header of your public page, in the from name on the confirmation email, and in the email signature.",
+            "Add your logo. Any HTTPS image link works. Square logos look best.",
+            "Pick a primary color and an accent color. The two combine into the gradient at the top of your public page. The primary color is also used on the submit button.",
+            "Write your tagline. The first line becomes the headline customers see, the rest is supporting copy.",
+            "Set your published response time. The page will display this prominently, so set it to something you can confidently meet.",
+            "Add your support email if you have one. It will appear as a fallback on the page and as the reply to address on outbound mail.",
+            "List the topics your customers can choose from when they submit a request. These become friendly buttons on the form and help your team route work.",
+            "Click Save branding. Your settings take effect immediately on the public page.",
           ],
         },
         {
           type: "callout",
           variant: "warning",
-          title: "Choose your slug carefully",
+          title: "Choose your short address carefully",
           text:
-            "The slug becomes the public URL segment. If you change it later, any links you have already shared will return a Portal not found page. Pick a value you are willing to live with.",
+            "Once you start sharing your support page, the short address becomes part of every printed link, business card, and email signature. Changing it later can break those links. Pick a value you are happy to live with.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Verify the portal",
-          id: "verify-portal",
+          text: "Preview the page",
+          id: "preview",
         },
         {
           type: "list",
           ordered: true,
           items: [
-            "Click Copy portal URL in the operator toolbar.",
-            "Paste it into an incognito window so you see what an unauthenticated visitor sees.",
-            "Confirm the hero gradient, logo, display name, and hero copy are correct.",
-            "Confirm the trust strip shows your SLA minutes and the Browse Help Center link.",
-            "Try the form by filling in name, email, subject, body, and submitting.",
-            "You should land on the status page with a confirmation banner, the ticket id, and a reply timeline that is initially empty.",
+            "Click Copy portal URL in the top toolbar.",
+            "Paste the link into a private window so you see exactly what an unauthenticated visitor sees.",
+            "Confirm your colors, logo, headline, and topic list look right.",
+            "Submit a test request to see the full path a customer experiences.",
+            "Watch the request appear in your inbox, write a reply, and send it.",
+            "Check the email that arrives at the test address. Confirm the wording, the from name, and the signature look professional.",
           ],
         },
         {
-          type: "heading",
-          level: 3,
-          text: "Required environment for emails",
-          id: "email-env",
-        },
-        {
-          type: "paragraph",
-          text:
-            "Customer emails go out through the platform email service, which uses Resend as the primary provider. Set the following in your backend .env file. If RESEND_API_KEY is missing, the agent still works end to end, the email is silently skipped and a warning is logged.",
-        },
-        {
-          type: "code",
-          language: "bash",
-          code:
-            "RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx\nEMAIL_FROM_ADDRESS=noreply@yourdomain.com\nEMAIL_FROM_NAME=Your Brand Support\nPUBLIC_BASE_URL=https://app.yourdomain.com",
-        },
-        {
           type: "callout",
-          variant: "info",
-          title: "About PUBLIC_BASE_URL",
+          variant: "tip",
+          title: "Iterate freely",
           text:
-            "This is the URL that gets stamped on every status link in customer emails. It must be the public address customers can reach in a browser. In local development point it at http://localhost:8080 (or whichever port your frontend is served on). In production point it at your real domain.",
+            "You can revisit Branding at any time. Color tweaks, logo changes, and tagline edits take effect on the next page load. Customers in flight on the old version simply see the new one when they refresh.",
         },
       ],
     },
@@ -251,13 +233,13 @@ export const customerServiceAgent: AgentDocEntry = {
     // ─────────────────────────────────────────────────────────────────
     {
       slug: "operator-inbox",
-      title: "Operator inbox",
+      title: "Working in the inbox",
       content: [
-        { type: "heading", level: 2, text: "Working a ticket from the operator side", id: "operator-inbox" },
+        { type: "heading", level: 2, text: "Handling a request", id: "operator-inbox" },
         {
           type: "paragraph",
           text:
-            "The operator workspace is the heart of the agent. Every ticket your customers submit, whether through the portal, a future widget, or a future inbound email integration, flows into this single inbox. Tickets are scoped to your organization automatically, so an operator on one tenant never sees another tenant's tickets even if they share the same Lumicoria install.",
+            "The inbox is where your team spends most of its time. Every request your customers submit, however they reach you, lands in this single view. The flow from arrival to resolution is short and unfussy.",
         },
         {
           type: "heading",
@@ -268,18 +250,18 @@ export const customerServiceAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text:
-            "Tickets render newest first, with five status filter pills above the list. All shows everything that is not soft deleted. Open shows tickets that have never been replied to. In Progress shows tickets where an operator has sent at least one reply but has not marked the case resolved. Resolved shows cases the operator closed out. Each row carries the public ticket id, a priority badge, a status badge, the optional category, the customer name or email, and a relative submitted timestamp.",
+            "Requests are listed newest first. A row shows you the request reference, a priority badge, a status badge, an optional category, the customer name or email, and how long ago they submitted. Use the filter pills above the list to narrow the view to Open, In Progress, or Resolved cases.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Selecting a ticket",
+          text: "Selecting a request",
           id: "selecting",
         },
         {
           type: "paragraph",
           text:
-            "Clicking a row loads the ticket detail in the right pane below the queue. The reply composer is always rendered. Until a ticket is selected, the textarea and buttons are disabled with a helper line that reads Select a ticket from the queue to start. Once a ticket is selected, the conversation history appears as a stack of bubbles. Operator replies render right aligned with a dark background. Customer replies render left aligned with a light background. AI assisted replies carry an explicit AI Draft badge.",
+            "Click any row to load the request below. You will see the full conversation history laid out as bubbles. Replies from your team are aligned to the right and shown on a dark background. Replies from the customer are aligned to the left on a light background. Replies that were drafted with assistance carry a clear label so you always know which messages were human written and which were drafted before sending.",
         },
         {
           type: "heading",
@@ -291,128 +273,108 @@ export const customerServiceAgent: AgentDocEntry = {
           type: "list",
           ordered: true,
           items: [
-            "Choose a quick reply template if one fits, or skip this step and type from scratch. Quick reply pills appear above the textarea and reflect every template the organization owns, including the five seeded defaults.",
-            "Edit the text. Templates are starting points, not contracts. Personalise the customer name, fill in the placeholders, and remove any line that does not apply.",
-            "Optionally click AI Draft to ask the agent to write the response for you. The button is disabled until a ticket is selected. While the call is in flight a spinner shows. The result fills the textarea and a row of citation chips appears below it, one chip per source the agent used.",
-            "Review the citation chips. Each chip shows the source title and page when available. The agent only cites material that already lives in your organization's knowledge base, so a chip you do not recognise usually means a help article you forgot about, not the model hallucinating.",
-            "Click Send Reply. The reply is persisted as a row in the ticket_replies table, the ticket transitions from Open to In Progress automatically, and the customer receives an email with the reply body inline.",
-            "Optionally click Mark resolved if your reply closes the loop. The ticket flips to Resolved and the resolved_at timestamp is recorded. You can still reopen by patching the status back to Open or In Progress.",
+            "If a template fits, click it. The reply box fills with the template body. Personalize the customer name, fill in any details, and send.",
+            "If you would like a draft to start from, click Draft Suggestion. A suggested reply will fill the box, written in your brand voice and informed by similar past cases. Treat it as a starting point. Read it, edit it, and make it your own.",
+            "Click Send Reply when you are ready. The reply is delivered to the customer by email and the request automatically moves to In Progress.",
+            "Click Mark Resolved when the case is closed. The customer can still come back to add follow up information, but the request leaves the active queue.",
           ],
         },
         {
           type: "callout",
           variant: "tip",
-          title: "Manual ticket entry",
+          title: "Manual entry",
           text:
-            "Click New Ticket in the toolbar to log a customer inquiry that arrived through a different channel. The form takes the customer email, optional name, subject, body, priority, and category, and creates a row with channel set to manual.",
+            "Use the New Ticket button in the toolbar when a customer reaches you through a different channel, for example a phone call or a personal email, and you want to keep that conversation alongside the rest of your work.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Status transitions and lifecycle",
+          text: "Status and lifecycle",
           id: "lifecycle",
         },
         {
           type: "paragraph",
           text:
-            "Tickets start in Open. The first operator reply transitions the ticket to In Progress automatically unless the operator explicitly chooses a different status. Marking a ticket Resolved sets resolved_at and removes it from the default Open and In Progress filters. Closed and Cancelled are terminal states intended for tickets that should not be acted on further. Soft delete via the delete endpoint sets deleted_at and the row stops appearing in any list, but it stays in the database for audit and undelete purposes.",
+            "Requests start in Open. The first reply from your team moves them to In Progress automatically. Marking a request Resolved closes it out and removes it from the active queue. You can reopen any closed request if a customer comes back. Closed and Cancelled are final states for cases that should not be acted on further. Deleted requests are removed from view but not lost; an admin can restore them if needed.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Tenant isolation in the inbox",
+          text: "Privacy and isolation",
           id: "isolation",
         },
         {
           type: "paragraph",
           text:
-            "Every list, get, update, reply, and delete query filters by the operator's organization id before anything else. There is no path through the API where a missing organization filter could expose another tenant's data. The filter is enforced at the SQL layer, not the application layer, which means even a buggy frontend cannot accidentally request a ticket that belongs to a different organization.",
+            "Your conversations stay private to your business. Members of your team see only your requests, your customers, and your settings. There is no cross over with other customers of the platform.",
         },
       ],
     },
 
     // ─────────────────────────────────────────────────────────────────
     {
-      slug: "ai-draft",
-      title: "AI Draft and the knowledge base",
+      slug: "draft-assistant",
+      title: "Draft assistant",
       content: [
-        { type: "heading", level: 2, text: "How AI Draft works", id: "ai-draft" },
+        { type: "heading", level: 2, text: "Replies in your voice, faster", id: "draft-assistant" },
         {
           type: "paragraph",
           text:
-            "AI Draft is a single button on the reply composer that asks the agent to generate a grounded reply for the currently selected ticket. The word grounded is the important one. The model is not asked to imagine an answer. It is given the ticket, a small set of relevant excerpts from your organization's knowledge base, the most recently resolved tickets in the same category, and the best matching response template. Then it composes a draft.",
+            "The draft assistant is a single button in the reply box. Click it and the workspace prepares a suggested reply for the request you have open. It is designed to do the part of the work that takes time, drafting a thoughtful, on brand response, while leaving the judgement that matters to your team.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Where the context comes from",
+          text: "How it stays in your voice",
           id: "draft-context",
         },
         {
-          type: "list",
-          items: [
-            "Top five RAG chunks from your ingested documents. The retrieval uses the same embedding pipeline that powers the rest of Lumicoria. It is filtered by your organization id, so an operator never sees suggestions seeded by a different tenant's documents.",
-            "Top three resolved tickets in the same category. Their subject is matched against the current ticket's subject with an escaped ILIKE search, and the last operator or AI reply on each is included so the model can learn from how the team handled similar cases.",
-            "The best matching response template by category. The template body is included so the model has a canonical structure to follow when one exists.",
-            "The organization's branding hints. Display name, support email, and SLA minutes are rendered into the prompt header so the draft uses the right voice and signs off correctly.",
-            "The customer profile. Name and email are passed through so the draft addresses the customer by name when known.",
-          ],
-        },
-        {
-          type: "callout",
-          variant: "info",
-          title: "Why this matters",
+          type: "paragraph",
           text:
-            "An ungrounded draft is just an AI guess. A grounded draft is the model writing in your voice, citing your documents, and following the same response patterns your team has used before. Operators spend their time editing rather than starting from scratch.",
+            "The draft is shaped by what your business has already published. The branding you set, the tagline, your published response time, the templates your team uses most, and the answers you have collected in your help center all guide the draft. The result reads like something your team would write, not a generic reply.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Reading the citation chips",
+          text: "Sources alongside the draft",
           id: "citation-chips",
         },
         {
           type: "paragraph",
           text:
-            "Below the draft text the agent renders a row of small chips. Each chip represents one document chunk that contributed to the draft. The chip shows the document title and the page when one is available. There is no chip for prior tickets or templates because those are internal context, not sources you would expose to the customer. If the chip strip is empty, the model wrote without retrieved context, which can happen when the knowledge base is empty or the ticket subject is too short for the embedder to produce useful matches.",
+            "Whenever the draft pulls from a published article or a previous resolution, the workspace shows you which sources informed it. You see them as small chips just below the draft text. Click any chip to open the source and verify the answer is current. If a chip references something out of date, edit the draft before sending and update the underlying article when you have a moment.",
+        },
+        {
+          type: "callout",
+          variant: "info",
+          title: "Why this approach",
+          text:
+            "A draft that comes out of nowhere is just a guess. A draft grounded in your actual published material is closer to a colleague who has been on your team for a year. The more you publish, the better the drafts become.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Feeding the knowledge base",
-          id: "feeding-kb",
+          text: "Make the workspace smarter",
+          id: "feed-the-knowledge",
         },
         {
           type: "paragraph",
           text:
-            "The agent gets smarter when you feed it. Two recommended paths exist for adding new knowledge. The first is the Generate FAQ from Tickets button in the right column. Type a topic, an optional target audience, click Generate, and the agent produces a markdown FAQ. Then choose what to do with the output:",
+            "Two paths exist for adding knowledge that the draft assistant can use later.",
         },
         {
           type: "list",
           items: [
-            "Copy. Puts the markdown on your clipboard. Use this if you want to paste the content into your own help center or hand it to a writer.",
-            "Download .md. Saves the markdown as a file. Useful for backups or for editing in your favourite markdown editor before publishing.",
-            "Save to Knowledge Base. Pushes the content into the same RAG ingest pipeline you use for documents. Future AI Drafts will retrieve it. The article does not appear on the public help center.",
-            "Publish on Help Center. Does Save to Knowledge Base AND creates a published support_articles row. The article becomes immediately visible at /portal/{slug}/help/{article-slug}. End users can read it before they ever open a ticket.",
+            "Generate FAQ from Tickets. Type a topic, click Generate, and the workspace produces a polished FAQ document. You can copy it, download it, save it for the assistant to learn from, or publish it on your help center in one click.",
+            "Direct upload. If you already have help documents, brand guidelines, or product information in PDF, Word, or Markdown, upload them through the Document Agent. Anything you upload becomes part of the knowledge the draft assistant draws on.",
           ],
         },
         {
           type: "callout",
           variant: "tip",
-          title: "Self reinforcing loop",
+          title: "A self reinforcing loop",
           text:
-            "Every FAQ you publish does two things at once. It teaches the AI Draft to write better grounded replies on the same topic, and it gives end users a self serve answer that can prevent the ticket from being filed in the first place. Volume drops while quality rises.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "Direct document ingestion",
-          id: "direct-ingest",
-        },
-        {
-          type: "paragraph",
-          text:
-            "If you already have help docs as PDFs, DOCX files, or Markdown, you do not need to convert them into FAQs. Drop them through the standard Lumicoria document upload flow at /agents/document and tag them with your organization id. The Customer Service AI Draft picks them up automatically because both flows write to the same per organization vector index.",
+            "Every published answer does two things at once. It teaches the draft assistant to write better suggestions on the same topic. And it gives a future customer the chance to find their answer themselves before they ever file a request.",
         },
       ],
     },
@@ -420,53 +382,41 @@ export const customerServiceAgent: AgentDocEntry = {
     // ─────────────────────────────────────────────────────────────────
     {
       slug: "public-portal",
-      title: "Public portal and help center",
+      title: "Your public page",
       content: [
-        { type: "heading", level: 2, text: "What customers see", id: "public-portal" },
+        { type: "heading", level: 2, text: "What your customers see", id: "public-portal" },
         {
           type: "paragraph",
           text:
-            "Your customers never see the operator workspace. They only see the public portal at /portal/{slug}. The portal is a single branded page with three things on it. A hero with your logo, name, and tagline. A trust strip beneath it that surfaces your SLA, a privacy reassurance, your support email, and a Browse Help Center link. And a smart form that takes name, email, subject, body, priority, and a category from your configured list.",
+            "Your customers never see the workspace. They see a single branded page that you control. The page has a clear hero with your logo, your tagline, and your published response time. Below it, a thoughtful form lets them submit a request without creating an account.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Submitting a ticket",
+          text: "Submitting a request",
           id: "public-submit",
         },
         {
           type: "list",
           ordered: true,
           items: [
-            "The visitor lands on /portal/{slug}, reads your hero copy, and decides whether to file a ticket or browse the help center first.",
-            "If they choose to file a ticket they fill in the form. Client side validation catches missing fields, malformed emails, and oversized inputs before any network call is made.",
-            "On submit, a POST goes to /public/portal/{slug}/tickets. Per IP rate limiting in Redis caps abuse at five submissions every fifteen minutes.",
-            "The backend sanitizes all user supplied strings with bleach, persists the ticket row, and immediately fans out two notifications. The customer receives a confirmation email. Operators receive an in app notification and a web push.",
-            "The visitor is redirected to /portal/{slug}/status/{ticket_id}?email={their email} and sees a confirmation banner.",
-            "The same status URL is also embedded in the email they just received, so they can return to it later from any device by clicking the link.",
+            "A visitor lands on your page, reads your tagline, and decides whether to ask a question or browse your help center first.",
+            "If they decide to file a request, they fill in their name, email, subject, body, and optional priority and category.",
+            "When they submit, the page validates the form and confirms receipt instantly.",
+            "They are taken to a confirmation page that shows their reference number and a clean message saying you will be in touch.",
+            "A confirmation email arrives in their inbox within seconds, signed in your brand voice, with the same reference number and a link they can return to later.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Privacy gated status checks",
-          id: "privacy-gate",
+          text: "Following up later",
+          id: "follow-up",
         },
         {
           type: "paragraph",
           text:
-            "The status page requires the original submitter email as a query parameter. If the email does not match the ticket's customer_email, the API returns 404 rather than 401. This is intentional. A 401 would let an attacker enumerate valid ticket ids by watching the response codes. A 404 reveals nothing. The visitor is asked to enter their email when the URL is missing it, and they only ever see a status if the email matches.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "Following up on an existing ticket",
-          id: "customer-follow-up",
-        },
-        {
-          type: "paragraph",
-          text:
-            "On the status page, customers see the original ticket subject and status, plus the timeline of operator and AI assisted replies. Their own messages are not echoed back to them on this view, since they wrote those themselves. A reply box at the bottom lets them add follow up information without filing a new ticket. The submission is rate limited at ten per fifteen minutes per IP, and the same email gate applies. Operators see follow up replies threaded under the original ticket in their inbox, with the customer label.",
+            "Customers can return to their request at any time using the link in their confirmation email. They are asked to confirm the email address they used so only the original requester can see the conversation. Once confirmed, they see the timeline of replies your team has sent and a box where they can add follow up notes. Their follow up appears alongside the original request in your inbox so the conversation stays in one place.",
         },
         {
           type: "heading",
@@ -477,22 +427,14 @@ export const customerServiceAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text:
-            "Every published article appears at /portal/{slug}/help. The page renders with the same gradient hero as the support form, a search box, a Featured row when articles are pinned, and a list of all other articles below. Each article opens at /portal/{slug}/help/{article-slug}. The body is rendered through ReactMarkdown with GitHub flavoured markdown extensions. Tables, fenced code, headings, and links all render as expected.",
-        },
-        {
-          type: "list",
-          items: [
-            "View counts increment server side every time an article is fetched.",
-            "Visitors can vote helpful or not helpful with a single click. The vote is sent to the public vote endpoint and the counters are stored on the article row.",
-            "If a visitor reads an article and still has a question, the article footer carries a Did not find what you were looking for prompt and a button that returns them to the ticket form.",
-          ],
+            "If you publish answers to common questions, they live on a help center page that wears the same branding as your support form. Customers can search the page, browse featured articles, and read full answers without ever filing a request. After reading an article they can mark it helpful or not helpful, which gives you a signal about which answers are actually useful and which need to be revised.",
         },
         {
           type: "callout",
           variant: "info",
-          title: "From FAQ to article in one click",
+          title: "From answer to article in one click",
           text:
-            "When you click Publish on Help Center inside the FAQ generation modal, the agent does three things in a single request. It pushes the markdown into RAG. It creates a support_articles row marked published. It pins the rag_document_id back onto the article so future edits can sync the same record. The article appears live on the help center within a second.",
+            "Inside the workspace, when you draft an FAQ on a topic, the Publish button puts it live on your help center immediately. The article is searchable, ranked, and ready for your customers within seconds.",
         },
       ],
     },
@@ -502,70 +444,66 @@ export const customerServiceAgent: AgentDocEntry = {
       slug: "notifications",
       title: "Notifications",
       content: [
-        { type: "heading", level: 2, text: "Multi channel notifications", id: "notifications" },
+        { type: "heading", level: 2, text: "Keeping everyone informed", id: "notifications" },
         {
           type: "paragraph",
           text:
-            "The notification system fans out by event and by audience. Customers get email. Operators get in app and web push. Each channel is best effort and independent. A failure on one (for example, the email provider returning a 502) never blocks the others or the user facing HTTP request that triggered the event.",
+            "The notification system was designed around two simple rules. Customers should always know what is happening with their request. Your team should never be drowned in email. Different channels carry the right kind of message to the right audience.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Customer notifications",
+          text: "What your customers receive",
           id: "customer-notifications",
         },
         {
           type: "paragraph",
           text:
-            "Customers never receive in app or push notifications because they do not have Lumicoria accounts. They only ever receive email, and only on two specific events.",
+            "Customers receive email and only email. The emails are clean, professional, and signed by your business. They never look automated.",
         },
         {
           type: "list",
           items: [
-            "On ticket creation. Subject line is bracketed by the ticket id, like [TK-abc12345] We've received your request. Body opens with a personal greeting using the customer name when known, confirms receipt, surfaces the SLA minutes from your branding, includes the original message as a quoted block for their records, and closes with a link to the status page. The from name is your display name. Reply to is your support email when configured.",
-            "On operator reply. Subject is Re: {original subject} [TK-abc12345]. The body presents the operator's reply prominently, then quotes the original message as a Gmail style trailing block. The signature uses the operator's display name and your organization name. The same status URL is included so the customer can return to the conversation in a browser.",
+            "When a customer submits a request, they receive a confirmation. It contains a reference number, the original message for their records, your published response time, and a link they can return to later.",
+            "When your team replies, the customer receives the reply directly in their inbox. The original message is quoted at the bottom in the same way Gmail or Outlook would quote a thread, so the conversation stays readable on any device.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Operator notifications",
+          text: "What your team receives",
           id: "operator-notifications",
         },
         {
           type: "paragraph",
           text:
-            "Operators are deliberately not emailed about new tickets. A busy organization can take in five hundred tickets a day, and emailing one per ticket would render the operator's inbox useless. Instead operators receive instant notifications through two channels designed for high volume.",
+            "Your team is never emailed about new requests. A busy business can take in hundreds of requests a day, and email at that volume becomes noise. Instead, the workspace uses two channels designed for high volume.",
         },
         {
           type: "list",
           items: [
-            "In app notification. The bell icon at the top of the Lumicoria interface ticks up. Opening it shows a row with the ticket priority, the customer name, and a snippet of the subject. Clicking the row deep links to the operator inbox with the ticket pre selected.",
-            "Web push notification. If the operator has granted push permission for the Lumicoria origin, the same alert fires as a native browser notification. This works while the operator is on a different tab, on a different application, or even on a locked phone if they have installed the progressive web app.",
-            "Delivery confirmation. When the operator clicks Send Reply, an in app toast confirms the email was dispatched, including the customer email it went to and the ticket id. No push fires for delivery confirmations because the operator just initiated the action.",
+            "An in app alert. The bell icon at the top of the interface ticks up. Opening the alerts shows the request priority, the customer name, and a snippet of the subject. Clicking through opens the request in the inbox.",
+            "A native browser notification. If your team has granted permission, the same alert fires as a notification on the desktop, so they see it even when the app is in a background tab.",
+            "A delivery confirmation. After sending a reply, an in app message confirms the email reached the customer. No browser notification is sent for confirmations because your team just initiated the action.",
           ],
         },
         {
           type: "callout",
           variant: "tip",
-          title: "Granting push permission",
+          title: "Allow browser notifications",
           text:
-            "On first visit to the operator workspace the browser may show a permission dialog asking whether Lumicoria can send notifications. Click Allow. If you accidentally clicked Block, open the lock icon in the address bar, set Notifications to Allow, and refresh the page.",
+            "On first visit, your browser may ask whether the workspace can send notifications. Click Allow. If you accidentally clicked Block, you can change it from the lock icon in the address bar.",
         },
         {
           type: "heading",
           level: 3,
-          text: "What can fail and how the system reacts",
+          text: "When something goes wrong",
           id: "notification-resilience",
         },
         {
-          type: "list",
-          items: [
-            "Resend or SendGrid is down. The customer email is queued and retried with exponential backoff inside the email provider's failover layer. If both providers fail, a structured warning is logged with the ticket id. The ticket itself is created successfully and the operator notification still fires.",
-            "Customer email address is unverified at the provider. The provider rejects the send. The agent logs the rejection and returns the ticket id to the customer through the status redirect, so they still see their request was accepted.",
-            "Operator has revoked push permission. The push send returns an error. The in app notification still appears in the bell tray, and the next time the operator loads the page the notification list reflects what they missed.",
-            "Operator is offline when the ticket arrives. Notifications are stored in MongoDB and surface in the bell tray on next login. Web push sends are best effort; the in app store is the durable record.",
-          ],
+          type: "paragraph",
+          text:
+            "Notifications are designed to be resilient. If an email cannot be delivered for any reason, the request itself is still received and your team is still alerted. If a browser notification cannot be sent, the in app alert still appears in the bell tray. The system errs on the side of you and your customer always knowing where things stand.",
         },
       ],
     },
@@ -575,171 +513,205 @@ export const customerServiceAgent: AgentDocEntry = {
       slug: "analytics",
       title: "Analytics",
       content: [
-        { type: "heading", level: 2, text: "Real numbers, computed live", id: "analytics" },
+        { type: "heading", level: 2, text: "Understand your support performance", id: "analytics" },
         {
           type: "paragraph",
           text:
-            "The analytics panel in the operator workspace is not a fake dashboard. Every value is computed live from real ticket and reply rows in your tenant's slice of Postgres. Switch the time range and the figures recompute. There are no mocked numbers anywhere on the page.",
+            "The analytics view at the top of the workspace gives you a live picture of how your support operation is performing. The numbers update as work moves through the inbox, so what you see is always current.",
         },
         {
           type: "heading",
           level: 3,
-          text: "What each card shows",
+          text: "What the cards mean",
           id: "analytics-cards",
         },
         {
           type: "list",
           items: [
-            "Open Tickets. Count of tickets currently in Open status, computed against the local ticket list rather than analytics so it always matches the queue.",
-            "Avg Response. Mean number of seconds between ticket creation and the first operator or AI reply, averaged over the chosen time range. Rendered in seconds when low, minutes when above sixty seconds.",
-            "Total Requests. Number of tickets created during the time range, regardless of current status.",
-            "Satisfaction. Percentage of tickets resolved during the time range that carry a non negative sentiment score. Will read as zero until tickets carry sentiment scores from the analyse feedback path.",
+            "Open Tickets. How many requests are currently waiting for a first reply.",
+            "Avg Response. The average time between a customer submitting a request and your team responding for the first time, over your selected time range.",
+            "Total Requests. The number of requests submitted within the selected time range, regardless of their current status.",
+            "Satisfaction. The percentage of resolved requests that ended on a positive note, based on signals collected during the conversation.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Customer Sentiment panel",
+          text: "Customer Sentiment",
           id: "sentiment-panel",
         },
         {
           type: "paragraph",
           text:
-            "Below the four stat cards is a horizontal sentiment bar broken into Positive, Neutral, and Negative percentages. The values come from bucketed sentiment scores on tickets created within the time range. Positive bucket starts at sentiment score 0.25 and above. Negative is below minus 0.25. The middle is Neutral. A clean tenant with no sentiment scores yet shows a No sentiment data for this range yet message rather than a fake bar.",
+            "Below the four cards is a breakdown of customer sentiment over the time range. You see the share of requests that came in or ended on a positive note, the share that were neutral, and the share that were negative. New workspaces with no recorded sentiment will show a friendly placeholder rather than a fabricated number.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Ticket Categories panel",
+          text: "Ticket Categories",
           id: "categories-panel",
         },
         {
           type: "paragraph",
           text:
-            "Below sentiment is a count of tickets by category, descending. The labels are the category strings you configured in branding. The colors rotate through a predefined palette. A tenant with no categorised tickets yet shows a No categorised issues yet message.",
+            "Below sentiment is a count of requests by category, ordered by frequency. The labels are the topics you configured in branding. Watch this panel over time. The categories that grow tell you where your product needs better self serve answers, where your onboarding is unclear, or where a feature is causing friction.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Time range selector",
+          text: "Time range",
           id: "time-ranges",
         },
         {
           type: "paragraph",
           text:
-            "Five options in the top toolbar: 1d, 7d, 30d, 90d, 1y. Each switches the analytics endpoint cutoff. The endpoint accepts only those five values to keep cardinality bounded and SQL plans cacheable.",
+            "Switch the range at the top of the page between today, the past week, the past month, the past quarter, or the past year. Every card and panel recalculates instantly so you can compare any window you like.",
         },
         {
           type: "callout",
           variant: "info",
-          title: "Why analytics will look quiet at first",
+          title: "If your numbers look quiet",
           text:
-            "The endpoint computes from real rows. A new tenant with no tickets reports zeros. This is the correct behaviour. Operators who want to see the dashboard light up should submit a few test tickets via the public portal, mark some resolved, and watch the numbers update.",
+            "A new workspace will report zeros at first. This is expected. The analytics view computes from real activity. As your team handles real requests, the numbers begin to move and the categories panel starts to surface real patterns.",
         },
       ],
     },
 
     // ─────────────────────────────────────────────────────────────────
     {
-      slug: "security",
-      title: "Security and privacy",
+      slug: "trust",
+      title: "Trust and privacy",
       content: [
-        { type: "heading", level: 2, text: "What protects your data", id: "security" },
+        { type: "heading", level: 2, text: "How your data is protected", id: "trust" },
         {
           type: "paragraph",
           text:
-            "The Customer Service Agent surfaces a public, anonymous endpoint for ticket submission. That makes it the most exposed component on Lumicoria. Several layers of defence operate around it. Each one is enforced at the API edge so a buggy frontend or a malicious user cannot bypass them.",
+            "The Customer Service Agent handles real customer information, including names, email addresses, and the contents of every request. We treat that data with the seriousness it deserves at every step.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Multi tenant isolation",
+          text: "Your data stays your data",
           id: "isolation-guarantee",
         },
         {
           type: "list",
           items: [
-            "Every operator query filters on organization_id before any other clause. There is no path through the API that returns rows from another tenant's organization, even if the frontend explicitly asks for them.",
-            "Public endpoints resolve the organization id by slug first. The slug carries a unique index across all organizations on Lumicoria, so two tenants cannot collide.",
-            "The ticket id namespace is shared, but the public id pattern of TK followed by eight hex characters provides about four billion values per organization, with a unique index enforced on insert.",
+            "Every request, every reply, and every setting is private to your business. Other customers of the platform never see your information.",
+            "Your team only sees the requests, articles, and settings that belong to your business.",
+            "Your customers only see the conversations that belong to them. A reference number alone is not enough to view a request; the original email address is also required.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "SQL injection",
-          id: "sql-injection",
+          text: "Defending the public page",
+          id: "abuse-protection",
         },
         {
           type: "paragraph",
           text:
-            "All queries are constructed through SQLAlchemy with bound parameters. There is no raw SQL string formatting anywhere in the customer service module. ILIKE searches escape the percent and underscore wildcards in user input so a malicious search term cannot match every row. Schema migrations use parameterless ALTER TABLE statements that take no user input.",
+            "Your public page is open to anyone with the link, which is the point. To keep it safe, the page is protected against the kinds of abuse that anonymous forms commonly attract. Excessive submissions from a single source are slowed down. Submissions are inspected for malicious content before they ever reach your inbox. If you receive unusual volume from a particular topic or region, an additional verification step can be turned on for your page.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Cross site scripting",
-          id: "xss",
+          text: "Customer information handling",
+          id: "customer-data",
         },
         {
           type: "paragraph",
           text:
-            "Every user supplied string that lands in the database is sanitized with bleach before storage. The allow list is intentionally small. Common formatting tags such as paragraph, line break, strong, emphasis, ordered and unordered list, blockquote, and code all pass through. Anything else, including script tags, iframes, and inline event handlers, is stripped. Both ticket bodies, reply bodies, hero copy, template bodies, and article bodies go through the same filter.",
+            "Customer email addresses and request bodies are personal information. They are never used outside the conversation they belong to and are never shared between businesses. They are stored long enough to support your team and your customer through the conversation, then retained according to your account's data retention settings.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Rate limiting",
-          id: "rate-limiting",
-        },
-        {
-          type: "list",
-          items: [
-            "Public ticket creation: five submissions per fifteen minutes per IP. A 429 with Retry After is returned beyond that.",
-            "Public branding fetch: sixty per minute per IP, bounded to keep public help center traffic from melting Postgres.",
-            "Public status check: thirty per fifteen minutes per IP. The privacy gate also helps here because a high rate of mismatched emails alone never returns useful information.",
-            "Public customer reply on an existing ticket: ten per fifteen minutes per IP.",
-          ],
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "Captcha",
-          id: "captcha",
-        },
-        {
-          type: "paragraph",
-          text:
-            "Each organization can flip captcha_enabled to true on its branding record. When enabled, the public ticket creation endpoint requires an h-captcha-response field on every submission and verifies it against hCaptcha's verify endpoint using the HCAPTCHA_SECRET environment variable. If the secret is missing the gate is silently skipped with a warning so a misconfigured deployment does not silently stop accepting tickets.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "Audit trail",
+          text: "Audit and accountability",
           id: "audit",
         },
         {
           type: "paragraph",
           text:
-            "Every state changing endpoint logs an activity through the platform activity logger. Ticket created, ticket replied, branding updated, template created, article created. The events are stored in MongoDB and survive deletes of the underlying records. They are visible to anyone in your organization with the activity dashboard permission.",
+            "Important actions in the workspace are recorded for accountability. You can see who replied to which request, who edited which article, and who changed the branding settings. The audit record helps your team take ownership of decisions and is useful for compliance reviews.",
         },
+        {
+          type: "callout",
+          variant: "info",
+          title: "A note on retention",
+          text:
+            "Deleted requests are removed from active views but kept in your account for a recovery period in case a deletion was a mistake. Permanent removal happens automatically once the recovery window has passed.",
+        },
+      ],
+    },
+
+    // ─────────────────────────────────────────────────────────────────
+    {
+      slug: "best-practices",
+      title: "Best practices",
+      content: [
+        { type: "heading", level: 2, text: "Getting the most out of the workspace", id: "best-practices" },
         {
           type: "heading",
           level: 3,
-          text: "Soft deletes",
-          id: "soft-deletes",
+          text: "Set realistic response times",
+          id: "set-sla",
         },
         {
           type: "paragraph",
           text:
-            "Delete endpoints set a deleted_at timestamp rather than removing the row. Lists filter on deleted_at IS NULL. This keeps the audit trail intact and allows undelete by clearing the field directly in Postgres. Hard delete is intentionally not exposed via the API.",
+            "The response time you publish is the first promise you make to a customer. Pick a number you can actually meet on a typical day. A slightly longer published time that you always honour creates more trust than a short time you regularly miss.",
+        },
+        {
+          type: "heading",
+          level: 3,
+          text: "Publish answers to your most common questions",
+          id: "publish-articles",
+        },
+        {
+          type: "paragraph",
+          text:
+            "After your first week of real requests, look at the categories panel and write a help center article for the top three or four topics. The investment is small, the article remains useful indefinitely, and a good article often deflects ten or twenty future requests.",
+        },
+        {
+          type: "heading",
+          level: 3,
+          text: "Make templates short and personal",
+          id: "templates-personal",
+        },
+        {
+          type: "paragraph",
+          text:
+            "The best templates are short outlines, not finished replies. Leave space for the operator to add a sentence about the customer's specific situation. A reply that begins with the customer's name and references something they actually wrote feels personal even when the rest of the body is from a template.",
+        },
+        {
+          type: "heading",
+          level: 3,
+          text: "Use the draft assistant for the hard ones",
+          id: "draft-strategy",
+        },
+        {
+          type: "paragraph",
+          text:
+            "Quick questions usually deserve a quick personal reply. The draft assistant earns its keep on the harder cases, where you need to explain something carefully, refer to a published policy, or thread a needle between two competing concerns. Save the click for the moments where it actually saves you time.",
+        },
+        {
+          type: "heading",
+          level: 3,
+          text: "Review categories monthly",
+          id: "review-categories",
+        },
+        {
+          type: "paragraph",
+          text:
+            "Take ten minutes a month to look at the categories panel. The list shifts as your product evolves. Categories that grow point at issues you should fix at the source. Categories that shrink usually mean a help article landed and is doing its job. Adjust your topic list and your help center as patterns emerge.",
         },
         {
           type: "callout",
-          variant: "warning",
-          title: "A note on PII",
+          variant: "tip",
+          title: "Treat support as a feedback channel",
           text:
-            "Customer emails and ticket bodies are personally identifiable information. They are never logged at info level, only at debug. Production deployments should ensure their structured log shipper does not include debug events from the customer service module unless the operator has a specific reason to enable that.",
+            "Your support inbox is the most direct unfiltered feedback channel your business has. Patterns that emerge there should reach your product, design, and operations teams quickly. The Customer Service Agent makes those patterns visible at a glance.",
         },
       ],
     },
@@ -749,83 +721,71 @@ export const customerServiceAgent: AgentDocEntry = {
       slug: "troubleshooting",
       title: "Troubleshooting",
       content: [
-        { type: "heading", level: 2, text: "Common issues and fixes", id: "troubleshooting" },
+        { type: "heading", level: 2, text: "Common questions", id: "troubleshooting" },
         {
           type: "heading",
           level: 3,
-          text: "The portal returns Portal not found",
-          id: "portal-not-found",
+          text: "My public page shows a Page not found message",
+          id: "page-not-found",
         },
         {
           type: "paragraph",
           text:
-            "The slug in the URL does not match any organization's branding row. Either the slug was never set, the slug was changed since you last shared the link, or the URL has a typo. From the operator workspace, click Branding, confirm the slug, click Copy portal URL to get an exact link, and paste it into a fresh tab.",
+            "The short address in the link does not match your branding settings. Open Branding from the workspace, confirm the short address is correct, and use the Copy portal URL button to get an exact link. Sharing the copied link will always work.",
         },
         {
           type: "heading",
           level: 3,
-          text: "AI Draft fails with a model error",
-          id: "ai-draft-model",
-        },
-        {
-          type: "paragraph",
-          text:
-            "The AI Draft endpoint reads DEFAULT_LLM_PROVIDER and the matching model name from your backend .env. If those are misconfigured, the call returns a 502 Bad Gateway with the underlying provider error. Check that DEFAULT_LLM_PROVIDER is set to one of gemini, openai, anthropic, mistral, or perplexity. Check that the matching API key is set. Check that the model name is one the provider currently supports. Restart the backend to apply changes.",
-        },
-        {
-          type: "heading",
-          level: 3,
-          text: "AI Draft returns no citations",
+          text: "The draft assistant did not produce sources",
           id: "no-citations",
         },
         {
           type: "paragraph",
           text:
-            "The chip strip beneath the draft is empty. This means the retrieval step found nothing. Either the knowledge base is empty for your organization, or the ticket subject is too short for the embedder to produce useful matches. Generate an FAQ on the topic and click Save to Knowledge Base, or upload your help docs through the document agent. Then try AI Draft again.",
+            "The draft was written without referencing your published material. This usually means you have not yet published help articles or uploaded documents on the topic. Publish a short FAQ on the question or upload a relevant document, then try the assistant again on a similar request.",
         },
         {
           type: "heading",
           level: 3,
-          text: "Customer email never arrived",
+          text: "A confirmation email never arrived for a customer",
           id: "no-email",
         },
         {
           type: "list",
           items: [
-            "Check the backend logs for a customer_email_ticket_received_sent event with success true. If success is false, the event includes the provider's error message.",
-            "Confirm RESEND_API_KEY is set in the backend .env file and is a valid key. If RESEND_API_KEY is missing, the email is silently skipped and the ticket still lands.",
-            "Confirm EMAIL_FROM_ADDRESS uses a domain you have verified in your Resend account. Resend rejects sends from unverified domains with a clear error in the logs.",
-            "Check the customer's spam folder. Branded transactional mail from a new domain often gets filtered on first send.",
+            "Ask the customer to check their spam folder. Branded mail from a new domain often gets filtered on the first send.",
+            "Confirm your team entered the email correctly when the request was logged manually. A typo in an email address is the most common cause.",
+            "If you are using a custom from address, confirm the domain has been verified for sending. Verifying the domain is a one time step that improves deliverability dramatically.",
           ],
         },
         {
           type: "heading",
           level: 3,
-          text: "Permission denied saving branding",
+          text: "I see a permission error when saving branding",
           id: "permission-denied",
         },
         {
           type: "paragraph",
           text:
-            "The agent enforces an AGENT customer_service EXECUTE permission. Personal accounts pass this check by default because the underlying permission repository treats no organization context as permitted. If you are part of a multi user organization and you see a 403, your account does not yet have the permission. Ask an organization admin to grant it through the standard permissions admin.",
+            "Your account does not yet have permission to edit branding for this workspace. If you are part of a multi user account, ask an admin to grant the customer service permission. Solo accounts are granted the permission automatically.",
         },
         {
           type: "heading",
           level: 3,
-          text: "The status URL in the email points at the wrong host",
+          text: "The status link in customer emails goes to the wrong address",
           id: "wrong-host",
         },
         {
           type: "paragraph",
           text:
-            "The link is built from PUBLIC_BASE_URL in your backend .env, falling back to FRONTEND_URL, then to the local development default. Set PUBLIC_BASE_URL to the public address customers can reach in a browser. For local testing this is usually http://localhost:8080. For production it is your domain. Restart the backend after changing the value because pydantic settings are loaded once at process start.",
+            "The status link is built from the public address configured for your account. If your account is part of a custom installation, an admin can update the public address in the platform settings. After the change, new emails will carry the correct link. Already sent emails keep the old link.",
         },
         {
           type: "callout",
           variant: "info",
-          title: "Getting more help",
+          title: "Need more help",
           text:
-            "If something is misbehaving and the cause is not obvious, the backend logs are the fastest path to a fix. Every customer service event is logged with a structlog event name and the ticket id. Grep for the ticket id and you will see every step the system took for that one ticket.",
+            "If you run into something that is not covered here, contact your account team. Include a screenshot of what you are seeing and the reference number of any specific request involved.",
         },
       ],
     },
