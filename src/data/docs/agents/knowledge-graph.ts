@@ -57,6 +57,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
           text: "Open the Knowledge Graph Agent. Click Extract Knowledge. Paste a recent document — a strategy memo, a meeting note, a customer interview transcript — and submit. Within a few seconds the graph fills in and the new entities appear in the visualization.",
         },
         {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Knowledge Graph workspace",
+          caption: "The institutional memory you keep wishing you could search — given a shape.",
+        },
+        {
           type: "live-link",
           label: "Open the Knowledge Graph Agent",
           href: "/agents/knowledge-graph",
@@ -106,6 +112,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Six core capabilities",
+          caption: "Extract, discover, fill gaps, search, navigate, and track — the full loop in one place.",
+        },
       ],
     },
 
@@ -151,6 +163,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
           variant: "info",
           title: "Size limits",
           text: "Each extraction accepts up to about fifty thousand characters of text at a time, and up to twenty focus areas for a discovery or gap fill. For larger documents, split the content into themed sections and feed them in one at a time — the agent will join the pieces together as it goes.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Adding content to the graph",
+          caption: "Paste a paragraph, point to a library document — the graph grows from what you bring.",
         },
       ],
     },
@@ -215,6 +233,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
           type: "paragraph",
           text: "Recomputes the layout from your current data. Use it any time you want a clean snapshot of where things sit after a series of extractions.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Working with the graph",
+          caption: "Extract, discover, fill, query, and refresh — five small habits, one growing map.",
+        },
       ],
     },
 
@@ -243,6 +267,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
           title: "Where the work happens",
           text: "All processing happens inside your Lumicoria workspace using your existing model preferences. Nothing leaves the platform.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Private to your workspace",
+          caption: "Each workspace has its own graph. No cross-organisation visibility.",
+        },
       ],
     },
 
@@ -261,6 +291,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
             "Revisit the extraction history. The history is the easiest way to spot a piece of content that did not behave as expected.",
             "Refresh the view after a heavy editing session. It produces a cleaner layout for sharing with the rest of the team.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Growing a graph that lasts",
+          caption: "Start small, group by theme, revisit the history — the graph that survives is the one tended to.",
         },
       ],
     },
@@ -310,6 +346,12 @@ export const knowledgeGraphAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text: "If you fire many extractions in quick succession the workspace will pause briefly to keep the graph consistent. Wait a moment and the action will succeed.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Common roadblocks",
+          caption: "Most issues are content-shaped — feed the graph well and the rest follows.",
         },
       ],
     },

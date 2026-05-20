@@ -1,7 +1,7 @@
 import type { AgentDocEntry } from "../types";
 
 export const studentAgent: AgentDocEntry = {
-  slug: "student-agent",
+  slug: "student",
   name: "Student Agent",
   tagline:
     "A study companion who actually helps — works through assignments alongside you, builds the right study plan for your week, and explains what does not yet make sense in language you can follow.",
@@ -57,6 +57,12 @@ export const studentAgent: AgentDocEntry = {
           text: "Open the Student Agent and pick the mode that matches what you need right now. Assignment Help for a piece of work in front of you. Study Plan to map out the week. Explain Concept for a topic that has not landed. Research for a paper. General Help for anything else.",
         },
         {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Student Agent workspace",
+          caption: "Assignments, study plans, concept explanations, and research — under one roof.",
+        },
+        {
           type: "live-link",
           label: "Open the Student Agent",
           href: "/agents/student",
@@ -106,6 +112,12 @@ export const studentAgent: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Five focused modes",
+          caption: "Assignment Help, Study Plan, Explain Concept, Research, General Help.",
+        },
       ],
     },
 
@@ -149,6 +161,12 @@ export const studentAgent: AgentDocEntry = {
             "A clear sense of what you have already tried — \"I read the chapter and I still don't get X\" is more useful than \"I don't get X.\"",
             "Your deadlines and the time you have available, for study-plan sessions.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Choosing the right mode",
+          caption: "Match the mode to the task in front of you — the rest follows.",
         },
       ],
     },
@@ -209,6 +227,12 @@ export const studentAgent: AgentDocEntry = {
           type: "paragraph",
           text: "Short questions, format checks, the kind of confusion you would normally ask a friend about. General Help is the catch-all. Use it freely.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "A typical session",
+          caption: "Bring the prompt, your notes, and what you've already tried — the agent does the rest with you.",
+        },
       ],
     },
 
@@ -231,6 +255,12 @@ export const studentAgent: AgentDocEntry = {
             "When research help produces sources, read them yourself. Do not cite a source you have not opened.",
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Honest study practice",
+          caption: "Help understanding, planning, and checking — never a substitute for your own work.",
+        },
       ],
     },
 
@@ -249,6 +279,12 @@ export const studentAgent: AgentDocEntry = {
             "When an explanation does not land, ask for a different one. There is no limit on how many attempts you can ask for.",
             "Treat research help as a starting point. The agent finds the sources; you read them and build the argument.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Steady study habits",
+          caption: "Sunday plans, weekday execution, weekly check-ins — the rhythm that builds up.",
         },
       ],
     },
@@ -298,6 +334,12 @@ export const studentAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Ask the agent for higher-quality sources — peer-reviewed papers, primary documents, textbooks. The default is breadth; you can ask for depth.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "When study hits a wall",
+          caption: "Be specific about what you've tried — that's the fastest way to a better answer.",
         },
       ],
     },

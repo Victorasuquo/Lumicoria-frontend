@@ -57,6 +57,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
           text: "Open the Data Analysis Agent. Click Upload, pick a CSV or spreadsheet from your computer, and choose Exploratory as the analysis mode. Within seconds you will see the size of the dataset, the columns it contains, and a first round of charts and summaries.",
         },
         {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Data Analysis Agent workspace",
+          caption: "Upload a file, choose a mode, and get charts, numbers, and a written narrative back.",
+        },
+        {
           type: "live-link",
           label: "Open the Data Analysis Agent",
           href: "/agents/data-analysis",
@@ -111,6 +117,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Six analysis modes",
+          caption: "Choose the mode that matches the question — from a quick overview to a full narrative report.",
+        },
       ],
     },
 
@@ -161,6 +173,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
           variant: "info",
           title: "File size",
           text: "The agent handles spreadsheets up to several hundred thousand rows comfortably. For larger files, consider running an exploratory analysis first on a representative sample and going deeper from there.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Uploading and configuring an analysis",
+          caption: "Bring in CSVs, spreadsheets, or pasted tables. The agent reads the structure for you.",
         },
       ],
     },
@@ -231,6 +249,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
           type: "paragraph",
           text: "Every analysis is saved in your history. Reopen one any time and the original charts, numbers, and narrative appear exactly as they were. Delete an entry when it is no longer useful.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Reading the analysis output",
+          caption: "Summary at the top, charts in the middle, raw numbers at the bottom — interactive throughout.",
+        },
       ],
     },
 
@@ -259,6 +283,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
           title: "Sensitive data",
           text: "If your file contains personal information, consider whether the people in it would consent to the analysis. The agent treats data as confidential and does not surface it outside your workspace, but the responsibility for what you choose to upload remains yours.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Data stays in your workspace",
+          caption: "Files and analyses are scoped to your workspace and never used to train external models.",
+        },
       ],
     },
 
@@ -277,6 +307,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
             "Save the analysis as a report when you reach a finding worth keeping. Reports are easier to share than a chart with no explanation.",
             "Use anomaly mode on customer-level data before quarterly reviews. It catches the rows your dashboards would average away.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "A repeatable analysis habit",
+          caption: "Start exploratory, save reports you want to share, revisit the history when you need to.",
         },
       ],
     },
@@ -326,6 +362,12 @@ export const dataAnalysisAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Merge them in a spreadsheet first and upload the combined file. The agent treats one analysis as one file; combining sources before upload keeps the result coherent.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Common questions",
+          caption: "Most surprises in an analysis trace back to file formatting or column types.",
         },
       ],
     },

@@ -1,7 +1,7 @@
 import type { AgentDocEntry } from "../types";
 
 export const ragAgent: AgentDocEntry = {
-  slug: "rag-agent",
+  slug: "rag",
   name: "RAG Agent",
   tagline:
     "Turn every document, link, and note your team has ever collected into one searchable, citable brain that answers questions with the exact sources behind every line.",
@@ -55,6 +55,12 @@ export const ragAgent: AgentDocEntry = {
           variant: "tip",
           title: "Quick start",
           text: "Open the RAG Agent. Upload a PDF, paste a URL, or drop in some plain text. Wait a few seconds for it to be indexed. Then type a question about it in the search box at the top — your answer appears with the exact passages it drew from, ready to click and read.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "RAG Agent workspace overview",
+          caption: "Your library of documents, links, and notes — searchable in plain English.",
         },
         {
           type: "live-link",
@@ -111,6 +117,12 @@ export const ragAgent: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Citation-backed answers from your library",
+          caption: "Every answer arrives with the passages it drew from — ready to click and verify.",
+        },
       ],
     },
 
@@ -158,6 +170,12 @@ export const ragAgent: AgentDocEntry = {
           variant: "info",
           title: "Size and patience",
           text: "Long documents take a few seconds to index after upload. Most articles and short PDFs are ready within five seconds; very long books may take a minute. While indexing is happening, the document is visible in your library with a status indicator so you know it is on the way.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Bringing material into the library",
+          caption: "Add documents, paste URLs, or drop in raw notes — everything lives in one place.",
         },
       ],
     },
@@ -218,6 +236,12 @@ export const ragAgent: AgentDocEntry = {
           type: "paragraph",
           text: "Old material can be removed from the library at any time. Removing a document also removes it from future answers, so the library stays current as your knowledge changes.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Question, answer, citations workflow",
+          caption: "Ask in your own words. Read the answer. Click any citation to verify.",
+        },
       ],
     },
 
@@ -241,6 +265,12 @@ export const ragAgent: AgentDocEntry = {
             "All processing happens inside your Lumicoria workspace.",
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Private workspace boundary",
+          caption: "Your library is scoped to your workspace and never shared across organisations.",
+        },
       ],
     },
 
@@ -259,6 +289,12 @@ export const ragAgent: AgentDocEntry = {
             "If an answer feels thin, look at the citations. Either the source material doesn't contain what you need, in which case you can add more, or the agent missed a passage, in which case rephrasing usually resolves it.",
             "Remove documents that have gone stale. Outdated material can pull answers in the wrong direction.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "A well-tended library",
+          caption: "Quality beats quantity — a curated library produces better answers than a sprawling one.",
         },
       ],
     },
@@ -308,6 +344,12 @@ export const ragAgent: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Your history is preserved even when a document is removed. New questions will not see the removed material; only the historical record references it. If that is a problem, the history entry can be deleted.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Resolving common issues",
+          caption: "Most issues are a quick fix away — start with the library, then the question, then the source.",
         },
       ],
     },

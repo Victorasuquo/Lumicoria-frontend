@@ -58,6 +58,12 @@ export const learningCoach: AgentDocEntry = {
           text: "Open the Learning Coach. Choose Learning Path. Type your goal — \"be able to read a financial statement,\" \"feel comfortable in a beginner pottery class,\" \"write a clean unit test\" — and your current level. Within seconds you will have a structured path you can begin today.",
         },
         {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Learning Coach workspace",
+          caption: "A path that fits your goal, your starting point, and the time you actually have.",
+        },
+        {
           type: "live-link",
           label: "Open the Learning Coach",
           href: "/agents/learning-coach",
@@ -107,6 +113,12 @@ export const learningCoach: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Six learning modes",
+          caption: "Path, explanations, quizzes, progress, resources, and difficulty — all in one place.",
+        },
       ],
     },
 
@@ -149,6 +161,12 @@ export const learningCoach: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Three hours a week and three hours a day produce very different paths. The coach respects whatever pace you give it. You can change it later as your schedule shifts; the path adjusts.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Opening a learning path",
+          caption: "Tell the coach your goal, your level, and your time — it builds the rest.",
         },
       ],
     },
@@ -209,6 +227,12 @@ export const learningCoach: AgentDocEntry = {
           type: "paragraph",
           text: "The recommended resources are paired to where you are in your path. They are not replacements for the work the coach is guiding; they are second voices on the same material. Use them when an explanation needs a different angle.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Following a path",
+          caption: "Quiz often. Ask for a different explanation when one doesn't click.",
+        },
       ],
     },
 
@@ -228,6 +252,12 @@ export const learningCoach: AgentDocEntry = {
             "Schedule a regular weekly slot. Consistency beats intensity over the months it takes to build a real skill.",
             "Tell the coach about projects you are working on. The path adapts to make what you are learning immediately useful.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Habits that compound",
+          caption: "Consistency beats intensity over the months it takes to build a real skill.",
         },
       ],
     },
@@ -250,6 +280,12 @@ export const learningCoach: AgentDocEntry = {
             "The coach makes judgements about what to study next, but the decisions remain yours.",
             "You can reset, delete, or change any part of your path at any time.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Private progress data",
+          caption: "Your progress and your path stay inside your workspace.",
         },
       ],
     },
@@ -299,6 +335,12 @@ export const learningCoach: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Start a new path. The coach keeps old paths in your history; you can return to them later. There is no penalty for branching out.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Working through common snags",
+          caption: "When something isn't working, tell the coach. A direct nudge beats waiting it out.",
         },
       ],
     },

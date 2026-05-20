@@ -59,6 +59,12 @@ export const researchMentor: AgentDocEntry = {
           text: "Open the Research Mentor. Choose the Problem Analysis stage. Type the question you are trying to answer in your own words, even if it is still messy. The mentor will help you break it into parts and decide which one to start with.",
         },
         {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "Research Mentor workspace",
+          caption: "A thinking partner who walks the project with you, stage by stage.",
+        },
+        {
           type: "live-link",
           label: "Open the Research Mentor",
           href: "/agents/research-mentor",
@@ -113,6 +119,12 @@ export const researchMentor: AgentDocEntry = {
             },
           ],
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Seven stages of the research arc",
+          caption: "From a vague question to a defensible argument, one stage at a time.",
+        },
       ],
     },
 
@@ -158,6 +170,12 @@ export const researchMentor: AgentDocEntry = {
             "Pieces of evidence or sources you have already encountered, if any.",
             "Where in the process you currently feel stuck — \"I cannot pick a method,\" \"I have too many papers and they all say something different,\" \"I cannot tell if my hypothesis is too narrow.\"",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Starting a session",
+          caption: "Pick the stage you're at — the mentor adjusts its style accordingly.",
         },
       ],
     },
@@ -208,6 +226,12 @@ export const researchMentor: AgentDocEntry = {
           type: "paragraph",
           text: "You do not finish a stage in a single sitting. Save your session, come back, and pick the stage you need next. The mentor keeps the thread of your work without forcing you to recap everything from scratch.",
         },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "A back-and-forth session",
+          caption: "The most useful turns are the ones that hand a question back to you.",
+        },
       ],
     },
 
@@ -227,6 +251,12 @@ export const researchMentor: AgentDocEntry = {
             "Use Critical Evaluation more than once. Once when your first round of evidence is in, once before you write up.",
             "Synthesise out loud. The act of writing the argument almost always reveals which parts are still soft.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1586953208270-767889db4b3e?w=1200&h=700&fit=crop",
+          alt: "Disciplined research habits",
+          caption: "Compress the question into one sentence. Revisit the framing whenever you feel lost.",
         },
       ],
     },
@@ -249,6 +279,12 @@ export const researchMentor: AgentDocEntry = {
             "Citations, when offered, are pointers to verify, not stamps of approval. The instruction is always to check.",
             "Material you paste in is treated as confidential and is not used to train any external model.",
           ],
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=700&fit=crop",
+          alt: "Private sessions",
+          caption: "Your sessions and the material you paste in stay inside your workspace.",
         },
       ],
     },
@@ -288,6 +324,12 @@ export const researchMentor: AgentDocEntry = {
         {
           type: "paragraph",
           text: "Push back. Explain why. The mentor is at its best when it is being challenged with specifics. The point is to sharpen your thinking, not to win an argument.",
+        },
+        {
+          type: "screenshot",
+          url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=700&fit=crop",
+          alt: "When things get stuck",
+          caption: "Vague questions, looping advice — usually an earlier stage that's still soft.",
         },
       ],
     },

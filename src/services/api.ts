@@ -1000,7 +1000,9 @@ export interface DocumentUploadResponse {
   message: string;
   status: string;
   filename: string;
-  saved_as: string;
+  saved_as?: string;
+  document_id?: string;
+  s3_key?: string;
 }
 
 export interface DocumentListRequest {
@@ -2203,99 +2205,206 @@ export const integrationApi = {
 
 // ─── Legal Document API ─────────────────────────────────────────────────────
 
+export type LegalProvider =
+  | "gemini"
+  | "anthropic"
+  | "claude"
+  | "perplexity"
+  | "openai"
+  | "mistral"
+  | "deepseek";
+
+export type LegalMode =
+  | "clause_extraction"
+  | "risk_analysis"
+  | "version_comparison"
+  | "plain_language"
+  | "compliance_check";
+
 export interface LegalDocumentResponse {
   results: Record<string, any>;
-  metadata: Record<string, any>;
+  metadata: {
+    analysis_id?: string;
+    model_provider?: string;
+    model_name?: string;
+    processing_time_ms?: number;
+    source_kind?: "inline" | "rag_document" | null;
+    source_ref?: string | null;
+    [key: string]: any;
+  };
+}
+
+export interface LegalHistoryItem {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  mode: LegalMode;
+  status: "running" | "ready" | "error";
+  title?: string | null;
+  content_preview?: string | null;
+  source_kind?: "inline" | "rag_document" | null;
+  source_ref?: string | null;
+  model_provider?: string | null;
+  model_name?: string | null;
+  parameters?: Record<string, any>;
+  metadata?: Record<string, any>;
+  processing_time_ms?: number | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
+export interface LegalHistoryDetail extends LegalHistoryItem {
+  result?: Record<string, any>;
+}
+
+export interface LegalAnalytics {
+  time_range: string;
+  total_analyses: number;
+  by_mode: Record<string, number>;
+  by_model: Array<{ provider: string; model: string; count: number }>;
+  average_processing_time_ms: number;
+  success_count: number;
+  error_count: number;
+  success_rate: number;
+}
+
+// Shared input shape — every mode takes the same base fields plus a
+// few mode-specific toggles.  Drop the old { data: {...} } wrapper.
+interface BaseLegalInput {
+  content?: string;
+  rag_document_id?: string;
+  context?: Record<string, any>;
+  parameters?: Record<string, any>;
+  metadata?: Record<string, any>;
+  provider?: LegalProvider;
+  model?: string;
 }
 
 export const legalApi = {
-  /** General-purpose legal document analysis. */
-  analyze: async (data: {
-    data: Record<string, any>;
-    mode?: string;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/analyze', data);
+  /** Mode-routed entry point. */
+  analyze: async (
+    payload: BaseLegalInput & { mode: LegalMode }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/analyze",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
-  /** Extract clauses, obligations, and deadlines. */
-  extractClauses: async (data: {
-    data: Record<string, any>;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-    include_metadata?: boolean;
-    highlight_obligations?: boolean;
-    extract_dates?: boolean;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/analyze/clauses', data);
+  /** Extract clauses, obligations, deadlines. */
+  extractClauses: async (
+    payload: BaseLegalInput & {
+      include_metadata?: boolean;
+      highlight_obligations?: boolean;
+      extract_dates?: boolean;
+    }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/analyze/clauses",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
-  /** Identify and categorize risks. */
-  analyzeRisks: async (data: {
-    data: Record<string, any>;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-    risk_threshold?: number;
-    include_recommendations?: boolean;
-    categorize_risks?: boolean;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/analyze/risks', data);
+  /** Identify and categorise risks. */
+  analyzeRisks: async (
+    payload: BaseLegalInput & {
+      risk_threshold?: number;
+      include_recommendations?: boolean;
+      categorize_risks?: boolean;
+    }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/analyze/risks",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
   /** Compare two document versions. */
-  compareVersions: async (data: {
-    data: Record<string, any>;
-    old_version: string;
-    new_version: string;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-    track_changes?: boolean;
-    summarize_changes?: boolean;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/compare/versions', data);
+  compareVersions: async (
+    payload: BaseLegalInput & {
+      old_version: string;
+      new_version: string;
+      track_changes?: boolean;
+      summarize_changes?: boolean;
+    }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/compare/versions",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
-  /** Generate plain-language summary of a legal document. */
-  plainLanguage: async (data: {
-    data: Record<string, any>;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-    simplify_terms?: boolean;
-    include_examples?: boolean;
-    maintain_legal_accuracy?: boolean;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/summarize/plain', data);
+  /** Plain-language summary. */
+  plainLanguage: async (
+    payload: BaseLegalInput & {
+      simplify_terms?: boolean;
+      include_examples?: boolean;
+      maintain_legal_accuracy?: boolean;
+    }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/summarize/plain",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
-  /** Check regulatory compliance. */
-  checkCompliance: async (data: {
-    data: Record<string, any>;
-    context?: Record<string, any>;
-    parameters?: Record<string, any>;
-    model?: string;
-    jurisdiction?: string;
-    industry_specific?: boolean;
-    include_citations?: boolean;
-  }): Promise<LegalDocumentResponse> => {
-    const response = await api.post<LegalDocumentResponse>('/legal/check/compliance', data);
+  /** Regulatory / contractual compliance check. */
+  checkCompliance: async (
+    payload: BaseLegalInput & {
+      jurisdiction?: string;
+      industry_specific?: boolean;
+      include_citations?: boolean;
+    }
+  ): Promise<LegalDocumentResponse> => {
+    const response = await api.post<LegalDocumentResponse>(
+      "/legal/check/compliance",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
 
-  /** Get legal document analytics. */
-  getAnalytics: async (timeRange?: string): Promise<Record<string, any>> => {
-    const response = await api.get('/legal/analytics', {
-      params: { time_range: timeRange || '7d' },
+  /** History (recent analyses for this workspace). */
+  listHistory: async (params?: {
+    mode?: LegalMode;
+    time_range?: "1d" | "7d" | "30d" | "90d" | "1y";
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    analyses: LegalHistoryItem[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> => {
+    const response = await api.get("/legal/history", { params });
+    return response.data;
+  },
+
+  /** Reopen a past analysis with its full result body. */
+  getHistoryItem: async (id: string): Promise<LegalHistoryDetail> => {
+    const response = await api.get<LegalHistoryDetail>(`/legal/history/${id}`);
+    return response.data;
+  },
+
+  /** Soft-delete a past analysis. */
+  deleteHistoryItem: async (id: string): Promise<void> => {
+    await api.delete(`/legal/history/${id}`);
+  },
+
+  /** Workspace analytics powered by real history data. */
+  getAnalytics: async (timeRange?: string): Promise<LegalAnalytics> => {
+    const response = await api.get<LegalAnalytics>("/legal/analytics", {
+      params: { time_range: timeRange || "7d" },
     });
     return response.data;
   },

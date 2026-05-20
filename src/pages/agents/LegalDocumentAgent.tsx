@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,67 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Scale, Upload, AlertTriangle, CheckCircle2, FileText,
-  ChevronRight, Eye, Shield, Loader2, Copy, ArrowRightLeft,
-  BookOpen, Gavel, X,
+  ChevronRight, ChevronDown, Eye, Shield, Loader2, Copy, ArrowRightLeft,
+  BookOpen, Gavel, X, Sparkles, Bot, Clock, Trash2, RefreshCw,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { legalApi, LegalDocumentResponse } from "@/services/api";
+import {
+  legalApi,
+  chatApi,
+  LegalDocumentResponse,
+  LegalHistoryItem,
+  LegalProvider,
+} from "@/services/api";
+
+/* ── Provider toggle ────────────────────────────────────────────── */
+
+interface ProviderOption {
+  value: LegalProvider;
+  label: string;
+  hint: string;
+}
+
+const PROVIDER_OPTIONS: ProviderOption[] = [
+  {
+    value: "gemini",
+    label: "Gemini",
+    hint: "Fast, well-rounded summaries",
+  },
+  {
+    value: "anthropic",
+    label: "Claude",
+    hint: "Thorough, careful legal reasoning",
+  },
+];
+
+function relativeTime(iso?: string | null): string {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const seconds = Math.max(0, (Date.now() - then) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function modeKeyToAnalysisMode(mode: string): AnalysisMode | null {
+  switch (mode) {
+    case "clause_extraction":
+      return "clauses";
+    case "risk_analysis":
+      return "risks";
+    case "plain_language":
+      return "plain";
+    case "compliance_check":
+      return "compliance";
+    case "version_comparison":
+      return "compare";
+    default:
+      return null;
+  }
+}
 
 /* ── Analysis Modes ────────────────────────────────────────────────── */
 
@@ -106,35 +162,176 @@ const LegalDocumentAgent: React.FC = () => {
   const [compareNew, setCompareNew] = useState("");
   const [selectedMode, setSelectedMode] = useState<AnalysisMode | null>(null);
   const [jurisdiction, setJurisdiction] = useState("global");
+  // When the user uploads a file we store the resulting document id
+  // (returned by the platform's ingestion pipeline) and the filename
+  // so we can show it in the UI.  The id is sent to the backend as
+  // `rag_document_id` when the analysis is run.
+  const [libraryDocId, setLibraryDocId] = useState("");
+  const [uploadedFilename, setUploadedFilename] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [provider, setProvider] = useState<LegalProvider>("gemini");
 
   // Processing
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Results
+  // Results + history (server-persisted)
   const [result, setResult] = useState<LegalDocumentResponse | null>(null);
-  const [history, setHistory] = useState<
-    Array<{ mode: AnalysisMode; label: string; timestamp: string; result: LegalDocumentResponse }>
-  >([]);
+  const [history, setHistory] = useState<LegalHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [showMetadata, setShowMetadata] = useState(false);
+
+  /* ── File upload ──────────────────────────────────────────── */
+
+  const handleFilePick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset the input so picking the same file twice still triggers
+      // onChange.
+      if (e.target) e.target.value = "";
+      if (!file) return;
+      try {
+        setIsUploading(true);
+        const res = await chatApi.uploadDocument(file, file.name);
+        const docId = res?.document_id;
+        if (!docId) {
+          throw new Error("Upload did not return a document id");
+        }
+        setLibraryDocId(docId);
+        setUploadedFilename(file.name);
+        toast({
+          title: "Document uploaded",
+          description: `${file.name} is ready to analyse.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: "Upload failed",
+          description: err?.response?.data?.detail || err?.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [toast],
+  );
+
+  const clearUploadedFile = useCallback(() => {
+    setLibraryDocId("");
+    setUploadedFilename(null);
+  }, []);
+
+  /* ── History loaders ───────────────────────────────────────── */
+
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const data = await legalApi.listHistory({ limit: 25 });
+      setHistory(data.analyses || []);
+    } catch (e: any) {
+      // History is non-blocking; surface only on first load failure.
+      console.warn("legal history load failed", e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const openHistoryItem = useCallback(
+    async (id: string) => {
+      try {
+        const detail = await legalApi.getHistoryItem(id);
+        const targetMode = modeKeyToAnalysisMode(detail.mode);
+        if (targetMode) setSelectedMode(targetMode);
+        // Server stores the full result body under `result`; the
+        // analyze endpoints return { results, metadata }, so reshape
+        // to match.
+        const reshaped: LegalDocumentResponse = {
+          results: (detail.result?.results as Record<string, any>) || {},
+          metadata: {
+            ...(detail.result?.metadata as Record<string, any> || {}),
+            analysis_id: detail.id,
+            model_provider: detail.model_provider || undefined,
+            model_name: detail.model_name || undefined,
+          },
+        };
+        setResult(reshaped);
+        setActiveHistoryId(id);
+        if (detail.content_preview) {
+          setDocumentText(detail.content_preview);
+        }
+        if (detail.model_provider === "anthropic" || detail.model_provider === "gemini") {
+          setProvider(detail.model_provider as LegalProvider);
+        }
+      } catch (e: any) {
+        toast({
+          title: "Could not open analysis",
+          description: e?.response?.data?.detail || e?.message,
+          variant: "destructive",
+        });
+      }
+    },
+    [toast],
+  );
+
+  const deleteHistoryItem = useCallback(
+    async (id: string) => {
+      try {
+        await legalApi.deleteHistoryItem(id);
+        setHistory((prev) => prev.filter((h) => h.id !== id));
+        if (activeHistoryId === id) {
+          setActiveHistoryId(null);
+          setResult(null);
+        }
+        toast({ title: "Analysis removed" });
+      } catch (e: any) {
+        toast({
+          title: "Delete failed",
+          description: e?.response?.data?.detail || e?.message,
+          variant: "destructive",
+        });
+      }
+    },
+    [activeHistoryId, toast],
+  );
 
   /* ── API calls ─────────────────────────────────────────────── */
 
   const handleAnalyze = async () => {
     if (!selectedMode) return;
 
+    // Compare needs two bodies; everything else needs at least one.
     if (selectedMode === "compare") {
       if (!compareOld.trim() || !compareNew.trim()) {
         toast({ title: "Paste both document versions", variant: "destructive" });
         return;
       }
-    } else {
-      if (!documentText.trim()) {
-        toast({ title: "Paste or type your legal document first", variant: "destructive" });
-        return;
-      }
+    } else if (!documentText.trim() && !libraryDocId.trim()) {
+      toast({
+        title: "Bring in your document",
+        description: "Paste the text or supply a library document id.",
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsProcessing(true);
     setResult(null);
+    setActiveHistoryId(null);
+
+    const base = {
+      content: documentText.trim() || undefined,
+      rag_document_id: libraryDocId.trim() || undefined,
+      provider,
+    };
 
     try {
       let response: LegalDocumentResponse;
@@ -142,7 +339,7 @@ const LegalDocumentAgent: React.FC = () => {
       switch (selectedMode) {
         case "clauses":
           response = await legalApi.extractClauses({
-            data: { document_text: documentText },
+            ...base,
             include_metadata: true,
             highlight_obligations: true,
             extract_dates: true,
@@ -151,7 +348,7 @@ const LegalDocumentAgent: React.FC = () => {
 
         case "risks":
           response = await legalApi.analyzeRisks({
-            data: { document_text: documentText },
+            ...base,
             risk_threshold: 0.7,
             include_recommendations: true,
             categorize_risks: true,
@@ -160,7 +357,7 @@ const LegalDocumentAgent: React.FC = () => {
 
         case "plain":
           response = await legalApi.plainLanguage({
-            data: { document_text: documentText },
+            ...base,
             simplify_terms: true,
             include_examples: true,
             maintain_legal_accuracy: true,
@@ -169,7 +366,7 @@ const LegalDocumentAgent: React.FC = () => {
 
         case "compliance":
           response = await legalApi.checkCompliance({
-            data: { document_text: documentText },
+            ...base,
             jurisdiction,
             industry_specific: true,
             include_citations: true,
@@ -178,7 +375,7 @@ const LegalDocumentAgent: React.FC = () => {
 
         case "compare":
           response = await legalApi.compareVersions({
-            data: {},
+            provider,
             old_version: compareOld,
             new_version: compareNew,
             track_changes: true,
@@ -191,19 +388,19 @@ const LegalDocumentAgent: React.FC = () => {
       }
 
       setResult(response);
+      const newId = response.metadata?.analysis_id || null;
+      setActiveHistoryId(newId);
 
       const modeConf = modes.find((m) => m.key === selectedMode)!;
-      setHistory((prev) => [
-        {
-          mode: selectedMode,
-          label: modeConf.label,
-          timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          result: response,
-        },
-        ...prev,
-      ]);
+      toast({
+        title: `${modeConf.label} complete`,
+        description: response.metadata?.model_name
+          ? `Powered by ${response.metadata.model_name}`
+          : undefined,
+      });
 
-      toast({ title: `${modeConf.label} complete` });
+      // Refresh the persisted history so the new run shows up.
+      loadHistory();
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -231,69 +428,170 @@ const LegalDocumentAgent: React.FC = () => {
 
   /* ── Render helpers ────────────────────────────────────────── */
 
+  // Values like "N/A", "Unknown", null, undefined, "" should not be
+  // shown — they're placeholders the LLM emits when a field genuinely
+  // doesn't apply.  Keep numbers (including zero) since "0 critical
+  // issues" is a real statement.
+  const isEmptyValue = (v: any): boolean => {
+    if (v === null || v === undefined) return true;
+    if (typeof v === "string") {
+      const t = v.trim().toLowerCase();
+      return (
+        t === "" ||
+        t === "n/a" ||
+        t === "na" ||
+        t === "none" ||
+        t === "null" ||
+        t === "undefined" ||
+        t === "unknown"
+      );
+    }
+    if (Array.isArray(v)) return v.length === 0;
+    if (typeof v === "object")
+      return Object.values(v).every((x) => isEmptyValue(x));
+    return false;
+  };
+
+  const renderScalar = (v: any) => {
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean")
+      return String(v);
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return "";
+    }
+  };
+
+  // Heuristic: a nested object that maps severity labels to counts
+  // ({"critical":0,"high":0,"medium":2,"low":1}) is best shown as
+  // colored pills, not raw JSON.
+  const SEVERITY_COLORS: Record<string, string> = {
+    critical: "bg-red-50 text-red-700 border-red-200",
+    high: "bg-orange-50 text-orange-700 border-orange-200",
+    medium: "bg-amber-50 text-amber-700 border-amber-200",
+    low: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  };
+  const isSeverityCountObject = (v: any) =>
+    v &&
+    typeof v === "object" &&
+    !Array.isArray(v) &&
+    Object.keys(v).some((k) => k.toLowerCase() in SEVERITY_COLORS) &&
+    Object.values(v).every((x) => typeof x === "number");
+
+  const renderSeverityCounts = (v: Record<string, number>) => (
+    <div className="flex flex-wrap gap-1.5">
+      {(["critical", "high", "medium", "low"] as const).map((level) => {
+        if (v[level] === undefined) return null;
+        return (
+          <span
+            key={level}
+            className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${SEVERITY_COLORS[level]}`}
+          >
+            {v[level]} {level}
+          </span>
+        );
+      })}
+    </div>
+  );
+
+  // Recursively render any value as a small DOM tree.  Used inside
+  // arrays and inside object-typed values so we never fall through to
+  // JSON.stringify for nested structures.
+  const renderAny = (v: any, depth: number = 0): React.ReactNode => {
+    if (isEmptyValue(v)) return null;
+    if (typeof v === "string") return <span>{v}</span>;
+    if (typeof v === "number" || typeof v === "boolean")
+      return <span>{String(v)}</span>;
+    if (Array.isArray(v)) {
+      return (
+        <div className="space-y-1">
+          {v.map((item, i) =>
+            isEmptyValue(item) ? null : (
+              <div key={i} className="text-xs text-gray-700">
+                {renderAny(item, depth + 1)}
+              </div>
+            ),
+          )}
+        </div>
+      );
+    }
+    if (typeof v === "object" && v !== null) {
+      if (isSeverityCountObject(v))
+        return renderSeverityCounts(v as Record<string, number>);
+      const entries = Object.entries(v).filter(([_, x]) => !isEmptyValue(x));
+      if (entries.length === 0) return null;
+      return (
+        <div className="space-y-1">
+          {entries.map(([k, val]) => (
+            <div key={k} className="flex items-start gap-2">
+              <span className="text-[10px] font-medium text-gray-400 uppercase min-w-[80px] shrink-0 mt-0.5">
+                {k.replace(/_/g, " ")}
+              </span>
+              <div className="text-xs text-gray-700 flex-1 min-w-0">
+                {renderAny(val, depth + 1)}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return <span>{renderScalar(v)}</span>;
+  };
+
   const renderResults = () => {
     if (!result) return null;
     const data = result.results;
 
-    // Try to render structured results intelligently
     if (typeof data === "object" && data !== null) {
+      // Filter out top-level keys whose values are empty.  No more
+      // "Citation: N/A" or "Document Type: Unknown".
+      const entries = Object.entries(data).filter(
+        ([_, value]) => !isEmptyValue(value),
+      );
+      if (entries.length === 0) {
+        return (
+          <p className="text-sm text-gray-400">
+            No structured results to display.
+          </p>
+        );
+      }
       return (
         <div className="space-y-4">
-          {Object.entries(data).map(([key, value]) => (
+          {entries.map(([key, value]) => (
             <div key={key}>
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 {key.replace(/_/g, " ")}
               </h4>
               {Array.isArray(value) ? (
                 <div className="space-y-2">
-                  {value.map((item: any, i: number) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700"
-                    >
-                      {typeof item === "string" ? (
-                        <p>{item}</p>
-                      ) : typeof item === "object" ? (
-                        <div className="space-y-1">
-                          {Object.entries(item).map(([k, v]) => (
-                            <div key={k} className="flex items-start gap-2">
-                              <span className="text-[10px] font-medium text-gray-400 uppercase min-w-[80px] shrink-0 mt-0.5">
-                                {k.replace(/_/g, " ")}
-                              </span>
-                              <span className="text-xs text-gray-700">
-                                {typeof v === "string" || typeof v === "number"
-                                  ? String(v)
-                                  : JSON.stringify(v)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p>{String(item)}</p>
-                      )}
-                    </motion.div>
-                  ))}
+                  {value.map((item: any, i: number) =>
+                    isEmptyValue(item) ? null : (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700"
+                      >
+                        {renderAny(item)}
+                      </motion.div>
+                    ),
+                  )}
                 </div>
               ) : typeof value === "string" ? (
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-xl p-3">
                   {value}
                 </p>
+              ) : isSeverityCountObject(value) ? (
+                <div className="bg-gray-50 rounded-xl p-3">
+                  {renderSeverityCounts(value as Record<string, number>)}
+                </div>
               ) : typeof value === "object" && value !== null ? (
-                <div className="bg-gray-50 rounded-xl p-3 space-y-1">
-                  {Object.entries(value).map(([k, v]) => (
-                    <div key={k} className="flex items-start gap-2">
-                      <span className="text-[10px] font-medium text-gray-400 uppercase min-w-[80px] shrink-0 mt-0.5">
-                        {k.replace(/_/g, " ")}
-                      </span>
-                      <span className="text-xs text-gray-700">{String(v)}</span>
-                    </div>
-                  ))}
+                <div className="bg-gray-50 rounded-xl p-3">
+                  {renderAny(value)}
                 </div>
               ) : (
-                <p className="text-sm text-gray-700">{String(value)}</p>
+                <p className="text-sm text-gray-700">{renderScalar(value)}</p>
               )}
             </div>
           ))}
@@ -323,8 +621,36 @@ const LegalDocumentAgent: React.FC = () => {
           </p>
         </div>
 
+        {/* Model toggle */}
+        <div className="max-w-3xl mx-auto mb-3 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Bot size={13} className="text-gray-400" />
+            <span>Powered by</span>
+            <div className="inline-flex rounded-md border border-gray-200 bg-gray-50/60 p-0.5">
+              {PROVIDER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setProvider(opt.value)}
+                  title={opt.hint}
+                  className={`px-2.5 py-1 rounded transition-colors text-[11px] ${
+                    provider === opt.value
+                      ? "bg-white shadow-sm text-gray-900 font-medium"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 max-w-[260px] text-right">
+            {PROVIDER_OPTIONS.find((p) => p.value === provider)?.hint}
+          </p>
+        </div>
+
         {/* Document Input */}
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden mb-6 max-w-3xl mx-auto">
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden mb-3 max-w-3xl mx-auto">
           <div className="p-4 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen size={14} className="text-gray-400" />
@@ -340,6 +666,69 @@ const LegalDocumentAgent: React.FC = () => {
             onChange={(e) => setDocumentText(e.target.value)}
             className="border-0 rounded-none min-h-[180px] resize-none text-sm text-gray-700 placeholder:text-gray-300 focus-visible:ring-0 p-4 leading-relaxed"
           />
+        </div>
+
+        {/* File upload — sends through the platform's document ingestion */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.txt,.md,.rtf,.odt"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={handleFilePick}
+            disabled={isUploading}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-dashed shadow-sm transition-colors text-left ${
+              uploadedFilename
+                ? "bg-emerald-50/50 border-emerald-200"
+                : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/60"
+            }`}
+          >
+            {isUploading ? (
+              <Loader2 size={16} className="text-gray-500 animate-spin shrink-0" />
+            ) : uploadedFilename ? (
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            ) : (
+              <Upload size={16} className="text-gray-400 shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              {uploadedFilename ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {uploadedFilename}
+                  </p>
+                  <p className="text-[11px] text-emerald-600">
+                    Ready to analyse — click below to run a mode.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-700">
+                    {isUploading ? "Uploading…" : "Upload a document"}
+                  </p>
+                  <p className="text-[11px] text-gray-400">
+                    Click to choose a PDF, Word, or text file from your computer.
+                  </p>
+                </>
+              )}
+            </div>
+            {uploadedFilename && !isUploading && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearUploadedFile();
+                }}
+                className="p-1 text-gray-300 hover:text-red-500"
+                title="Remove"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </button>
         </div>
 
         {/* Analysis Modes */}
@@ -363,39 +752,107 @@ const LegalDocumentAgent: React.FC = () => {
         </div>
 
         {/* History */}
-        {history.length > 0 && (
-          <div className="max-w-3xl mx-auto mt-8">
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-50">
-                <h3 className="text-sm font-semibold text-gray-900">Recent Analyses</h3>
+        <div className="max-w-3xl mx-auto mt-8">
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">
+                Recent Analyses
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadHistory}
+                disabled={historyLoading}
+                className="text-xs text-gray-400 h-7 px-2"
+                title="Refresh"
+              >
+                <RefreshCw
+                  size={12}
+                  className={historyLoading ? "animate-spin" : ""}
+                />
+              </Button>
+            </div>
+            {historyLoading && history.length === 0 ? (
+              <div className="p-6 flex items-center justify-center text-xs text-gray-400 gap-2">
+                <Loader2 size={14} className="animate-spin" /> Loading…
               </div>
+            ) : history.length === 0 ? (
+              <div className="p-6 text-center">
+                <Sparkles size={20} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-xs text-gray-500">
+                  No analyses yet. Run one above and it will land here.
+                </p>
+              </div>
+            ) : (
               <div className="divide-y divide-gray-50">
-                {history.slice(0, 5).map((h, i) => {
-                  const mc = modes.find((m) => m.key === h.mode)!;
+                {history.slice(0, 8).map((h) => {
+                  const ui = modeKeyToAnalysisMode(h.mode);
+                  const mc = ui ? modes.find((m) => m.key === ui)! : null;
                   return (
                     <div
-                      key={i}
-                      onClick={() => {
-                        setSelectedMode(h.mode);
-                        setResult(h.result);
-                      }}
-                      className="p-4 flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer transition-colors"
+                      key={h.id}
+                      className="p-3 flex items-center gap-3 hover:bg-gray-50/50 transition-colors"
                     >
-                      <div className={`w-8 h-8 rounded-lg ${mc.bg} flex items-center justify-center shrink-0`}>
-                        <mc.icon size={14} className={mc.color} />
+                      <div
+                        className={`w-8 h-8 rounded-lg ${
+                          mc?.bg || "bg-gray-50"
+                        } flex items-center justify-center shrink-0`}
+                      >
+                        {mc ? (
+                          <mc.icon size={14} className={mc.color} />
+                        ) : (
+                          <FileText size={14} className="text-gray-400" />
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800">{h.label}</p>
-                        <p className="text-[11px] text-gray-400">{h.timestamp}</p>
-                      </div>
-                      <ChevronRight size={14} className="text-gray-300" />
+                      <button
+                        type="button"
+                        onClick={() => openHistoryItem(h.id)}
+                        className="flex-1 min-w-0 text-left"
+                        title="Reopen this analysis"
+                      >
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {h.title || mc?.label || h.mode}
+                        </p>
+                        <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
+                          <Clock size={9} />
+                          {relativeTime(h.created_at)}
+                          {h.model_provider && (
+                            <>
+                              <span className="text-gray-300">·</span>
+                              <span className="capitalize">
+                                {h.model_provider === "anthropic"
+                                  ? "Claude"
+                                  : h.model_provider}
+                              </span>
+                            </>
+                          )}
+                          {h.status === "error" && (
+                            <Badge
+                              variant="outline"
+                              className="h-4 text-[9px] border-red-200 text-red-500 ml-1"
+                            >
+                              error
+                            </Badge>
+                          )}
+                        </p>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteHistoryItem(h.id);
+                        }}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                        title="Remove from history"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </AgentPageLayout>
     );
   }
@@ -409,6 +866,15 @@ const LegalDocumentAgent: React.FC = () => {
       icon={Scale}
       gradient="from-slate-500 to-gray-600"
     >
+      {/* Hidden file input used by the upload button below */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt,.md,.rtf,.odt"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Mode header bar */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -427,8 +893,30 @@ const LegalDocumentAgent: React.FC = () => {
             <span className="text-sm font-semibold text-gray-900">{currentModeConf.label}</span>
           </div>
         )}
+        {/* Provider toggle (compact) */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <Bot size={12} className="text-gray-400" />
+          <div className="inline-flex rounded-md border border-gray-200 bg-gray-50/60 p-0.5">
+            {PROVIDER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setProvider(opt.value)}
+                title={opt.hint}
+                className={`px-2 py-0.5 rounded transition-colors text-[10px] ${
+                  provider === opt.value
+                    ? "bg-white shadow-sm text-gray-900 font-medium"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Mode switcher pills */}
-        <div className="flex gap-1.5 ml-auto">
+        <div className="flex gap-1.5">
           {modes.map((m) => (
             <button
               key={m.key}
@@ -480,20 +968,64 @@ const LegalDocumentAgent: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-3 border-b border-gray-50 flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-gray-900">Document</h3>
-                {documentText.length > 0 && (
-                  <span className="text-[10px] text-gray-300">{documentText.length.toLocaleString()} chars</span>
-                )}
+            <>
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-gray-50 flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-gray-900">Document</h3>
+                  {documentText.length > 0 && (
+                    <span className="text-[10px] text-gray-300">{documentText.length.toLocaleString()} chars</span>
+                  )}
+                </div>
+                <Textarea
+                  placeholder="Paste your legal document, contract, or agreement here…"
+                  value={documentText}
+                  onChange={(e) => setDocumentText(e.target.value)}
+                  className="border-0 rounded-none min-h-[340px] resize-none text-sm text-gray-700 placeholder:text-gray-300 focus-visible:ring-0 p-4 leading-relaxed"
+                />
               </div>
-              <Textarea
-                placeholder="Paste your legal document, contract, or agreement here…"
-                value={documentText}
-                onChange={(e) => setDocumentText(e.target.value)}
-                className="border-0 rounded-none min-h-[340px] resize-none text-sm text-gray-700 placeholder:text-gray-300 focus-visible:ring-0 p-4 leading-relaxed"
-              />
-            </div>
+              <button
+                type="button"
+                onClick={handleFilePick}
+                disabled={isUploading}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 border-dashed shadow-sm transition-colors text-left ${
+                  uploadedFilename
+                    ? "bg-emerald-50/50 border-emerald-200"
+                    : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/60"
+                }`}
+              >
+                {isUploading ? (
+                  <Loader2 size={13} className="text-gray-500 animate-spin shrink-0" />
+                ) : uploadedFilename ? (
+                  <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                ) : (
+                  <Upload size={13} className="text-gray-400 shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  {uploadedFilename ? (
+                    <p className="text-xs font-medium text-gray-800 truncate">
+                      {uploadedFilename}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      {isUploading ? "Uploading…" : "Or upload a file"}
+                    </p>
+                  )}
+                </div>
+                {uploadedFilename && !isUploading && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearUploadedFile();
+                    }}
+                    className="p-1 text-gray-300 hover:text-red-500"
+                    title="Remove"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </button>
+            </>
           )}
 
           {/* Compliance: Jurisdiction selector */}
@@ -538,28 +1070,76 @@ const LegalDocumentAgent: React.FC = () => {
           {/* History sidebar */}
           {history.length > 0 && (
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-3 border-b border-gray-50">
+              <div className="p-3 border-b border-gray-50 flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-gray-900">History</h3>
+                <button
+                  onClick={loadHistory}
+                  disabled={historyLoading}
+                  className="text-gray-300 hover:text-gray-600 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw
+                    size={11}
+                    className={historyLoading ? "animate-spin" : ""}
+                  />
+                </button>
               </div>
-              <div className="divide-y divide-gray-50 max-h-[200px] overflow-y-auto">
-                {history.map((h, i) => {
-                  const mc = modes.find((m) => m.key === h.mode)!;
+              <div className="divide-y divide-gray-50 max-h-[260px] overflow-y-auto">
+                {history.map((h) => {
+                  const ui = modeKeyToAnalysisMode(h.mode);
+                  const mc = ui ? modes.find((m) => m.key === ui)! : null;
+                  const isActive = activeHistoryId === h.id;
                   return (
                     <div
-                      key={i}
-                      onClick={() => {
-                        setSelectedMode(h.mode);
-                        setResult(h.result);
-                      }}
-                      className="p-3 flex items-center gap-2.5 hover:bg-gray-50/50 cursor-pointer transition-colors"
+                      key={h.id}
+                      className={`p-3 flex items-center gap-2.5 transition-colors ${
+                        isActive ? "bg-gray-50" : "hover:bg-gray-50/50"
+                      }`}
                     >
-                      <div className={`w-6 h-6 rounded-md ${mc.bg} flex items-center justify-center shrink-0`}>
-                        <mc.icon size={11} className={mc.color} />
+                      <div
+                        className={`w-6 h-6 rounded-md ${
+                          mc?.bg || "bg-gray-50"
+                        } flex items-center justify-center shrink-0`}
+                      >
+                        {mc ? (
+                          <mc.icon size={11} className={mc.color} />
+                        ) : (
+                          <FileText size={11} className="text-gray-400" />
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 truncate">{h.label}</p>
-                        <p className="text-[10px] text-gray-400">{h.timestamp}</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openHistoryItem(h.id)}
+                        className="flex-1 min-w-0 text-left"
+                        title="Reopen this analysis"
+                      >
+                        <p className="text-xs font-medium text-gray-700 truncate">
+                          {h.title || mc?.label || h.mode}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {relativeTime(h.created_at)}
+                          {h.model_provider && (
+                            <>
+                              {" · "}
+                              <span className="capitalize">
+                                {h.model_provider === "anthropic"
+                                  ? "Claude"
+                                  : h.model_provider}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteHistoryItem(h.id);
+                        }}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                        title="Remove"
+                      >
+                        <Trash2 size={10} />
+                      </button>
                     </div>
                   );
                 })}
@@ -610,21 +1190,40 @@ const LegalDocumentAgent: React.FC = () => {
                   <div className="p-4">{renderResults()}</div>
                 </div>
 
-                {/* Metadata */}
+                {/* Run details — diagnostic metadata, hidden by default */}
                 {result.metadata && Object.keys(result.metadata).length > 0 && (
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 mt-4">
-                    <h4 className="text-xs font-semibold text-gray-500 mb-2">Metadata</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(result.metadata).map(([k, v]) => (
-                        <Badge
-                          key={k}
-                          variant="outline"
-                          className="text-[10px] px-2 py-0.5 border-gray-200 text-gray-500"
-                        >
-                          {k.replace(/_/g, " ")}: {typeof v === "string" || typeof v === "number" ? String(v) : "…"}
-                        </Badge>
-                      ))}
-                    </div>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowMetadata((v) => !v)}
+                      className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <ChevronDown
+                        size={11}
+                        className={`transition-transform ${
+                          showMetadata ? "rotate-0" : "-rotate-90"
+                        }`}
+                      />
+                      {showMetadata ? "Hide run details" : "Show run details"}
+                    </button>
+                    {showMetadata && (
+                      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 mt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(result.metadata).map(([k, v]) => (
+                            <Badge
+                              key={k}
+                              variant="outline"
+                              className="text-[10px] px-2 py-0.5 border-gray-200 text-gray-500"
+                            >
+                              {k.replace(/_/g, " ")}:{" "}
+                              {typeof v === "string" || typeof v === "number"
+                                ? String(v)
+                                : "…"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </motion.div>
