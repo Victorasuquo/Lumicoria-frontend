@@ -6,6 +6,7 @@ import { researchAgent } from "./research-agent";
 import { visionAgent } from "./vision-agent";
 import { legalDocumentAgent } from "./legal-document";
 import { customerServiceAgent } from "./customer-service";
+import { knowledgeGraphAgent } from "./knowledge-graph";
 
 // Add new agent doc imports here. One per agent, then add to the array below.
 
@@ -17,6 +18,7 @@ export const agentDocs: AgentDocEntry[] = [
   researchAgent,
   legalDocumentAgent,
   customerServiceAgent,
+  knowledgeGraphAgent,
   // Add more agents as docs are written
 ];
 

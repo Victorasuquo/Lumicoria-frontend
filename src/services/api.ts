@@ -1605,43 +1605,6 @@ export const ethicsBiasApi = {
   },
 };
 
-// ─── Knowledge Graph API ────────────────────────────────────────────────────
-
-export const knowledgeGraphApi = {
-  extractKnowledge: async (data: any): Promise<any> => {
-    const response = await api.post('/knowledge-graph/extract', data);
-    return response.data;
-  },
-  discoverRelations: async (data: any): Promise<any> => {
-    const response = await api.post('/knowledge-graph/discover-relations', data);
-    return response.data;
-  },
-  fillGaps: async (data: any): Promise<any> => {
-    const response = await api.post('/knowledge-graph/fill-gaps', data);
-    return response.data;
-  },
-  queryGraph: async (data: any): Promise<any> => {
-    const response = await api.post('/knowledge-graph/query', data);
-    return response.data;
-  },
-  visualize: async (data: any): Promise<any> => {
-    const response = await api.post('/knowledge-graph/visualize', data);
-    return response.data;
-  },
-  getStats: async (): Promise<any> => {
-    const response = await api.get('/knowledge-graph/stats');
-    return response.data;
-  },
-  getNodeTypes: async (): Promise<string[]> => {
-    const response = await api.get<string[]>('/knowledge-graph/node-types');
-    return response.data;
-  },
-  getRelationTypes: async (): Promise<string[]> => {
-    const response = await api.get<string[]>('/knowledge-graph/relation-types');
-    return response.data;
-  },
-};
-
 // ─── Workspace Ergonomics API ───────────────────────────────────────────────
 
 export const workspaceErgonomicsApi = {
@@ -2763,7 +2726,7 @@ export const customerServiceApi = {
     return response.data;
   },
 
-  createTemplate: async (params: {
+  aiCreateTemplate: async (params: {
     content: string;
     template_category: string;
     variables?: string[];
@@ -3268,6 +3231,467 @@ export interface PublicSupportArticle {
   updated_at?: string | null;
   published_at?: string | null;
 }
+
+// ─── Data Analysis Agent ──────────────────────────────────────────────
+
+export type DataAnalysisMode =
+  | "exploratory"
+  | "statistical"
+  | "visualization"
+  | "anomaly"
+  | "trend"
+  | "report";
+
+export type DataAnalysisStatus = "pending" | "processing" | "ready" | "error";
+
+export type DataAnalysisTimeRange = "1d" | "7d" | "30d" | "90d" | "1y";
+
+export interface DataAnalysisColumn {
+  name: string;
+  dtype: string;
+  null_count?: number;
+  unique_count?: number;
+}
+
+export interface DataAnalysisInsight {
+  text: string;
+  type?: "positive" | "negative" | "neutral";
+}
+
+export type DataAnalysisChartType = "bar" | "line" | "pie" | "area" | "scatter";
+
+export interface DataAnalysisVisualization {
+  type: DataAnalysisChartType | string;
+  title: string;
+  x_axis: string;
+  y_axis: string;
+  data: Array<{ x?: any; y?: any; name?: any; value?: any }>;
+}
+
+export interface DataAnalysisSummaryStats {
+  count: number;
+  primary_column?: string;
+  mean?: number | string | null;
+  median?: number | string | null;
+  std?: number | string | null;
+  min?: number | string | null;
+  max?: number | string | null;
+  per_column?: Record<string, {
+    mean?: number | string | null;
+    median?: number | string | null;
+    std?: number | string | null;
+    min?: number | string | null;
+    max?: number | string | null;
+    count?: number;
+  }>;
+}
+
+export interface DataAnalysisQuestionTurn {
+  question: string;
+  answer: string;
+  model_used?: string | null;
+  asked_at: string;
+}
+
+export interface DataAnalysisRun {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  mode: DataAnalysisMode;
+  status: DataAnalysisStatus;
+  s3_key: string;
+  filename: string;
+  original_filename?: string | null;
+  content_type?: string | null;
+  size_bytes: number;
+  row_count?: number | null;
+  column_count?: number | null;
+  columns: DataAnalysisColumn[];
+  preview_rows: Array<Record<string, any>>;
+  summary_stats?: DataAnalysisSummaryStats | null;
+  visualizations: DataAnalysisVisualization[];
+  anomalies?: {
+    by_column?: Record<string, {
+      mean?: number | null;
+      std?: number | null;
+      z_outlier_count?: number;
+      iqr_outlier_count?: number;
+      z_threshold?: number;
+      iqr_lower?: number | null;
+      iqr_upper?: number | null;
+      samples?: Array<{ row: number; value: any }>;
+    }>;
+    summary?: { total_z_outliers?: number; columns_checked?: number };
+  } | null;
+  trends?: Record<string, {
+    rolling_window?: number;
+    rolling_average?: number[];
+    first_quarter_mean?: number | null;
+    last_quarter_mean?: number | null;
+    delta?: number | null;
+    direction?: "increasing" | "decreasing" | "flat";
+  }> | null;
+  statistical_results?: {
+    per_column?: Record<string, {
+      mean?: number | null;
+      median?: number | null;
+      std?: number | null;
+      min?: number | null;
+      max?: number | null;
+      skew?: number | null;
+      kurtosis?: number | null;
+      count?: number;
+    }>;
+    tests?: Array<{
+      test?: string;
+      column?: string;
+      t_statistic?: number | null;
+      p_value?: number | null;
+      significant_at_0_05?: boolean;
+      warning?: string;
+    }>;
+  } | null;
+  insights: DataAnalysisInsight[];
+  ai_summary?: string | null;
+  question_history?: DataAnalysisQuestionTurn[];
+  processing_time_ms?: number | null;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Lighter shape returned by GET /runs (omits heavy JSONB fields).
+export interface DataAnalysisRunListItem {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  mode: DataAnalysisMode;
+  status: DataAnalysisStatus;
+  filename: string;
+  original_filename?: string | null;
+  content_type?: string | null;
+  size_bytes: number;
+  row_count?: number | null;
+  column_count?: number | null;
+  processing_time_ms?: number | null;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DataAnalysisAnalytics {
+  time_range: string;
+  total_analyses: number;
+  average_processing_time: number;
+  mode_usage: Record<string, number>;
+  file_types: Record<string, number>;
+  error_rate: number;
+  quality_metrics: {
+    ready: number;
+    error: number;
+    processing: number;
+    pending: number;
+  };
+}
+
+export const dataAnalysisApi = {
+  /**
+   * Upload a CSV / XLSX / JSON file. The backend persists it to object
+   * storage, creates a run row, and runs the analysis pipeline
+   * synchronously, returning the full run dict with results populated.
+   */
+  upload: async (
+    file: File,
+    mode: DataAnalysisMode = "exploratory",
+  ): Promise<DataAnalysisRun> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<DataAnalysisRun>(
+      "/data-analysis/upload",
+      formData,
+      {
+        params: { mode },
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 5 * 60 * 1000, // 5 minutes for large uploads + analysis
+      },
+    );
+    return response.data;
+  },
+
+  listRuns: async (params?: {
+    status?: DataAnalysisStatus;
+    mode?: DataAnalysisMode;
+    time_range?: DataAnalysisTimeRange;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    runs: DataAnalysisRunListItem[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> => {
+    const response = await api.get("/data-analysis/runs", { params });
+    return response.data;
+  },
+
+  getRun: async (runId: string): Promise<DataAnalysisRun> => {
+    const response = await api.get<DataAnalysisRun>(
+      `/data-analysis/runs/${runId}`,
+    );
+    return response.data;
+  },
+
+  deleteRun: async (runId: string): Promise<void> => {
+    await api.delete(`/data-analysis/runs/${runId}`);
+  },
+
+  askAboutData: async (
+    runId: string,
+    question: string,
+  ): Promise<DataAnalysisQuestionTurn> => {
+    const response = await api.post<DataAnalysisQuestionTurn>(
+      `/data-analysis/runs/${runId}/ask`,
+      { question },
+    );
+    return response.data;
+  },
+
+  regenerate: async (
+    runId: string,
+    mode: DataAnalysisMode,
+  ): Promise<DataAnalysisRun> => {
+    const response = await api.post<DataAnalysisRun>(
+      `/data-analysis/runs/${runId}/regenerate`,
+      { mode },
+      { timeout: 5 * 60 * 1000 },
+    );
+    return response.data;
+  },
+
+  getAnalytics: async (
+    time_range: DataAnalysisTimeRange = "7d",
+  ): Promise<DataAnalysisAnalytics> => {
+    const response = await api.get<DataAnalysisAnalytics>(
+      "/data-analysis/analytics",
+      { params: { time_range } },
+    );
+    return response.data;
+  },
+};
+
+// ─── Knowledge Graph ──────────────────────────────────────────────────
+
+export type KGNodeType =
+  | "concept"
+  | "person"
+  | "project"
+  | "document"
+  | "event"
+  | "organization"
+  | "location"
+  | "resource";
+
+export type KGRelationType =
+  | "related_to"
+  | "part_of"
+  | "created_by"
+  | "mentions"
+  | "influences"
+  | "collaborates_with"
+  | "occurs_in"
+  | "references"
+  | "similar_to"
+  | "depends_on";
+
+export type KGActionLabel = "extract" | "discover" | "fill_gaps";
+export type KGExtractionStatus = "ready" | "error";
+
+export interface KGStats {
+  node_count: number;
+  edge_count: number;
+  node_types: Record<string, number>;
+  relation_types: Record<string, number>;
+  last_updated_at?: string | null;
+}
+
+export interface KGExtraction {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  action: KGActionLabel;
+  status: KGExtractionStatus;
+  title?: string | null;
+  source_kind?: string | null;
+  source_ref?: string | null;
+  content_preview?: string | null;
+  node_ids: string[];
+  edge_ids: string[];
+  node_count: number;
+  edge_count: number;
+  processing_time_ms?: number | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
+export interface KGVisualizationNode {
+  id: string;
+  label: string;
+  type: string;
+  x?: number;
+  y?: number;
+  properties?: Record<string, any>;
+}
+
+export interface KGVisualizationEdge {
+  source: string;
+  target: string;
+  type: string;
+  properties?: Record<string, any>;
+}
+
+export interface KGVisualization {
+  visualization: {
+    nodes: KGVisualizationNode[];
+    edges: KGVisualizationEdge[];
+  };
+  metadata: {
+    node_count: number;
+    edge_count: number;
+    generated_at: string;
+    extraction_id?: string;
+    added_node_count?: number;
+    added_edge_count?: number;
+    processing_time_ms?: number;
+  };
+}
+
+export interface KGAgentResult<T = any> {
+  results: T;
+  metadata: {
+    action?: string;
+    timestamp?: string;
+    graph_stats?: KGStats;
+    parameters?: Record<string, any>;
+    extraction_id?: string;
+    added_node_count?: number;
+    added_edge_count?: number;
+    added_node_ids?: string[];
+    added_edge_ids?: string[];
+    processing_time_ms?: number;
+  };
+}
+
+export const knowledgeGraphApi = {
+  /**
+   * Extract knowledge from inline text OR an already-uploaded RAG
+   * document. Exactly one of `content` / `rag_document_id` is required.
+   */
+  extract: async (params: {
+    content?: string;
+    rag_document_id?: string;
+    source?: Record<string, any>;
+    metadata?: Record<string, any>;
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+  }): Promise<KGAgentResult> => {
+    const response = await api.post<KGAgentResult>(
+      "/knowledge-graph/extract",
+      params,
+      { timeout: 5 * 60 * 1000 }, // 5 min ceiling for very long extractions
+    );
+    return response.data;
+  },
+
+  discoverRelations: async (params: {
+    focus: string[];
+    context?: Record<string, any>;
+    constraints?: Record<string, any>;
+    parameters?: Record<string, any>;
+  }): Promise<KGAgentResult> => {
+    const response = await api.post<KGAgentResult>(
+      "/knowledge-graph/discover-relations",
+      params,
+      { timeout: 5 * 60 * 1000 },
+    );
+    return response.data;
+  },
+
+  fillGaps: async (params: {
+    focus: string[];
+    context?: Record<string, any>;
+    parameters?: Record<string, any>;
+  }): Promise<KGAgentResult> => {
+    const response = await api.post<KGAgentResult>(
+      "/knowledge-graph/fill-gaps",
+      params,
+      { timeout: 5 * 60 * 1000 },
+    );
+    return response.data;
+  },
+
+  query: async (params: {
+    query_type: "path" | "neighbors" | "search" | "subgraph";
+    query: Record<string, any>;
+    parameters?: Record<string, any>;
+  }): Promise<KGAgentResult> => {
+    const response = await api.post<KGAgentResult>(
+      "/knowledge-graph/query",
+      params,
+    );
+    return response.data;
+  },
+
+  visualize: async (params?: {
+    focus?: string[];
+    parameters?: Record<string, any>;
+  }): Promise<KGVisualization> => {
+    const response = await api.post<KGAgentResult<KGVisualization>>(
+      "/knowledge-graph/visualize",
+      params || {},
+    );
+    // The agent returns { results: { visualization, metadata } }.
+    // Flatten to a more direct shape for the frontend.
+    const inner = response.data.results as any;
+    return {
+      visualization: inner?.visualization || { nodes: [], edges: [] },
+      metadata: { ...(inner?.metadata || {}), ...(response.data.metadata || {}) },
+    };
+  },
+
+  getStats: async (): Promise<KGStats> => {
+    const response = await api.get<KGStats>("/knowledge-graph/stats");
+    return response.data;
+  },
+
+  getNodeTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>("/knowledge-graph/node-types");
+    return response.data;
+  },
+
+  getRelationTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>("/knowledge-graph/relation-types");
+    return response.data;
+  },
+
+  listExtractions: async (params?: {
+    action?: KGActionLabel;
+    time_range?: "1d" | "7d" | "30d" | "90d" | "1y";
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    extractions: KGExtraction[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> => {
+    const response = await api.get("/knowledge-graph/extractions", { params });
+    return response.data;
+  },
+
+  deleteExtraction: async (extractionId: string): Promise<void> => {
+    await api.delete(`/knowledge-graph/extractions/${extractionId}`);
+  },
+};
 
 // Export the api instance for custom requests
 export default api;
