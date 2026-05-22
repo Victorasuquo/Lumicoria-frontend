@@ -1576,33 +1576,233 @@ export const researchMentorApi = {
 
 // ─── Ethics & Bias API ──────────────────────────────────────────────────────
 
+export type EthicsProvider =
+  | "gemini"
+  | "anthropic"
+  | "claude"
+  | "perplexity"
+  | "openai"
+  | "mistral"
+  | "deepseek";
+
+export type EthicsAction =
+  | "analyze"
+  | "check_guidelines"
+  | "generate_suggestions"
+  | "get_citations";
+
+export type EthicsSeverity = "critical" | "high" | "medium" | "low" | "info";
+
+export interface EthicsIssue {
+  id?: string;
+  category: string;
+  description: string;
+  location?: Record<string, any>;
+  severity: EthicsSeverity;
+  suggestions?: string[];
+  citations?: Array<{ title?: string; url?: string; relevance?: string }>;
+  confidence?: number;
+  detected_at?: string;
+}
+
+export interface BiasIssue {
+  id?: string;
+  type: string;
+  description: string;
+  location?: Record<string, any>;
+  severity: EthicsSeverity;
+  impact?: string;
+  suggestions?: string[];
+  citations?: Array<{ title?: string; url?: string; relevance?: string }>;
+  confidence?: number;
+  detected_at?: string;
+}
+
+export interface EthicsBiasResponse {
+  results: {
+    ethics_issues?: EthicsIssue[];
+    bias_issues?: BiasIssue[];
+    summary?: string;
+    overall_severity?: EthicsSeverity;
+    compliance?: Record<string, { passed: boolean; notes?: string }>;
+    violations?: Array<{
+      guideline: string;
+      description: string;
+      severity: EthicsSeverity;
+      evidence?: string;
+      recommendation?: string;
+    }>;
+    recommendations?: string[];
+    citations?: Array<Record<string, any>>;
+    overall_compliance?: string;
+    suggestions?: Array<{
+      title: string;
+      description: string;
+      priority: EthicsSeverity;
+      issue_reference?: string;
+    }>;
+    implementation_steps?: string[];
+    resources?: Array<Record<string, any>>;
+    relevance_scores?: Record<string, number>;
+    [key: string]: any;
+  };
+  metadata: {
+    analysis_id?: string;
+    model_provider?: string;
+    model_name?: string;
+    processing_time_ms?: number;
+    ethics_score?: number;
+    issue_count?: number;
+    [key: string]: any;
+  };
+  error?: string;
+}
+
+export interface EthicsHistoryItem {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  action: EthicsAction;
+  status: "running" | "ready" | "error";
+  title?: string | null;
+  content_preview?: string | null;
+  content_type?: string | null;
+  model_provider?: string | null;
+  model_name?: string | null;
+  parameters?: Record<string, any>;
+  metadata?: Record<string, any>;
+  ethics_score?: number | null;
+  issue_count?: number;
+  processing_time_ms?: number | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
+export interface EthicsHistoryDetail extends EthicsHistoryItem {
+  result?: Record<string, any>;
+}
+
+export interface EthicsAnalytics {
+  time_range: string;
+  total_analyses: number;
+  by_action: Record<string, number>;
+  average_ethics_score: number;
+  total_issues: number;
+  success_count: number;
+  error_count: number;
+  success_rate: number;
+}
+
+interface BaseEthicsInput {
+  context?: Record<string, any>;
+  parameters?: Record<string, any>;
+  metadata?: Record<string, any>;
+  provider?: EthicsProvider;
+  model?: string;
+}
+
 export const ethicsBiasApi = {
-  analyzeContent: async (data: any): Promise<any> => {
-    const response = await api.post('/ethics-bias/analyze', data);
+  /** Analyze content for ethical issues and bias. */
+  analyzeContent: async (
+    payload: BaseEthicsInput & { content: string; content_type?: string }
+  ): Promise<EthicsBiasResponse> => {
+    const response = await api.post<EthicsBiasResponse>(
+      "/ethics-bias/analyze",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
-  checkGuidelines: async (data: any): Promise<any> => {
-    const response = await api.post('/ethics-bias/check-guidelines', data);
+
+  /** Check content against ethical guidelines. */
+  checkGuidelines: async (
+    payload: BaseEthicsInput & {
+      content: string;
+      guidelines_focus?: string[];
+    }
+  ): Promise<EthicsBiasResponse> => {
+    const response = await api.post<EthicsBiasResponse>(
+      "/ethics-bias/check-guidelines",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
-  generateSuggestions: async (data: any): Promise<any> => {
-    const response = await api.post('/ethics-bias/generate-suggestions', data);
+
+  /** Generate suggestions for a set of identified issues. */
+  generateSuggestions: async (
+    payload: BaseEthicsInput & {
+      issues: Array<Record<string, any>>;
+      content?: string;
+    }
+  ): Promise<EthicsBiasResponse> => {
+    const response = await api.post<EthicsBiasResponse>(
+      "/ethics-bias/generate-suggestions",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
-  getCitations: async (data: any): Promise<any> => {
-    const response = await api.post('/ethics-bias/get-citations', data);
+
+  /** Find citations / references for an ethics topic. */
+  getCitations: async (
+    payload: BaseEthicsInput & { topic: string }
+  ): Promise<EthicsBiasResponse> => {
+    const response = await api.post<EthicsBiasResponse>(
+      "/ethics-bias/get-citations",
+      payload,
+      { timeout: 5 * 60 * 1000 }
+    );
     return response.data;
   },
+
+  /** Recent analyses for this workspace. */
+  listHistory: async (params?: {
+    action?: EthicsAction;
+    time_range?: "1d" | "7d" | "30d" | "90d" | "1y";
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    analyses: EthicsHistoryItem[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> => {
+    const response = await api.get("/ethics-bias/history", { params });
+    return response.data;
+  },
+
+  /** Reopen a past analysis with its full result body. */
+  getHistoryItem: async (id: string): Promise<EthicsHistoryDetail> => {
+    const response = await api.get<EthicsHistoryDetail>(
+      `/ethics-bias/history/${id}`
+    );
+    return response.data;
+  },
+
+  /** Soft-delete a past analysis. */
+  deleteHistoryItem: async (id: string): Promise<void> => {
+    await api.delete(`/ethics-bias/history/${id}`);
+  },
+
+  /** Workspace analytics derived from persisted history. */
+  getAnalytics: async (timeRange?: string): Promise<EthicsAnalytics> => {
+    const response = await api.get<EthicsAnalytics>("/ethics-bias/analytics", {
+      params: { time_range: timeRange || "7d" },
+    });
+    return response.data;
+  },
+
   getCategories: async (): Promise<string[]> => {
-    const response = await api.get<string[]>('/ethics-bias/ethics-categories');
+    const response = await api.get<string[]>("/ethics-bias/ethics-categories");
     return response.data;
   },
   getBiasTypes: async (): Promise<string[]> => {
-    const response = await api.get<string[]>('/ethics-bias/bias-types');
+    const response = await api.get<string[]>("/ethics-bias/bias-types");
     return response.data;
   },
   getSeverityLevels: async (): Promise<string[]> => {
-    const response = await api.get<string[]>('/ethics-bias/severity-levels');
+    const response = await api.get<string[]>("/ethics-bias/severity-levels");
     return response.data;
   },
 };

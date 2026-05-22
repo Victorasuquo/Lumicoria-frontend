@@ -7,6 +7,7 @@ import { visionAgent } from "./vision-agent";
 import { legalDocumentAgent } from "./legal-document";
 import { customerServiceAgent } from "./customer-service";
 import { knowledgeGraphAgent } from "./knowledge-graph";
+import { ethicsBiasAgent } from "./ethics-bias";
 import { ragAgent } from "./rag-agent";
 import { dataAnalysisAgent } from "./data-analysis-agent";
 import { researchMentor } from "./research-mentor";
@@ -29,6 +30,7 @@ export const agentDocs: AgentDocEntry[] = [
   ragAgent,
   dataAnalysisAgent,
   knowledgeGraphAgent,
+  ethicsBiasAgent,
   // Add more agents as docs are written
 ];
 
