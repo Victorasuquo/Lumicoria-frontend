@@ -13,6 +13,7 @@ import { dataAnalysisAgent } from "./data-analysis-agent";
 import { researchMentor } from "./research-mentor";
 import { learningCoach } from "./learning-coach";
 import { studentAgent } from "./student-agent";
+import { wellbeingCoachAgent } from "./wellbeing-coach";
 
 // Add new agent doc imports here. One per agent, then add to the array below.
 
@@ -31,6 +32,7 @@ export const agentDocs: AgentDocEntry[] = [
   dataAnalysisAgent,
   knowledgeGraphAgent,
   ethicsBiasAgent,
+  wellbeingCoachAgent,
   // Add more agents as docs are written
 ];
 

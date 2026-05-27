@@ -678,6 +678,94 @@ export const wellbeingApi = {
     const response = await api.get<WellbeingRecord[]>('/wellbeing/history', { params: { time_range: timeRange || '7d' } });
     return response.data;
   },
+
+  // ── Coach / live additions ─────────────────────────────────
+
+  /** Frontend pings this every 30s while the tab is active. */
+  heartbeat: async (): Promise<{ ok: boolean; now: number }> => {
+    const response = await api.post('/wellbeing/heartbeat');
+    return response.data;
+  },
+
+  /** Aggregated productivity stats for the Coach + dashboard. */
+  getProductivity: async (): Promise<{
+    focus_minutes_today: number;
+    agent_runs_today: number;
+    tasks_total: number;
+    tasks_completed: number;
+    tasks_completed_today: number;
+    tasks_completed_week: number;
+    tasks_in_progress: number;
+    tasks_not_started: number;
+    tasks_blocked: number;
+    completion_ratio: number;
+    streak_days: number;
+  }> => {
+    const response = await api.get('/wellbeing/productivity');
+    return response.data;
+  },
+
+  /** Single-shot bundle for the Coach page. */
+  getCoachState: async (): Promise<{
+    metrics: Record<string, any>;
+    productivity: Record<string, any>;
+    break_timer: {
+      interval_minutes: number;
+      duration_minutes: number;
+      seconds_until_break: number;
+      seconds_since_break: number;
+    };
+    today_timeline: Array<Record<string, any>>;
+    recommendations: Array<Record<string, any>>;
+    week_series: Array<number | null>;
+    generated_at: string;
+  }> => {
+    const response = await api.get('/wellbeing/coach-state');
+    return response.data;
+  },
+
+  /** Today's activity log, chronological. */
+  getTodayTimeline: async (): Promise<Array<Record<string, any>>> => {
+    const response = await api.get('/wellbeing/history/timeline');
+    return response.data;
+  },
+
+  /** Conversational turn with the coach (Gemini-locked server-side). */
+  chatWithCoach: async (payload: {
+    message: string;
+    history?: Array<{ role: string; content: string }>;
+  }): Promise<{
+    response: string;
+    follow_up_suggestions: string[];
+    action_buttons: Array<{ label: string; action: string }>;
+  }> => {
+    const response = await api.post('/wellbeing/chat', payload, {
+      timeout: 2 * 60 * 1000,
+    });
+    return response.data;
+  },
+
+  /** Poll for a pending mood-prompt (true → show modal now). */
+  pollMoodPrompt: async (): Promise<{ prompt: boolean }> => {
+    const response = await api.get('/wellbeing/mood-prompts/poll');
+    return response.data;
+  },
+
+  /** Dismiss / snooze the mood prompt for N minutes. */
+  dismissMoodPrompt: async (snoozeMinutes: number = 90): Promise<void> => {
+    await api.post('/wellbeing/mood-prompts/dismiss', { snooze_minutes: snoozeMinutes });
+  },
+
+  /** Push the next-break countdown forward. */
+  snoozeBreak: async (minutes: number = 15): Promise<void> => {
+    await api.post('/wellbeing/break/snooze', { minutes });
+  },
+
+  /** Render the weekly digest payload without sending an email. */
+  previewWeeklyDigest: async (): Promise<Record<string, any>> => {
+    const response = await api.get('/wellbeing/weekly-digest/preview');
+    return response.data;
+  },
 };
 
 // Student agent API

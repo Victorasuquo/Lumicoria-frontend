@@ -1,6 +1,9 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { WellbeingProvider } from './contexts/WellbeingContext';
+import { MoodPromptModal } from './components/wellbeing/MoodPromptModal';
+import { CoachBubble } from './components/wellbeing/CoachBubble';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -193,7 +196,11 @@ const App = () => (
     <TooltipProvider>
       <Router>
         <AuthProvider>
-          <AppRoutes />
+          <WellbeingProvider>
+            <AppRoutes />
+            <MoodPromptModal />
+            <CoachBubble />
+          </WellbeingProvider>
         </AuthProvider>
       </Router>
     </TooltipProvider>

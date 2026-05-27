@@ -39,6 +39,8 @@ import {
   WellbeingStats,
 } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoalCreateDialog } from '@/components/wellbeing/GoalCreateDialog';
+import { LogActivityDialog } from '@/components/wellbeing/LogActivityDialog';
 
 // ── Icon mapping for metric types ──────────────────────────────────────
 const METRIC_ICONS: Record<string, React.ElementType> = {
@@ -79,6 +81,8 @@ const NewWellbeing = () => {
   const [analytics, setAnalytics] = useState<WellbeingAnalytics | null>(null);
   const [stats, setStats] = useState<WellbeingStats | null>(null);
   const [submittingMetric, setSubmittingMetric] = useState(false);
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -218,6 +222,13 @@ const NewWellbeing = () => {
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
           </select>
+          <Button
+            variant="outline"
+            onClick={() => setActivityDialogOpen(true)}
+          >
+            <Activity className="mr-2 h-4 w-4" />
+            Log Activity
+          </Button>
           <Button
             className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => submitQuickMetric('mood', 7)}
@@ -470,7 +481,7 @@ const NewWellbeing = () => {
                     <CardTitle>Well-being Goals</CardTitle>
                     <CardDescription>Track your progress towards your well-being goals</CardDescription>
                   </div>
-                  <Button onClick={() => toast({ title: 'Coming soon', description: 'Goal creation dialog coming in next update.' })}>
+                  <Button onClick={() => setGoalDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Set New Goal
                   </Button>
@@ -512,7 +523,11 @@ const NewWellbeing = () => {
                   <div className="text-center py-12">
                     <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 mb-2">No goals set yet</p>
-                    <p className="text-sm text-gray-400">Create a goal to start tracking your progress</p>
+                    <p className="text-sm text-gray-400 mb-4">Create a goal to start tracking your progress</p>
+                    <Button onClick={() => setGoalDialogOpen(true)} variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create first goal
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -646,6 +661,17 @@ const NewWellbeing = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <GoalCreateDialog
+        open={goalDialogOpen}
+        onClose={() => setGoalDialogOpen(false)}
+        onCreated={fetchData}
+      />
+      <LogActivityDialog
+        open={activityDialogOpen}
+        onClose={() => setActivityDialogOpen(false)}
+        onLogged={fetchData}
+      />
     </div>
   );
 };
