@@ -2,11 +2,33 @@
     "framework": "vite",
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/((?!.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|webmanifest|js|css|map|txt|xml|json|woff|woff2|ttf|eot)$).*)",
             "destination": "/index.html"
         }
     ],
     "headers": [
+        {
+            "source": "/favicon.(ico|png)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400, stale-while-revalidate=604800"
+                },
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                }
+            ]
+        },
+        {
+            "source": "/site.webmanifest",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/manifest+json"
+                }
+            ]
+        },
         {
             "source": "/(.*)",
             "headers": [
