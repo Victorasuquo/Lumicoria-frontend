@@ -4090,5 +4090,154 @@ export const knowledgeGraphApi = {
   },
 };
 
+// ─── Calendar API (Phase 2 — Lumicoria-native calendar) ────────────────────
+
+export type CalendarEventSource = "task" | "manual" | "gcal_imported" | "agent";
+export type CalendarEventStatus = "scheduled" | "completed" | "cancelled";
+
+export interface CalendarEventReminder {
+  minutes_before: number;
+  channel: "in_app" | "email" | "push";
+}
+
+export interface CalendarEvent {
+  id: string;
+  owner_user_id: string;
+  organization_id?: string | null;
+  task_id?: string | null;
+  project_id?: string | null;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  start: string;            // ISO 8601
+  end: string;              // ISO 8601
+  all_day: boolean;
+  color: string;
+  timezone: string;
+  source: CalendarEventSource;
+  status: CalendarEventStatus;
+  gcal_event_id?: string | null;
+  gcal_calendar_id?: string | null;
+  last_synced_at?: string | null;
+  attendees?: Array<Record<string, any>>;
+  reminders?: CalendarEventReminder[];
+  tags?: string[];
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface CalendarEventCreatePayload {
+  title: string;
+  description?: string;
+  location?: string;
+  start: string;                       // ISO 8601
+  end: string;                         // ISO 8601
+  all_day?: boolean;
+  color?: string;                      // hex
+  timezone?: string;
+  task_id?: string | null;
+  project_id?: string | null;
+  source?: CalendarEventSource;
+  attendees?: Array<Record<string, any>>;
+  reminders?: CalendarEventReminder[];
+  tags?: string[];
+  metadata?: Record<string, any>;
+  sync_to_google?: boolean;
+}
+
+export interface CalendarEventUpdatePayload {
+  title?: string;
+  description?: string;
+  location?: string;
+  start?: string;
+  end?: string;
+  all_day?: boolean;
+  color?: string;
+  timezone?: string;
+  status?: CalendarEventStatus;
+  attendees?: Array<Record<string, any>>;
+  reminders?: CalendarEventReminder[];
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface SyncToGoogleResult {
+  synced: boolean;
+  reason?: string;
+  event_id?: string;
+  note?: string;
+}
+
+export const calendarApi = {
+  list: async (params: {
+    start: string;                         // ISO 8601
+    end: string;                           // ISO 8601
+    include_completed?: boolean;
+    sources?: CalendarEventSource[];
+  }): Promise<CalendarEvent[]> => {
+    const search = new URLSearchParams();
+    search.append("start", params.start);
+    search.append("end", params.end);
+    if (params.include_completed !== undefined)
+      search.append("include_completed", String(params.include_completed));
+    (params.sources || []).forEach((s) => search.append("sources", s));
+    const response = await api.get<CalendarEvent[]>(`/calendar/events?${search}`);
+    return response.data;
+  },
+
+  today: async (): Promise<CalendarEvent[]> => {
+    const response = await api.get<CalendarEvent[]>("/calendar/events/today");
+    return response.data;
+  },
+
+  upcoming: async (days = 7): Promise<CalendarEvent[]> => {
+    const response = await api.get<CalendarEvent[]>(`/calendar/events/upcoming?days=${days}`);
+    return response.data;
+  },
+
+  get: async (id: string): Promise<CalendarEvent> => {
+    const response = await api.get<CalendarEvent>(`/calendar/events/${id}`);
+    return response.data;
+  },
+
+  create: async (payload: CalendarEventCreatePayload): Promise<CalendarEvent> => {
+    const response = await api.post<CalendarEvent>("/calendar/events", payload);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    payload: CalendarEventUpdatePayload,
+  ): Promise<CalendarEvent> => {
+    const response = await api.put<CalendarEvent>(`/calendar/events/${id}`, payload);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/calendar/events/${id}`);
+  },
+
+  fromTask: async (taskId: string): Promise<CalendarEvent> => {
+    const response = await api.post<CalendarEvent>(`/calendar/events/from-task/${taskId}`);
+    return response.data;
+  },
+
+  syncEventToGoogle: async (id: string): Promise<SyncToGoogleResult> => {
+    const response = await api.post<SyncToGoogleResult>(`/calendar/events/${id}/sync/google`);
+    return response.data;
+  },
+
+  syncAllToGoogle: async (daysAhead = 30): Promise<{
+    synced: number;
+    total: number;
+    results: SyncToGoogleResult[];
+  }> => {
+    const response = await api.post(`/calendar/sync/google?days_ahead=${daysAhead}`);
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;

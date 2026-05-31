@@ -12,6 +12,7 @@ import {
   FileText, Filter, ArrowUpDown,
 } from "lucide-react";
 import { taskApi, TaskItem } from "@/services/api";
+import TodayPanel from "@/components/TodayPanel";
 
 /* ── Config ────────────────────────────────────────────────── */
 
@@ -172,6 +173,9 @@ const Tasks: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Today panel — Phase 2 calendar surface */}
+        <TodayPanel />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

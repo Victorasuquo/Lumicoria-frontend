@@ -15,7 +15,8 @@ import {
   Circle, PlayCircle, CheckCircle, XCircle, PauseCircle,
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
-import { documentApi, Document } from "@/services/api";
+import { documentApi, Document, calendarApi, taskApi } from "@/services/api";
+import { useNavigate } from "react-router-dom";
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -184,6 +185,7 @@ const TaskDetailPopup: React.FC<TaskDetailPopupProps> = ({ task, index, onClose,
 
 const DocumentAgent: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -193,6 +195,10 @@ const DocumentAgent: React.FC = () => {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [activeTab, setActiveTab] = useState("extracted");
   const [creatingTasks, setCreatingTasks] = useState(false);
+
+  // Calendar push state (Phase 2)
+  const [pushingCalendar, setPushingCalendar] = useState(false);
+  const [pushedDates, setPushedDates] = useState<Set<string>>(new Set());
 
   // Task detail popup
   const [selectedTaskIndex, setSelectedTaskIndex] = useState<number | null>(null);
@@ -308,6 +314,154 @@ const DocumentAgent: React.FC = () => {
     } finally {
       setCreatingTasks(false);
     }
+  };
+
+  /* ── Push extracted dates + task deadlines to the Lumicoria Calendar ── */
+  // Parses an extracted deadline string into an ISO date.  Accepts:
+  //   "2026-05-01"
+  //   "Prior to 2026-06-26"
+  //   "Weekly until 2026-06-26"
+  //   "May 25, 2025"
+  // Returns null when nothing parseable is found.
+  const parseDeadlineToIso = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    // 1. ISO-like YYYY-MM-DD anywhere in the string
+    const iso = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) {
+      const d = new Date(`${iso[1]}-${iso[2]}-${iso[3]}T09:00:00`);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    // 2. Long-form "May 25, 2025" / "Jan 1 2024"
+    const longForm = new Date(raw);
+    if (!isNaN(longForm.getTime())) {
+      longForm.setHours(9, 0, 0, 0);
+      return longForm.toISOString();
+    }
+    return null;
+  };
+
+  const handleAddAllToCalendar = async () => {
+    if (!selectedDoc) return;
+    const extracted = (selectedDoc.extraction_result as any) || {};
+    const extractionItems: Array<{ type: string; value: string; context?: string }> =
+      extracted.extracted_info?.dates?.map((d: any) => ({
+        type: "Date",
+        value: d.text || d,
+        context: d.context,
+      })) || [];
+    const autoTasks: Array<{ title: string; deadline?: string; priority?: string; description?: string }> =
+      extracted.tasks || (selectedDoc as any).metadata?.auto_tasks || [];
+
+    // Build the list of events we'll push
+    type PendingEvent = {
+      title: string;
+      start: string;
+      color: string;
+      priority?: string;
+      description?: string;
+      sourceKey: string;
+    };
+    const PRIORITY_COLOR: Record<string, string> = {
+      low: "#94A3B8",
+      medium: "#6C4AB0",
+      high: "#F59E0B",
+      critical: "#EF4444",
+    };
+
+    const pending: PendingEvent[] = [];
+
+    // 1. Raw extracted dates
+    for (const item of extractionItems) {
+      const iso = parseDeadlineToIso(item.value);
+      if (!iso) continue;
+      const key = `date:${item.value}`;
+      if (pushedDates.has(key)) continue;
+      pending.push({
+        title: item.context || item.value || "Event",
+        start: iso,
+        color: "#6C4AB0",
+        sourceKey: key,
+      });
+    }
+
+    // 2. Task deadlines
+    for (const t of autoTasks) {
+      if (!t.deadline) continue;
+      const iso = parseDeadlineToIso(t.deadline);
+      if (!iso) continue;
+      const key = `task:${t.title}:${t.deadline}`;
+      if (pushedDates.has(key)) continue;
+      pending.push({
+        title: t.title,
+        start: iso,
+        color: PRIORITY_COLOR[(t.priority || "medium").toLowerCase()] || PRIORITY_COLOR.medium,
+        priority: t.priority,
+        description: t.description,
+        sourceKey: key,
+      });
+    }
+
+    if (pending.length === 0) {
+      toast({
+        title: "Nothing to add",
+        description: "No parseable dates found, or everything has already been pushed to the calendar.",
+      });
+      return;
+    }
+
+    setPushingCalendar(true);
+    let created = 0;
+    let failed = 0;
+    const newPushed = new Set(pushedDates);
+
+    for (const ev of pending) {
+      try {
+        const startDate = new Date(ev.start);
+        const endDate = new Date(startDate.getTime() + 60 * 60_000);
+        await calendarApi.create({
+          title: ev.title,
+          description: ev.description || `Extracted from ${selectedDoc.name}`,
+          start: ev.start,
+          end: endDate.toISOString(),
+          all_day: false,
+          color: ev.color,
+          source: "manual",
+          metadata: {
+            extracted_from_document_id: selectedDoc.id,
+            extracted_from_document_name: selectedDoc.name,
+            priority: ev.priority,
+          },
+        });
+        newPushed.add(ev.sourceKey);
+        created += 1;
+      } catch (e) {
+        failed += 1;
+      }
+    }
+    setPushedDates(newPushed);
+    setPushingCalendar(false);
+
+    if (created > 0) {
+      toast({
+        title: `${created} event${created !== 1 ? "s" : ""} added`,
+        description: failed > 0
+          ? `${failed} failed. Open the Calendar page to review.`
+          : "Open the Calendar page to review.",
+      });
+    } else {
+      toast({
+        title: "Calendar push failed",
+        description: "Could not add any events. Check your connection.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddManualEvent = () => {
+    // Navigate to the calendar — the create modal is one click away there.
+    // Stashing context in the URL would require another route param; the
+    // Calendar page's "New event" button is good enough for now.
+    navigate("/calendar");
   };
 
   /* ── Query document ───────────────────────────────────── */
@@ -790,15 +944,39 @@ const DocumentAgent: React.FC = () => {
                               </motion.div>
                             ))}
 
-                            <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400 cursor-pointer hover:bg-gray-100 transition-colors">
+                            <button
+                              type="button"
+                              onClick={handleAddManualEvent}
+                              className="w-full flex items-center p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                            >
                               <Plus size={14} className="mr-2" />
                               <span className="text-xs">Add event manually</span>
-                            </div>
+                              <span className="ml-auto text-[10px] text-gray-400">opens Calendar →</span>
+                            </button>
 
-                            <Button variant="outline" className="w-full border-gray-200 h-9 text-xs mt-2">
-                              <Calendar size={14} className="mr-2" />
-                              Add to Calendar
+                            <Button
+                              variant="outline"
+                              className="w-full border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-purple-700 h-9 text-xs mt-2 disabled:opacity-60"
+                              disabled={pushingCalendar}
+                              onClick={handleAddAllToCalendar}
+                            >
+                              {pushingCalendar ? (
+                                <Loader2 size={14} className="mr-2 animate-spin" />
+                              ) : (
+                                <Calendar size={14} className="mr-2" />
+                              )}
+                              {pushingCalendar
+                                ? "Adding to Calendar…"
+                                : `Add ${(dateItems.length + taskDeadlines.length)} to Calendar`}
                             </Button>
+
+                            <button
+                              type="button"
+                              onClick={() => navigate("/calendar")}
+                              className="w-full text-[11px] text-purple-600 hover:underline mt-1"
+                            >
+                              View on Calendar →
+                            </button>
                           </div>
                         );
                       })()}

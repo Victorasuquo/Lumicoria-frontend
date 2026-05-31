@@ -38,6 +38,7 @@ import Contact from "./pages/Contact";
 import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
 import Tasks from "./pages/Tasks";
+import Calendar from "./pages/Calendar";
 import IntegrationsHub from "./pages/IntegrationsHub";
 import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -155,6 +156,7 @@ const AppRoutes = () => {
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
         <Route path="/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
         <Route path="/integrations/:type" element={<ProtectedRoute><IntegrationDetail /></ProtectedRoute>} />
         <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />
