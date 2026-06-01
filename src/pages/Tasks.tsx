@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { taskApi, TaskItem } from "@/services/api";
 import TodayPanel from "@/components/TodayPanel";
+import AssigneePopover from "@/components/AssigneePopover";
 
 /* ── Config ────────────────────────────────────────────────── */
 
@@ -290,7 +291,7 @@ const Tasks: React.FC = () => {
                             }`}>
                               {getTaskName(task)}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityConfig[pri]?.cls || priorityConfig.medium.cls}`}>
                                 {priorityConfig[pri]?.label || "Medium"}
                               </Badge>
@@ -299,11 +300,20 @@ const Tasks: React.FC = () => {
                                   <Clock size={10} /> {formatDate(task.due_date)}
                                 </span>
                               )}
+                              {/* LLM-suggested assignee — purple to match the document name */}
                               {getTaskAssignee(task) && (
-                                <span className="text-[11px] text-violet-500 truncate max-w-[100px]">
+                                <span className="text-[11px] text-purple-600 truncate max-w-[120px]">
                                   {getTaskAssignee(task)}
                                 </span>
                               )}
+                              {/* Phase 5 — clickable assignee pill (optional) */}
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <AssigneePopover
+                                  task={task}
+                                  variant="compact"
+                                  onAssigned={() => fetchTasks()}
+                                />
+                              </div>
                               {task.document_id && (
                                 <FileText size={10} className="text-purple-300" />
                               )}
@@ -396,17 +406,56 @@ const Tasks: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    {getTaskAssignee(selectedTask) && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Assigned To</p>
-                        <p className="text-sm text-gray-700">{getTaskAssignee(selectedTask)}</p>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Assigned To</p>
+                      {/* LLM-suggested / current assignee name — purple to match document */}
+                      {getTaskAssignee(selectedTask) ? (
+                        <p className="text-sm text-purple-600">{getTaskAssignee(selectedTask)}</p>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">No one yet</p>
+                      )}
+                      {/* Phase 5 — click-to-reassign / invite, under the name */}
+                      <div className="mt-1.5">
+                        <AssigneePopover
+                          task={selectedTask}
+                          variant="detail"
+                          onAssigned={() => fetchTasks()}
+                        />
                       </div>
-                    )}
+                    </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created</p>
                       <p className="text-sm text-gray-700">{formatDate(selectedTask.created_at)}</p>
                     </div>
                   </div>
+
+                  {/* ── Activity meta — who did what last (Phase 5) ── */}
+                  {selectedTask.status_history && selectedTask.status_history.length > 0 && (() => {
+                    const last = selectedTask.status_history![selectedTask.status_history!.length - 1];
+                    const verbMap: Record<string, string> = {
+                      completed: "marked complete by",
+                      in_progress: "started by",
+                      blocked: "blocked by",
+                      cancelled: "cancelled by",
+                      deferred: "deferred by",
+                      todo: "reopened by",
+                    };
+                    const verb = verbMap[last.status] || "updated by";
+                    const who = last.changed_by_name || (last.changed_by ? "a teammate" : "");
+                    if (!who) return null;
+                    const when = last.changed_at ? new Date(last.changed_at).toLocaleString([], {
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    }) : "";
+                    return (
+                      <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[11px] text-gray-500 flex items-center gap-1.5">
+                        <CheckCircle2 size={11} className={last.status === "completed" ? "text-emerald-500" : "text-gray-400"} />
+                        <span className="capitalize">{last.status.replace("_", " ")}</span>
+                        <span>{verb}</span>
+                        <span className="text-gray-700 font-medium">{who}</span>
+                        {when && <span>· {when}</span>}
+                      </div>
+                    );
+                  })()}
 
                   {/* Tags */}
                   {selectedTask.tags && selectedTask.tags.length > 0 && (

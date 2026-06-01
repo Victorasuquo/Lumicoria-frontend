@@ -15,7 +15,8 @@ import {
   ListChecks,
   Blocks,
   Plug,
-  CalendarDays
+  CalendarDays,
+  Mail
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -217,6 +218,12 @@ export default function MainNav() {
                     <Link to="/calendar" className="flex items-center gap-2">
                       <CalendarDays className="h-4 w-4" />
                       Calendar
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/invites" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Invites
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">

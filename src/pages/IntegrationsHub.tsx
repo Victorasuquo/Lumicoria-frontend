@@ -11,9 +11,11 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import {
   integrationApi,
+  calendarApi,
   IntegrationCatalogItem,
   IntegrationItem,
 } from '@/services/api';
+import { CalendarDays } from 'lucide-react';
 
 // ── Category config ──────────────────────────────────────────────────────
 
@@ -47,8 +49,17 @@ export default function IntegrationsHub() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 
+  // Phase 3 — calendar sync toggle state
+  const [calSettings, setCalSettings] = useState<{ auto_sync_google_calendar: boolean; google_connected: boolean }>({
+    auto_sync_google_calendar: false,
+    google_connected: false,
+  });
+  const [savingCalSetting, setSavingCalSetting] = useState(false);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
+
   useEffect(() => {
     loadData();
+    loadCalendarSettings();
   }, []);
 
   const loadData = async () => {
@@ -65,6 +76,57 @@ export default function IntegrationsHub() {
       setCatalog(getDefaultCatalog());
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCalendarSettings = async () => {
+    try {
+      const s = await calendarApi.getSettings();
+      setCalSettings(s);
+    } catch {
+      // best-effort; defaults stay
+    }
+  };
+
+  const toggleAutoSync = async () => {
+    const next = !calSettings.auto_sync_google_calendar;
+    setSavingCalSetting(true);
+    try {
+      await calendarApi.updateSettings({ auto_sync_google_calendar: next });
+      setCalSettings((s) => ({ ...s, auto_sync_google_calendar: next }));
+      toast({
+        title: next ? 'Google Calendar auto-sync ON' : 'Auto-sync OFF',
+        description: next
+          ? 'New Lumicoria events will also appear on your Google Calendar.'
+          : 'New events stay only in Lumicoria. Use per-event "Sync" when needed.',
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Could not update settings',
+        description: e?.response?.data?.detail || 'Try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingCalSetting(false);
+    }
+  };
+
+  const bulkSync = async () => {
+    setBulkSyncing(true);
+    try {
+      const r = await calendarApi.syncAllToGoogle(30);
+      toast({
+        title: `${r.synced} of ${r.total} synced`,
+        description: r.synced === r.total ? 'All events mirrored to Google.' : 'Some events skipped — check Calendar.',
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Bulk sync failed',
+        description: e?.response?.data?.detail || 'Try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setBulkSyncing(false);
     }
   };
 
@@ -117,6 +179,75 @@ export default function IntegrationsHub() {
               <Shield className="w-3.5 h-3.5 text-blue-500" />
               <span className="text-sm font-medium text-gray-700">Encrypted</span>
             </div>
+          </div>
+        </motion.div>
+
+        {/* ── Calendar sync card (Phase 3) ────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.4 }}
+          className="mb-8 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4"
+        >
+          <div className="flex items-start gap-3 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
+              <CalendarDays size={18} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-semibold text-gray-900">Calendar sync</h3>
+                {calSettings.google_connected ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <Check size={10} /> Google connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200">
+                    Google not connected
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {calSettings.google_connected
+                  ? 'Mirror new Lumicoria events to your Google Calendar automatically.'
+                  : 'Connect Google Workspace below to enable two-way calendar sync.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Auto-sync toggle */}
+            <button
+              type="button"
+              onClick={toggleAutoSync}
+              disabled={!calSettings.google_connected || savingCalSetting}
+              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
+                calSettings.auto_sync_google_calendar
+                  ? 'bg-purple-600'
+                  : 'bg-gray-200'
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
+              aria-pressed={calSettings.auto_sync_google_calendar}
+              title={calSettings.google_connected ? 'Toggle auto-sync' : 'Connect Google first'}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                  calSettings.auto_sync_google_calendar ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-gray-600 font-medium">
+              {calSettings.auto_sync_google_calendar ? 'On' : 'Off'}
+            </span>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-gray-200 ml-2"
+              disabled={!calSettings.google_connected || bulkSyncing}
+              onClick={bulkSync}
+            >
+              {bulkSyncing ? <RefreshCw size={12} className="mr-1.5 animate-spin" /> : <RefreshCw size={12} className="mr-1.5" />}
+              Sync upcoming
+            </Button>
           </div>
         </motion.div>
 

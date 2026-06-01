@@ -8,6 +8,48 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+/**
+ * Normalise an axios error into a plain string.  FastAPI emits a 422 with
+ * `detail` as an *array of objects* — React crashes when you try to render
+ * that array as a child node.  This helper turns any shape into a sentence
+ * the UI can safely show.
+ *
+ * Usage:
+ *   catch (e) { toast({ description: getErrorMessage(e) }) }
+ */
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+
+  // Axios error shape
+  const anyErr = error as any;
+  const data = anyErr?.response?.data;
+  const detail = data?.detail;
+
+  // Single string detail (most common)
+  if (typeof detail === 'string' && detail.trim()) return detail;
+
+  // FastAPI 422 — array of {loc, msg, type, ...}
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail
+      .map((d: any) => {
+        const field = Array.isArray(d?.loc)
+          ? d.loc.filter((p: any) => p !== 'body').join('.') || 'field'
+          : 'field';
+        return `${field}: ${d?.msg || 'invalid'}`;
+      })
+      .join('; ');
+  }
+
+  // Some endpoints return { message } instead of { detail }
+  if (typeof data?.message === 'string') return data.message;
+
+  // Plain Error
+  if (anyErr instanceof Error && anyErr.message) return anyErr.message;
+
+  return fallback;
+}
+
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
@@ -162,9 +204,26 @@ export const authApi = {
 };
 
 // User API
+export interface UserSearchResult {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url?: string | null;
+  job_title?: string | null;
+}
+
 export const userApi = {
   getProfile: async (): Promise<User> => {
     const response = await api.get<User>('/users/me');
+    return response.data;
+  },
+
+  /** Phase 5 — autocomplete the assignee popover.  Returns at most `limit` rows. */
+  search: async (q: string, limit = 8): Promise<UserSearchResult[]> => {
+    const trimmed = (q || '').trim();
+    if (!trimmed) return [];
+    const params = new URLSearchParams({ q: trimmed, limit: String(limit) });
+    const response = await api.get<UserSearchResult[]>(`/users/search?${params}`);
     return response.data;
   },
 
@@ -315,6 +374,21 @@ export const documentApi = {
 };
 
 // Task API
+export interface TaskStatusHistoryEntry {
+  status: string;
+  changed_at: string;
+  changed_by?: string | null;
+  changed_by_name?: string | null;
+}
+
+export interface TaskAssignmentHistoryEntry {
+  assigned_to?: string | null;
+  assigned_to_email?: string | null;
+  changed_at: string;
+  changed_by?: string | null;
+  changed_by_name?: string | null;
+}
+
 export interface TaskItem {
   id: string;
   name: string;
@@ -324,6 +398,12 @@ export interface TaskItem {
   priority?: string | number;
   due_date?: string | null;
   assigned_to?: string | null;
+  /** Phase 5 — set when the assignee is an email that doesn't have an account yet. */
+  assigned_to_email?: string | null;
+  /** Phase 1 — "user" | "email_invite" | "agent" | "user_and_agent" | null */
+  assignee_kind?: string | null;
+  /** Phase 5 — invite row that backs assigned_to_email; lets the UI fetch invite status. */
+  invite_id?: string | null;
   created_by: string;
   organization_id: string;
   document_id?: string | null;
@@ -331,6 +411,9 @@ export interface TaskItem {
   metadata?: Record<string, any>;
   tags?: string[];
   progress?: number;
+  status_history?: TaskStatusHistoryEntry[];
+  assignment_history?: TaskAssignmentHistoryEntry[];
+  completed_at?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -4235,6 +4318,143 @@ export const calendarApi = {
     results: SyncToGoogleResult[];
   }> => {
     const response = await api.post(`/calendar/sync/google?days_ahead=${daysAhead}`);
+    return response.data;
+  },
+
+  // Phase 3 — detach one event from its Google mirror (deletes on Google).
+  unsyncEventFromGoogle: async (id: string): Promise<SyncToGoogleResult & { ok?: boolean }> => {
+    const response = await api.post<SyncToGoogleResult>(`/calendar/events/${id}/unsync/google`);
+    return response.data;
+  },
+
+  // Phase 3 — per-user calendar settings (auto-sync toggle).
+  getSettings: async (): Promise<{
+    auto_sync_google_calendar: boolean;
+    google_connected: boolean;
+  }> => {
+    const response = await api.get("/calendar/settings");
+    return response.data;
+  },
+
+  updateSettings: async (payload: { auto_sync_google_calendar: boolean }): Promise<{
+    auto_sync_google_calendar: boolean;
+    ok: boolean;
+  }> => {
+    const response = await api.put("/calendar/settings", payload);
+    return response.data;
+  },
+};
+
+// ─── Invite API (Phase 5 — invite-to-collaborate) ─────────────────────────
+
+export type InviteScope = "task" | "project" | "organization";
+export type InviteRole = "admin" | "member" | "viewer";
+export type InviteStatus = "pending" | "accepted" | "expired" | "revoked";
+
+export interface InviteItem {
+  id: string;
+  email: string;
+  email_normalized: string;
+  invited_by: string;
+  inviter_name?: string | null;
+  inviter_email?: string | null;
+  scope: InviteScope;
+  organization_id?: string | null;
+  project_id?: string | null;
+  task_ids?: string[];
+  role: InviteRole;
+  status: InviteStatus;
+  message?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+  accepted_at?: string | null;
+  accepted_user_id?: string | null;
+  last_reminder_sent_at?: string | null;
+  reminder_count?: number;
+}
+
+export interface InvitePreview extends InviteItem {
+  organization_name?: string | null;
+  project_name?: string | null;
+  task_previews?: Array<{ title: string; due_label: string; priority?: string }>;
+}
+
+export interface InviteCreatePayload {
+  email: string;
+  scope?: InviteScope;
+  organization_id?: string | null;
+  project_id?: string | null;
+  task_ids?: string[];
+  role?: InviteRole;
+  message?: string;
+  expires_in_days?: number;
+}
+
+export const inviteApi = {
+  create: async (payload: InviteCreatePayload): Promise<InviteItem> => {
+    const response = await api.post<InviteItem>("/invites", payload);
+    return response.data;
+  },
+
+  listSent: async (params?: { status?: InviteStatus; limit?: number; skip?: number }): Promise<InviteItem[]> => {
+    const search = new URLSearchParams();
+    if (params?.status) search.append("status", params.status);
+    if (params?.limit) search.append("limit", String(params.limit));
+    if (params?.skip) search.append("skip", String(params.skip));
+    const response = await api.get<InviteItem[]>(`/invites/sent?${search}`);
+    return response.data;
+  },
+
+  listReceived: async (): Promise<InviteItem[]> => {
+    const response = await api.get<InviteItem[]>("/invites/received");
+    return response.data;
+  },
+
+  resend: async (inviteId: string): Promise<{ ok: boolean }> => {
+    const response = await api.post(`/invites/${inviteId}/resend`);
+    return response.data;
+  },
+
+  revoke: async (inviteId: string): Promise<void> => {
+    await api.delete(`/invites/${inviteId}`);
+  },
+
+  previewByToken: async (token: string): Promise<InvitePreview> => {
+    // Public endpoint — no auth header needed.
+    const response = await api.get<InvitePreview>(`/invites/by-token/${token}`);
+    return response.data;
+  },
+
+  acceptByToken: async (token: string): Promise<{
+    ok: boolean;
+    accepted: number;
+    orgs_joined: number;
+    tasks_reassigned: number;
+    invite_ids?: string[];
+    invite?: InviteItem;
+  }> => {
+    const response = await api.post(`/invites/by-token/${token}/accept`);
+    return response.data;
+  },
+};
+
+// ─── Task assignment helper (Phase 5) ────────────────────────────────────
+
+export interface AssignTaskResult {
+  assigned: boolean;
+  via: "user_id" | "invite" | "existing_user";
+  user_id?: string | null;
+  invite_id?: string | null;
+  invite_token?: string;
+  invite_expires_at?: string;
+}
+
+export const taskAssignApi = {
+  assign: async (
+    taskId: string,
+    payload: { user_id?: string; email?: string; role?: InviteRole },
+  ): Promise<AssignTaskResult> => {
+    const response = await api.post<AssignTaskResult>(`/tasks/${taskId}/assign`, payload);
     return response.data;
   },
 };

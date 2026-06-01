@@ -39,6 +39,8 @@ import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
 import Tasks from "./pages/Tasks";
 import Calendar from "./pages/Calendar";
+import Invites from "./pages/Invites";
+import InviteAccept from "./pages/InviteAccept";
 import IntegrationsHub from "./pages/IntegrationsHub";
 import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -157,6 +159,9 @@ const AppRoutes = () => {
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+        <Route path="/invites" element={<ProtectedRoute><Invites /></ProtectedRoute>} />
+        {/* Public — token is the credential */}
+        <Route path="/invites/accept" element={<InviteAccept />} />
         <Route path="/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
         <Route path="/integrations/:type" element={<ProtectedRoute><IntegrationDetail /></ProtectedRoute>} />
         <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />

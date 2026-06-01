@@ -208,15 +208,39 @@ const Calendar: React.FC = () => {
     try {
       const result = await calendarApi.syncEventToGoogle(id);
       if (result.synced) {
-        toast({ title: "Synced to Google Calendar" });
+        toast({ title: result.note ? "Synced" : "Synced to Google Calendar" });
       } else if (result.reason === "google_not_connected") {
         toast({ title: "Google not connected", description: "Connect Google Workspace in Settings → Integrations.", variant: "destructive" });
       } else {
-        toast({ title: "Sync pending", description: result.note || result.reason });
+        toast({ title: "Sync failed", description: result.reason || "Unknown error", variant: "destructive" });
       }
+      // Re-fetch so the new gcal_event_id + last_synced_at land in the UI.
       refresh();
+      // Re-fetch the selected event so the drawer's badges update without re-opening.
+      if (selected?.id === id) {
+        try {
+          const fresh = await calendarApi.get(id);
+          setSelected(fresh);
+        } catch {/* noop */}
+      }
     } catch (e: any) {
       toast({ title: "Sync failed", description: e?.message, variant: "destructive" });
+    }
+  };
+
+  const handleUnsyncGoogle = async (id: string) => {
+    try {
+      await calendarApi.unsyncEventFromGoogle(id);
+      toast({ title: "Removed from Google Calendar", description: "Lumicoria event was kept." });
+      refresh();
+      if (selected?.id === id) {
+        try {
+          const fresh = await calendarApi.get(id);
+          setSelected(fresh);
+        } catch {/* noop */}
+      }
+    } catch (e: any) {
+      toast({ title: "Unsync failed", description: e?.message, variant: "destructive" });
     }
   };
 
@@ -358,6 +382,7 @@ const Calendar: React.FC = () => {
         onDelete={handleDelete}
         onComplete={handleComplete}
         onSyncGoogle={handleSyncGoogle}
+        onUnsyncGoogle={handleUnsyncGoogle}
         onSaved={(e) => { setSelected(e); refresh(); }}
       />
 
@@ -628,8 +653,9 @@ const EventDrawer: React.FC<{
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   onSyncGoogle: (id: string) => void;
+  onUnsyncGoogle: (id: string) => void;
   onSaved: (e: CalendarEvent) => void;
-}> = ({ event, onClose, onDelete, onComplete, onSyncGoogle, onSaved }) => {
+}> = ({ event, onClose, onDelete, onComplete, onSyncGoogle, onUnsyncGoogle, onSaved }) => {
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<{ title: string; description: string; start: string; end: string; color: string } | null>(null);
@@ -800,6 +826,28 @@ const EventDrawer: React.FC<{
                 {!editing && !event.gcal_event_id && (
                   <Button size="sm" variant="outline" className="text-xs" onClick={() => onSyncGoogle(event.id)}>
                     <CloudUpload size={12} className="mr-1" /> Sync
+                  </Button>
+                )}
+                {!editing && event.gcal_event_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={() => onSyncGoogle(event.id)}
+                    title="Re-push the latest title/time/description to Google"
+                  >
+                    <CloudUpload size={12} className="mr-1" /> Re-sync
+                  </Button>
+                )}
+                {!editing && event.gcal_event_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-amber-700 border-amber-200 hover:bg-amber-50"
+                    onClick={() => onUnsyncGoogle(event.id)}
+                    title="Remove from Google Calendar (keeps the Lumicoria event)"
+                  >
+                    Unsync
                   </Button>
                 )}
               </div>
