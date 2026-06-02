@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { blogApi, commentApi, type BlogComment } from "@/services/api";
+import { blogApi, commentApi, resolveAvatarUrl, type BlogComment } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import BlogNav from "@/components/BlogNav";
 import {
@@ -217,9 +217,9 @@ export default function BlogPostPage() {
         {/* Author Card */}
         <div className="mt-10 pt-8 border-t">
           <div className="flex items-center gap-4">
-            {post.author_avatar_url ? (
+            {resolveAvatarUrl(post.author_avatar_url) ? (
               <img
-                src={post.author_avatar_url}
+                src={resolveAvatarUrl(post.author_avatar_url)}
                 alt={post.author_name}
                 className="w-12 h-12 rounded-full"
               />
@@ -389,8 +389,8 @@ function CommentCard({
 
   return (
     <div className="flex gap-3">
-      {comment.user_avatar_url ? (
-        <img src={comment.user_avatar_url} alt="" className="w-9 h-9 rounded-full shrink-0" />
+      {resolveAvatarUrl(comment.user_avatar_url) ? (
+        <img src={resolveAvatarUrl(comment.user_avatar_url)} alt="" className="w-9 h-9 rounded-full shrink-0" />
       ) : (
         <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-400 shrink-0">
           {comment.user_name[0]}

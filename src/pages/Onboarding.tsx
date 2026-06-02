@@ -11,7 +11,7 @@ import {
 import { ArrowRight, ArrowLeft, Sparkles, Rocket, User, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import api from '@/services/api';
+import api, { resolveAvatarUrl } from '@/services/api';
 
 interface ProfileData {
   full_name: string;
@@ -172,7 +172,7 @@ const Onboarding: React.FC = () => {
               {/* Avatar */}
               <div className="flex items-center gap-5 mb-8">
                 <Avatar className="h-20 w-20 ring-4 ring-indigo-100">
-                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarImage src={resolveAvatarUrl(profile.avatar_url)} />
                   <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xl font-semibold">
                     {initials}
                   </AvatarFallback>

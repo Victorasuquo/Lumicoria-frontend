@@ -392,16 +392,16 @@ function Hero({ payload }: { payload: DashboardPayload }) {
             />
 
             <div className="grid grid-cols-12 gap-0 divide-x divide-white/40">
-                <div className="col-span-12 md:col-span-4 px-7 py-7 relative">
+                <div className="col-span-12 md:col-span-5 px-6 py-5 relative">
                     <p
                         className="text-[10.5px] uppercase tracking-[0.18em] font-medium"
                         style={{ color: INK_2 }}
                     >
                         Productivity index
                     </p>
-                    <div className="mt-2 flex items-baseline gap-2">
+                    <div className="mt-1.5 flex items-baseline gap-2">
                         <span
-                            className="font-hero font-bold text-[72px] leading-[0.9] tabular-nums"
+                            className="font-hero font-bold text-[56px] leading-[0.9] tabular-nums"
                             style={{
                                 background:
                                     "linear-gradient(135deg, #6C4AB0 0%, #0EA5E9 100%)",
@@ -446,22 +446,24 @@ function Hero({ payload }: { payload: DashboardPayload }) {
                     </div>
                 </div>
 
-                <HeroStat
-                    label="Tasks completed"
-                    value={tasks.completed}
-                    sub={`${tasks.total.toLocaleString()} total · ${(tasks.completion_rate * 100).toFixed(0)}% rate`}
-                />
-                <HeroStat
-                    label="Agent runs"
-                    value={agents.total_runs}
-                    sub={`${(agents.success_rate * 100).toFixed(0)}% success · ${agents.errors} errors`}
-                />
-                <HeroStat
-                    label="Pending review"
-                    value={proposals.pending_review}
-                    sub={`${proposals.approved} approved · ${proposals.rejected} rejected`}
-                    accent={proposals.pending_review > 0 ? PURPLE : undefined}
-                />
+                <div className="col-span-12 md:col-span-7 grid grid-cols-3 divide-x divide-white/40">
+                    <HeroStat
+                        label="Tasks completed"
+                        value={tasks.completed}
+                        sub={`${tasks.total.toLocaleString()} total · ${(tasks.completion_rate * 100).toFixed(0)}% rate`}
+                    />
+                    <HeroStat
+                        label="Agent runs"
+                        value={agents.total_runs}
+                        sub={`${(agents.success_rate * 100).toFixed(0)}% success · ${agents.errors} errors`}
+                    />
+                    <HeroStat
+                        label="Pending review"
+                        value={proposals.pending_review}
+                        sub={`${proposals.approved} approved · ${proposals.rejected} rejected`}
+                        accent={proposals.pending_review > 0 ? PURPLE : undefined}
+                    />
+                </div>
             </div>
         </motion.section>
     );
@@ -508,20 +510,20 @@ function HeroStat({
     accent?: string;
 }) {
     return (
-        <div className="col-span-12 sm:col-span-4 md:[grid-column:span_2.667/span_2.667] px-7 py-7">
+        <div className="px-4 py-5">
             <p
-                className="text-[10.5px] uppercase tracking-[0.18em] font-medium"
+                className="text-[10px] uppercase tracking-[0.16em] font-medium"
                 style={{ color: INK_2 }}
             >
                 {label}
             </p>
             <div
-                className="mt-2 font-hero font-bold text-[44px] leading-none tabular-nums"
+                className="mt-1.5 font-hero font-bold text-[28px] leading-none tabular-nums"
                 style={{ color: accent || INK }}
             >
                 {value.toLocaleString()}
             </div>
-            <p className="mt-2 text-[11.5px]" style={{ color: INK_2 }}>
+            <p className="mt-1.5 text-[11px] leading-snug" style={{ color: INK_2 }}>
                 {sub}
             </p>
         </div>
@@ -1297,7 +1299,7 @@ function ActivityFeed({ activity }: { activity: ActivityRow[] }) {
             subtitle="Most recent events across the workspace"
         >
             <ol className="divide-y" style={{ borderColor: "rgba(15,23,42,0.06)" }}>
-                {activity.slice(0, 14).map((row, i) => (
+                {activity.slice(0, 5).map((row, i) => (
                     <motion.li
                         key={row.id}
                         initial={{ opacity: 0, x: -6 }}

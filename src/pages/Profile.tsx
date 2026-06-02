@@ -7,11 +7,11 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Icons } from '../components/ui/icons';
-import { userApi, UserProfile, UserSettings } from '../services/api';
+import { userApi, UserProfile, UserSettings, resolveAvatarUrl } from '../services/api';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, setUser, refreshUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -127,6 +127,17 @@ export default function Profile() {
     setIsLoading(true);
     try {
       const updatedUser = await userApi.uploadAvatar(file);
+      // Push the new user (with fresh avatar_url) into the auth context so
+      // every header / nav / dropdown rerenders immediately.  Without this,
+      // the upload succeeds on the backend but the UI keeps the stale URL.
+      if (updatedUser) {
+        setUser(updatedUser as any);
+      } else {
+        // Defensive fallback — refetch /users/me if the upload response was empty.
+        await refreshUser();
+      }
+      // Reset the input so the same file can be re-selected after a retry.
+      e.target.value = '';
       toast({
         title: 'Success',
         description: 'Avatar updated successfully.',
@@ -162,7 +173,7 @@ export default function Profile() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center space-x-4 mb-8">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={user.avatar_url || undefined} alt={user.full_name} />
+            <AvatarImage src={resolveAvatarUrl(user.avatar_url)} alt={user.full_name} />
             <AvatarFallback>{user.full_name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
           <div>

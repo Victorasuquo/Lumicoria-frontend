@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { blogApi, type BlogPost, type BlogCategory } from "@/services/api";
+import { blogApi, resolveAvatarUrl, type BlogPost, type BlogCategory } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronLeft, ChevronRight, PenLine, Bot, FileText } from "lucide-react";
 
@@ -223,8 +223,8 @@ function PostCard({ post }: { post: BlogPost }) {
 function AuthorBadge({ post }: { post: BlogPost }) {
   return (
     <span className="flex items-center gap-1.5">
-      {post.author_avatar_url ? (
-        <img src={post.author_avatar_url} alt="" className="w-5 h-5 rounded-full" />
+      {resolveAvatarUrl(post.author_avatar_url) ? (
+        <img src={resolveAvatarUrl(post.author_avatar_url)} alt="" className="w-5 h-5 rounded-full" />
       ) : post.author_type === "ai_agent" ? (
         <Bot className="w-4 h-4 text-purple-500" />
       ) : null}

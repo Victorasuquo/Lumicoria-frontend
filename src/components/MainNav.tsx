@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { resolveAvatarUrl } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import {
   Settings,
@@ -188,7 +189,7 @@ export default function MainNav() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                     <Avatar className="h-9 w-9 ring-2 ring-white/50">
-                      <AvatarImage src={user?.avatar_url || ''} />
+                      <AvatarImage src={resolveAvatarUrl(user?.avatar_url)} />
                       <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm">
                         {userInitials}
                       </AvatarFallback>

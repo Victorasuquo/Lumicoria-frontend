@@ -48,6 +48,7 @@ import {
     OrgStats,
     getErrorMessage,
     InviteRole,
+    resolveAvatarUrl,
 } from "@/services/api";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -630,8 +631,8 @@ export default function Organization(): JSX.Element {
                                                     <td className="px-4 py-3 align-middle">
                                                         <div className="flex items-center gap-2.5 min-w-0">
                                                             <span className="flex-none w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-[11px] font-semibold flex items-center justify-center overflow-hidden">
-                                                                {m.profile_picture ? (
-                                                                    <img src={m.profile_picture} alt="" className="w-full h-full object-cover" />
+                                                                {resolveAvatarUrl(m.profile_picture) ? (
+                                                                    <img src={resolveAvatarUrl(m.profile_picture)} alt="" className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     initials(m.full_name || m.email)
                                                                 )}

@@ -11,6 +11,7 @@ import {
 import { User, Settings, LogOut, Shield, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { resolveAvatarUrl } from '@/services/api';
 
 interface ProfileMenuProps {
   user: {
@@ -38,7 +39,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ user }) => {
       <DropdownMenuTrigger asChild>
         <button className="relative flex items-center space-x-2 focus:outline-none">
           <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-lumicoria-purple/20 transition-all">
-            <AvatarImage src={user.avatar_url || undefined} />
+            <AvatarImage src={resolveAvatarUrl(user.avatar_url)} />
             <AvatarFallback>{user.full_name?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
         </button>

@@ -9,6 +9,42 @@ const api: AxiosInstance = axios.create({
 });
 
 /**
+ * Backend host (no `/api/v1`).  Used to resolve relative file URLs the
+ * backend hands back — e.g. avatar uploads land at `/uploads/avatars/...`
+ * which is relative to the backend origin, NOT the frontend dev server.
+ */
+const API_BASE: string =
+  (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+export const BACKEND_ORIGIN: string = API_BASE.replace(/\/api\/v1\/?$/, '');
+
+/**
+ * Resolve any avatar / file URL the backend returns so it actually loads
+ * in the browser, no matter how it was stored.
+ *
+ *   absolute (http/https/data/blob) → returned as-is
+ *   "/uploads/..."                  → prefixed with BACKEND_ORIGIN
+ *   ""/null/undefined               → undefined (so <AvatarImage> falls
+ *                                     through to the AvatarFallback)
+ *
+ * Use this everywhere we render `user.avatar_url`, `profile_picture`,
+ * `author_avatar_url`, etc.  Fixes the case where a self-uploaded avatar
+ * 404s on the Vite dev server because the path was relative to the
+ * backend origin.
+ */
+export function resolveAvatarUrl(
+  url: string | null | undefined,
+): string | undefined {
+  if (!url) return undefined;
+  const trimmed = String(url).trim();
+  if (!trimmed) return undefined;
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return `${BACKEND_ORIGIN}${trimmed}`;
+  // Relative path without leading slash — assume backend-hosted.
+  return `${BACKEND_ORIGIN}/${trimmed}`;
+}
+
+/**
  * Normalise an axios error into a plain string.  FastAPI emits a 422 with
  * `detail` as an *array of objects* — React crashes when you try to render
  * that array as a child node.  This helper turns any shape into a sentence
