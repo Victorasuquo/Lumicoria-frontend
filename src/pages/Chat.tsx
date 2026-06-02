@@ -15,6 +15,7 @@ import { chatApi, documentApi, ConversationSummary, DocumentItem } from '../serv
 import DocumentPreview, { CitationHighlight } from '@/components/DocumentPreview';
 import CitationBadge, { SourceInfo } from '@/components/CitationBadge';
 import MentionPopup, { MentionItem, MentionDocument, AGENT_LIST } from '@/components/MentionPopup';
+import AgentFlowPanel from '@/components/AgentFlowPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -54,6 +55,35 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+// Phase 7 — Multi-agent orchestrator visibility
+export interface AgentFlowStep {
+    /** Server-side step identifier (uuid). */
+    step_id: string;
+    step_index: number;
+    /** Registry key, e.g. "meeting", "rag", "general". */
+    agent: string;
+    /** Pretty label the backend computes ("Meeting", "Rag", "General"). */
+    agent_label?: string;
+    /** One-sentence purpose from the planner ("Pull context from prior meetings"). */
+    purpose: string;
+    /** True for the final composer step that streams tokens. */
+    is_composer?: boolean;
+    /** Set while the step is in-flight ("running") or after step_end. */
+    status: 'pending' | 'running' | 'completed' | 'error' | 'skipped';
+    duration_ms?: number;
+    output_preview?: string;
+    sources_count?: number;
+    error?: string | null;
+}
+
+export interface AgentFlow {
+    /** True when the planner decided to use multiple agents. */
+    multi_step: boolean;
+    /** Planner's one-sentence reason ("Question references prior meeting + needs research."). */
+    reason?: string;
+    steps: AgentFlowStep[];
+}
+
 interface Message {
     id: string;
     role: 'user' | 'assistant';
@@ -62,6 +92,8 @@ interface Message {
     timestamp: string;
     sources?: any[];
     processing_time?: number;
+    /** Phase 7 — populated when the chat stream emits step_start/step_end frames. */
+    agent_flow?: AgentFlow;
 }
 
 interface FileAttachment {
@@ -291,6 +323,11 @@ const ChatBubble: React.FC<{ msg: Message; onCitationClick?: (source: SourceInfo
                                 rehypePlugins={[rehypeKatex]}
                             >{msg.content}</ReactMarkdown>
                         </div>
+
+                        {/* Phase 7: Agent flow trace for multi-step orchestrated answers */}
+                        {msg.agent_flow && msg.agent_flow.steps && msg.agent_flow.steps.length > 0 && (
+                            <AgentFlowPanel flow={msg.agent_flow} agentMeta={AGENT_META} />
+                        )}
 
                         {msg.sources && msg.sources.length > 0 && (
                             <div className="mt-2 pt-2 border-t border-gray-100">
@@ -790,6 +827,69 @@ const Chat: React.FC = () => {
                             setCurrentAgent(frame.agent_used ?? 'general');
                             setMessages((prev) =>
                                 prev.map((m) => m.id === assistantId ? { ...m, agent: frame.agent_used ?? 'general' } : m)
+                            );
+                        } else if (frame.type === 'plan') {
+                            // Phase 7: planner emitted upfront — initialise the
+                            // agent_flow panel with all steps in "pending" state.
+                            const steps: AgentFlowStep[] = Array.isArray(frame.steps)
+                                ? frame.steps.map((s: any, i: number) => ({
+                                      step_id: `pending-${i}`,
+                                      step_index: i,
+                                      agent: String(s.agent || 'general'),
+                                      purpose: String(s.purpose || ''),
+                                      is_composer: i === frame.steps.length - 1,
+                                      status: 'pending',
+                                  }))
+                                : [];
+                            setMessages((prev) =>
+                                prev.map((m) => m.id === assistantId
+                                    ? { ...m, agent_flow: { multi_step: !!frame.multi_step, reason: frame.reason || '', steps } }
+                                    : m
+                                )
+                            );
+                        } else if (frame.type === 'step_start') {
+                            // Replace the matching "pending" step entry with the running one.
+                            setMessages((prev) =>
+                                prev.map((m) => {
+                                    if (m.id !== assistantId) return m;
+                                    const flow = m.agent_flow;
+                                    if (!flow) return m;
+                                    const nextSteps = flow.steps.map((s) =>
+                                        s.step_index === frame.step_index
+                                            ? {
+                                                  ...s,
+                                                  step_id: String(frame.step_id || s.step_id),
+                                                  agent: String(frame.agent || s.agent),
+                                                  agent_label: frame.agent_label,
+                                                  purpose: String(frame.purpose || s.purpose),
+                                                  is_composer: !!frame.is_composer,
+                                                  status: 'running' as const,
+                                              }
+                                            : s
+                                    );
+                                    return { ...m, agent_flow: { ...flow, steps: nextSteps } };
+                                })
+                            );
+                        } else if (frame.type === 'step_end') {
+                            setMessages((prev) =>
+                                prev.map((m) => {
+                                    if (m.id !== assistantId) return m;
+                                    const flow = m.agent_flow;
+                                    if (!flow) return m;
+                                    const nextSteps = flow.steps.map((s) =>
+                                        s.step_index === frame.step_index
+                                            ? {
+                                                  ...s,
+                                                  status: (frame.status || 'completed') as AgentFlowStep['status'],
+                                                  duration_ms: frame.duration_ms,
+                                                  output_preview: frame.output_preview,
+                                                  sources_count: frame.sources_count,
+                                                  error: frame.error,
+                                              }
+                                            : s
+                                    );
+                                    return { ...m, agent_flow: { ...flow, steps: nextSteps } };
+                                })
                             );
                         } else if (frame.type === 'delta') {
                             const chunk: string = frame.text ?? '';
