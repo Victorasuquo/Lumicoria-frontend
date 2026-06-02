@@ -4773,5 +4773,133 @@ export const organizationApi = {
   },
 };
 
+// ── Phase 9: Dashboard analytics API ───────────────────────────────────
+
+export type AnalyticsRange = "1d" | "7d" | "30d" | "90d" | "1y";
+
+export interface ProductivityScore {
+  score: number;          // 0–100
+  band: "excellent" | "strong" | "steady" | "slipping" | "needs-attention";
+  components: {
+    completion_rate_pct: number;
+    agent_success_rate_pct: number;
+    throughput_pct: number;
+  };
+}
+
+export interface TasksDailySeriesPoint {
+  day: string;            // YYYY-MM-DD
+  created: number;
+  completed: number;
+}
+
+export interface TasksPanel {
+  total: number;
+  completed: number;
+  in_progress: number;
+  todo: number;
+  blocked: number;
+  overdue: number;
+  completion_rate: number;
+  by_status: Record<string, number>;
+  by_priority: Record<string, number>;
+  by_assignee_kind: Record<string, number>;
+  series: TasksDailySeriesPoint[];
+}
+
+export interface AgentLeaderboardRow {
+  agent_key: string;
+  label: string;
+  runs: number;
+  completed: number;
+  errors: number;
+  success_rate: number;
+  avg_duration_ms: number | null;
+  p50_ms: number | null;
+  p95_ms: number | null;
+  tokens_input: number;
+  tokens_output: number;
+  cost_usd: number;
+}
+
+export interface AgentsDailySeriesPoint {
+  day: string;
+  runs: number;
+  errors: number;
+}
+
+export interface AgentsPanel {
+  time_range: string;
+  since: string;
+  total_runs: number;
+  completed: number;
+  errors: number;
+  success_rate: number;
+  by_status: Record<string, number>;
+  leaderboard: AgentLeaderboardRow[];
+  top: AgentLeaderboardRow[];
+  series: AgentsDailySeriesPoint[];
+}
+
+export interface DocumentsPanel {
+  total: number;
+  processed: number;
+  processing: number;
+  failed: number;
+  total_chunks: number;
+  total_tasks_extracted: number;
+  by_status: Record<string, number>;
+  by_type: Array<{ type: string; count: number }>;
+  series: Array<{ day: string; uploaded: number }>;
+}
+
+export interface ProposalsPanel {
+  total: number;
+  pending_review: number;
+  approved: number;
+  revision: number;
+  rejected: number;
+  errors: number;
+  by_status: Record<string, number>;
+  pending: Array<{
+    id: string;
+    title: string;
+    agent_key?: string | null;
+    due_date?: string | null;
+    updated_at?: string | null;
+  }>;
+}
+
+export interface ActivityRow {
+  id: string;
+  activity_type: string;
+  user_id?: string;
+  details?: Record<string, any>;
+  related_resource_type?: string;
+  related_resource_id?: string;
+  timestamp?: string;
+}
+
+export interface DashboardPayload {
+  time_range: AnalyticsRange;
+  window_days: number;
+  generated_at: string;
+  productivity: ProductivityScore;
+  tasks: TasksPanel;
+  agents: AgentsPanel;
+  documents: DocumentsPanel;
+  proposals: ProposalsPanel;
+  activity: ActivityRow[];
+}
+
+export const analyticsApi = {
+  getDashboard: async (range: AnalyticsRange = "30d"): Promise<DashboardPayload> => {
+    const response = await api.get<DashboardPayload>(
+      `/analytics/dashboard?range=${range}`,
+    );
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
