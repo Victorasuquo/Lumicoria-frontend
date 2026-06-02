@@ -50,7 +50,6 @@ import {
     Inbox,
     LayoutGrid,
     RefreshCcw,
-    Sparkles,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -278,31 +277,12 @@ function Header({
     return (
         <div className="flex items-end justify-between gap-6 flex-wrap">
             <div>
-                <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium"
-                    style={{
-                        background: "rgba(108, 74, 176, 0.10)",
-                        color: PURPLE,
-                    }}
-                >
-                    <Sparkles size={11} /> Operations · {RANGE_LABEL[range]}
-                </span>
                 <h1
-                    className="mt-3 font-hero font-bold text-[40px] leading-[1.04] tracking-[-0.018em]"
+                    className="font-hero font-bold text-[40px] leading-[1.04] tracking-[-0.018em]"
                     style={{ color: INK }}
                 >
                     {greeting},{" "}
-                    <span
-                        style={{
-                            background:
-                                "linear-gradient(90deg, #6C4AB0 0%, #0EA5E9 100%)",
-                            WebkitBackgroundClip: "text",
-                            backgroundClip: "text",
-                            color: "transparent",
-                        }}
-                    >
-                        {firstName}.
-                    </span>
+                    <span style={{ color: PURPLE }}>{firstName}.</span>
                 </h1>
                 <p
                     className="mt-2 text-[14.5px] max-w-xl leading-relaxed"
