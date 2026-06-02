@@ -16,7 +16,8 @@ import {
   Blocks,
   Plug,
   CalendarDays,
-  Mail
+  Mail,
+  Building2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -224,6 +225,12 @@ export default function MainNav() {
                     <Link to="/invites" className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
                       Invites
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/organization" className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Organization
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">

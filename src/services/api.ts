@@ -4559,5 +4559,219 @@ export const taskProposalApi = {
   },
 };
 
+// ── Phase 8: Organizations API ─────────────────────────────────────────
+
+export type OrgRole = "owner" | "admin" | "member";
+
+export interface OrganizationItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  logo_url?: string | null;
+  plan?: string | null;
+  owner_id?: string | null;
+  member_ids: string[];
+  admin_ids: string[];
+  settings?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+  /** Caller's role on this org — computed server-side. */
+  my_role?: OrgRole;
+}
+
+export interface OrgMemberItem {
+  id: string;
+  email: string;
+  full_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  profile_picture?: string | null;
+  role: OrgRole;
+  created_at?: string;
+}
+
+export interface OrgInviteItem {
+  id: string;
+  email: string;
+  role: InviteRole;
+  scope: string;
+  status: InviteStatus;
+  inviter_name?: string | null;
+  inviter_email?: string | null;
+  organization_id?: string | null;
+  expires_at?: string | null;
+  created_at?: string;
+  accepted_at?: string | null;
+  reminder_count?: number;
+}
+
+export interface OrgStats {
+  members: number;
+  admins: number;
+  pending_invites: number;
+  created_at?: string;
+}
+
+export const organizationApi = {
+  createOrg: async (payload: {
+    name: string;
+    description?: string;
+    industry?: string;
+    website?: string;
+    logo_url?: string;
+  }): Promise<OrganizationItem> => {
+    const response = await api.post<OrganizationItem>("/organizations", payload);
+    return response.data;
+  },
+
+  getMyOrg: async (): Promise<OrganizationItem> => {
+    const response = await api.get<OrganizationItem>("/organizations/me");
+    return response.data;
+  },
+
+  getOrg: async (orgId: string): Promise<OrganizationItem> => {
+    const response = await api.get<OrganizationItem>(`/organizations/${orgId}`);
+    return response.data;
+  },
+
+  updateOrg: async (
+    orgId: string,
+    patch: {
+      name?: string;
+      description?: string | null;
+      industry?: string | null;
+      website?: string | null;
+      logo_url?: string | null;
+      settings?: Record<string, any>;
+    },
+  ): Promise<OrganizationItem> => {
+    const response = await api.patch<OrganizationItem>(`/organizations/${orgId}`, patch);
+    return response.data;
+  },
+
+  listMembers: async (
+    orgId: string,
+    params?: { skip?: number; limit?: number },
+  ): Promise<{ count: number; items: OrgMemberItem[] }> => {
+    const q = new URLSearchParams();
+    if (params?.skip) q.append("skip", String(params.skip));
+    if (params?.limit) q.append("limit", String(params.limit));
+    const url = `/organizations/${orgId}/members${q.toString() ? "?" + q.toString() : ""}`;
+    const response = await api.get<{ count: number; items: OrgMemberItem[] }>(url);
+    return response.data;
+  },
+
+  updateMemberRole: async (
+    orgId: string,
+    userId: string,
+    role: "admin" | "member",
+  ): Promise<{ updated: boolean; user_id: string; role: string }> => {
+    const response = await api.post(
+      `/organizations/${orgId}/members/${userId}/role`,
+      { role },
+    );
+    return response.data;
+  },
+
+  removeMember: async (
+    orgId: string,
+    userId: string,
+  ): Promise<{ removed: boolean; user_id: string }> => {
+    const response = await api.delete(`/organizations/${orgId}/members/${userId}`);
+    return response.data;
+  },
+
+  leaveOrg: async (orgId: string): Promise<{ left: boolean }> => {
+    const response = await api.post(`/organizations/${orgId}/leave`);
+    return response.data;
+  },
+
+  transferOwnership: async (
+    orgId: string,
+    newOwnerId: string,
+  ): Promise<{ transferred: boolean; new_owner_id: string }> => {
+    const response = await api.post(`/organizations/${orgId}/transfer-ownership`, {
+      new_owner_id: newOwnerId,
+    });
+    return response.data;
+  },
+
+  listInvites: async (
+    orgId: string,
+    params?: { status?: InviteStatus; limit?: number; skip?: number },
+  ): Promise<{ count: number; items: OrgInviteItem[] }> => {
+    const q = new URLSearchParams();
+    if (params?.status) q.append("status", params.status);
+    if (params?.limit) q.append("limit", String(params.limit));
+    if (params?.skip) q.append("skip", String(params.skip));
+    const url = `/organizations/${orgId}/invites${q.toString() ? "?" + q.toString() : ""}`;
+    const response = await api.get<{ count: number; items: OrgInviteItem[] }>(url);
+    return response.data;
+  },
+
+  sendInvite: async (
+    orgId: string,
+    payload: {
+      email: string;
+      role?: InviteRole;
+      message?: string;
+      expires_in_days?: number;
+    },
+  ): Promise<OrgInviteItem> => {
+    const response = await api.post<OrgInviteItem>(
+      `/organizations/${orgId}/invites`,
+      payload,
+    );
+    return response.data;
+  },
+
+  /**
+   * Bulk-invite — pass a list of emails (or paste them comma-separated).
+   * Returns a per-email result so the UI can show "8 sent, 1 skipped".
+   */
+  sendInvitesBulk: async (
+    orgId: string,
+    payload: {
+      emails: string[];
+      role?: InviteRole;
+      message?: string;
+      expires_in_days?: number;
+    },
+  ): Promise<{
+    summary: { sent: number; skipped: number; failed: number; total: number };
+    results: Array<{
+      email: string;
+      status: "sent" | "skipped" | "failed";
+      reason: string;
+      invite: OrgInviteItem | null;
+    }>;
+  }> => {
+    const response = await api.post(`/organizations/${orgId}/invites`, payload);
+    return response.data;
+  },
+
+  resendInvite: async (orgId: string, inviteId: string): Promise<OrgInviteItem> => {
+    const response = await api.post<OrgInviteItem>(
+      `/organizations/${orgId}/invites/${inviteId}/resend`,
+    );
+    return response.data;
+  },
+
+  revokeInvite: async (
+    orgId: string,
+    inviteId: string,
+  ): Promise<{ revoked: boolean; invite_id: string }> => {
+    const response = await api.delete(`/organizations/${orgId}/invites/${inviteId}`);
+    return response.data;
+  },
+
+  stats: async (orgId: string): Promise<OrgStats> => {
+    const response = await api.get<OrgStats>(`/organizations/${orgId}/stats`);
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;
