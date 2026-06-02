@@ -389,6 +389,32 @@ export interface TaskAssignmentHistoryEntry {
   changed_by_name?: string | null;
 }
 
+/** Phase 6 — one source / citation produced by the agent's context_summary. */
+export interface AgentProposalSource {
+  index?: number;
+  title?: string;
+  type?: string;
+  url?: string;
+  document_id?: string;
+  page_number?: number | null;
+  chunk_text?: string;
+}
+
+/** Phase 6 — the agent's drafted output for a task, awaiting human review. */
+export interface AgentProposal {
+  status: 'pending_review' | 'approved' | 'revision' | 'rejected' | 'error';
+  content?: string | null;
+  sources?: AgentProposalSource[];
+  revision_notes?: string | null;
+  decision?: string | null;
+  agent_run_id?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  error?: string | null;
+}
+
 export interface TaskItem {
   id: string;
   name: string;
@@ -400,10 +426,14 @@ export interface TaskItem {
   assigned_to?: string | null;
   /** Phase 5 — set when the assignee is an email that doesn't have an account yet. */
   assigned_to_email?: string | null;
+  /** Phase 6 — registry key of the agent drafting this task, when assignee_kind ∈ {agent, user_and_agent}. */
+  assigned_to_agent?: string | null;
   /** Phase 1 — "user" | "email_invite" | "agent" | "user_and_agent" | null */
   assignee_kind?: string | null;
   /** Phase 5 — invite row that backs assigned_to_email; lets the UI fetch invite status. */
   invite_id?: string | null;
+  /** Phase 6 — the agent's drafted output for this task. */
+  agent_proposal?: AgentProposal | null;
   created_by: string;
   organization_id: string;
   document_id?: string | null;
@@ -4452,9 +4482,79 @@ export interface AssignTaskResult {
 export const taskAssignApi = {
   assign: async (
     taskId: string,
-    payload: { user_id?: string; email?: string; role?: InviteRole },
-  ): Promise<AssignTaskResult> => {
-    const response = await api.post<AssignTaskResult>(`/tasks/${taskId}/assign`, payload);
+    payload: { user_id?: string; email?: string; agent_key?: string; role?: InviteRole },
+  ): Promise<AssignTaskResult & { agent_key?: string }> => {
+    const response = await api.post<AssignTaskResult & { agent_key?: string }>(
+      `/tasks/${taskId}/assign`,
+      payload,
+    );
+    return response.data;
+  },
+};
+
+// ── Phase 6: agent proposal review API ──────────────────────────────────
+
+export interface AgentRegistryEntry {
+  key: string;
+  name: string;
+  description: string;
+}
+
+export interface AgentContextSummary {
+  agent_key: string;
+  context_snippets: string[];
+  sources: AgentProposalSource[];
+  suggested_prompt: string;
+}
+
+export const agentRegistryApi = {
+  list: async (): Promise<AgentRegistryEntry[]> => {
+    const response = await api.get<AgentRegistryEntry[]>('/agents/registry');
+    return response.data;
+  },
+
+  contextSummary: async (
+    agentKey: string,
+    payload: { query: string; task_id?: string },
+  ): Promise<AgentContextSummary> => {
+    const response = await api.post<AgentContextSummary>(
+      `/agents/registry/${encodeURIComponent(agentKey)}/context_summary`,
+      payload,
+    );
+    return response.data;
+  },
+};
+
+export interface PendingProposalsResponse {
+  count: number;
+  items: TaskItem[];
+}
+
+export const taskProposalApi = {
+  approve: async (taskId: string): Promise<{ approved: boolean; task_id: string; status: string }> => {
+    const response = await api.post(`/tasks/${taskId}/proposal/approve`);
+    return response.data;
+  },
+
+  revise: async (taskId: string, notes: string): Promise<{ revised: boolean; task_id: string; result: any }> => {
+    const response = await api.post(`/tasks/${taskId}/proposal/revise`, { notes });
+    return response.data;
+  },
+
+  reject: async (taskId: string, reason?: string): Promise<{ rejected: boolean; task_id: string }> => {
+    const response = await api.post(`/tasks/${taskId}/proposal/reject`, { reason });
+    return response.data;
+  },
+
+  runNow: async (taskId: string): Promise<{ started: boolean; task_id: string; result: any }> => {
+    const response = await api.post(`/tasks/${taskId}/proposal/run`);
+    return response.data;
+  },
+
+  listPending: async (limit = 20): Promise<PendingProposalsResponse> => {
+    const response = await api.get<PendingProposalsResponse>(
+      `/tasks/proposals/pending?limit=${limit}`,
+    );
     return response.data;
   },
 };

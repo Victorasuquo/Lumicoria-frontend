@@ -14,6 +14,7 @@ import {
 import { taskApi, TaskItem } from "@/services/api";
 import TodayPanel from "@/components/TodayPanel";
 import AssigneePopover from "@/components/AssigneePopover";
+import AgentProposalPanel from "@/components/AgentProposalPanel";
 
 /* ── Config ────────────────────────────────────────────────── */
 
@@ -97,6 +98,22 @@ const Tasks: React.FC = () => {
     if (selectedTask) {
       const updated = tasks.find(t => t.id === selectedTask.id);
       if (updated) setSelectedTask(updated);
+    }
+  }, [tasks]);
+
+  // Phase 6: deep-link from the proposal push notification.
+  // URL shape: /tasks?task=<id>&proposal=review → auto-select that task
+  // and the AgentProposalPanel scrolls into view inside the detail panel.
+  useEffect(() => {
+    if (tasks.length === 0) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get("task");
+      if (!targetId) return;
+      const match = tasks.find((t) => t.id === targetId);
+      if (match) setSelectedTask(match);
+    } catch {
+      /* malformed URL — ignore */
     }
   }, [tasks]);
 
@@ -306,7 +323,7 @@ const Tasks: React.FC = () => {
                                   {getTaskAssignee(task)}
                                 </span>
                               )}
-                              {/* Phase 5 — clickable assignee pill (optional) */}
+                              {/* Phase 5/6 — clickable assignee pill: shows the human OR the agent. */}
                               <div onClick={(e) => e.stopPropagation()}>
                                 <AssigneePopover
                                   task={task}
@@ -314,6 +331,9 @@ const Tasks: React.FC = () => {
                                   onAssigned={() => fetchTasks()}
                                 />
                               </div>
+                              {task.agent_proposal?.status === 'pending_review' && (
+                                <span className="text-[10px] text-purple-500">draft ready</span>
+                              )}
                               {task.document_id && (
                                 <FileText size={10} className="text-purple-300" />
                               )}
@@ -408,13 +428,23 @@ const Tasks: React.FC = () => {
                     )}
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Assigned To</p>
-                      {/* LLM-suggested / current assignee name — purple to match document */}
+                      {/* LLM-suggested / current human assignee — purple to match document */}
                       {getTaskAssignee(selectedTask) ? (
                         <p className="text-sm text-purple-600">{getTaskAssignee(selectedTask)}</p>
+                      ) : selectedTask.assigned_to_agent ? (
+                        <p className="text-sm text-purple-600">
+                          {selectedTask.assigned_to_agent
+                            .split('_')
+                            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+                            .join(' ')}{' '}
+                          <span className="text-[10px] uppercase tracking-wide bg-purple-100 text-purple-700 px-1 py-0.5 rounded ml-1">
+                            Agent
+                          </span>
+                        </p>
                       ) : (
                         <p className="text-sm text-gray-400 italic">No one yet</p>
                       )}
-                      {/* Phase 5 — click-to-reassign / invite, under the name */}
+                      {/* Phase 5/6 — click-to-reassign / invite / pick agent */}
                       <div className="mt-1.5">
                         <AssigneePopover
                           task={selectedTask}
@@ -456,6 +486,14 @@ const Tasks: React.FC = () => {
                       </div>
                     );
                   })()}
+
+                  {/* Phase 6: Agent proposal review panel */}
+                  {(selectedTask.assigned_to_agent || selectedTask.agent_proposal) && (
+                    <AgentProposalPanel
+                      task={selectedTask}
+                      onChanged={() => fetchTasks()}
+                    />
+                  )}
 
                   {/* Tags */}
                   {selectedTask.tags && selectedTask.tags.length > 0 && (

@@ -76,8 +76,14 @@ interface AutoTask {
   title: string;
   description?: string;
   priority: string;
+  /** Verbatim phrase the LLM lifted from the document (e.g., "by EOW"); may be null. */
   deadline?: string | null;
+  /** Canonical ISO-8601 UTC due date — always present after _normalize_task_record. */
+  due_date?: string | null;
+  /** True when due_date was inferred (no exact date in the document). */
+  inferred_due_date?: boolean;
   assignee?: string | null;
+  assigned_to_agent?: string | null;
   status?: string;
 }
 
@@ -136,12 +142,24 @@ const TaskDetailPopup: React.FC<TaskDetailPopupProps> = ({ task, index, onClose,
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            {task.deadline && (
+            {(task.deadline || task.due_date) && (
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Deadline</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  {task.deadline ? "Deadline" : "Due Date"}
+                  {task.inferred_due_date && !task.deadline && (
+                    <span className="ml-1 text-[10px] text-gray-400">(suggested)</span>
+                  )}
+                </p>
                 <div className="flex items-center gap-1.5 text-sm text-gray-700">
                   <Clock size={13} className="text-gray-400" />
-                  {task.deadline}
+                  {task.deadline ||
+                    (task.due_date
+                      ? new Date(task.due_date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "")}
                 </div>
               </div>
             )}
@@ -318,6 +336,7 @@ const DocumentAgent: React.FC = () => {
 
   /* ── Push extracted dates + task deadlines to the Lumicoria Calendar ── */
   // Parses an extracted deadline string into an ISO date.  Accepts:
+  //   "2026-05-01T09:00:00Z"          (Phase 4 normalized due_date)
   //   "2026-05-01"
   //   "Prior to 2026-06-26"
   //   "Weekly until 2026-06-26"
@@ -325,6 +344,11 @@ const DocumentAgent: React.FC = () => {
   // Returns null when nothing parseable is found.
   const parseDeadlineToIso = (raw: string | null | undefined): string | null => {
     if (!raw) return null;
+    // 0. Already an ISO-8601 datetime (with or without trailing Z) — pass through.
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
     // 1. ISO-like YYYY-MM-DD anywhere in the string
     const iso = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (iso) {
@@ -338,6 +362,38 @@ const DocumentAgent: React.FC = () => {
       return longForm.toISOString();
     }
     return null;
+  };
+
+  /** Single source of truth for any task's date: prefer ISO due_date, then human deadline phrase. */
+  const taskDateIso = (
+    t: { due_date?: string | null; deadline?: string | null } | undefined | null,
+  ): string | null => {
+    if (!t) return null;
+    return parseDeadlineToIso(t.due_date) || parseDeadlineToIso(t.deadline);
+  };
+
+  /** Pretty label for the calendar tab — uses the LLM phrase if present, otherwise formats the ISO date. */
+  const taskDateLabel = (
+    t: { due_date?: string | null; deadline?: string | null; inferred_due_date?: boolean } | undefined | null,
+  ): string => {
+    if (!t) return "";
+    if (t.deadline) return t.deadline;
+    if (t.due_date) {
+      try {
+        const d = new Date(t.due_date);
+        if (!isNaN(d.getTime())) {
+          const formatted = d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          return t.inferred_due_date ? `${formatted} (suggested)` : formatted;
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+    return "";
   };
 
   const handleAddAllToCalendar = async () => {
@@ -384,12 +440,14 @@ const DocumentAgent: React.FC = () => {
       });
     }
 
-    // 2. Task deadlines
-    for (const t of autoTasks) {
-      if (!t.deadline) continue;
-      const iso = parseDeadlineToIso(t.deadline);
+    // 2. Task dates — prefer the canonical `due_date` (ISO) and fall back to
+    //    the human `deadline` phrase.  Phase 4+: every task carries a non-null
+    //    due_date by design, so this picks up *all* tasks even when the LLM
+    //    didn't quote an explicit phrase from the document.
+    for (const t of autoTasks as AutoTask[]) {
+      const iso = taskDateIso(t);
       if (!iso) continue;
-      const key = `task:${t.title}:${t.deadline}`;
+      const key = `task:${t.title}:${t.due_date || t.deadline || iso}`;
       if (pushedDates.has(key)) continue;
       pending.push({
         title: t.title,
@@ -848,9 +906,9 @@ const DocumentAgent: React.FC = () => {
                                       <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityColors[pri] || priorityColors.medium}`}>
                                         {task.priority || "Medium"}
                                       </Badge>
-                                      {task.deadline && (
+                                      {(task.deadline || (task as AutoTask).due_date) && (
                                         <span className="text-[11px] text-gray-500 flex items-center gap-1">
-                                          <Clock size={10} /> {task.deadline}
+                                          <Clock size={10} /> {taskDateLabel(task as AutoTask)}
                                         </span>
                                       )}
                                       {task.assignee && (
@@ -891,7 +949,11 @@ const DocumentAgent: React.FC = () => {
                     <TabsContent value="calendar" className="p-4 m-0">
                       {(() => {
                         const dateItems = extractionItems.filter(i => i.type === "Date");
-                        const taskDeadlines = autoTasks.filter(t => t.deadline);
+                        // Phase 4+: surface every task with EITHER a canonical
+                        // due_date (always present) OR a quoted deadline phrase.
+                        const taskDeadlines = (autoTasks as AutoTask[]).filter(
+                          (t) => t.due_date || t.deadline,
+                        );
 
                         if (dateItems.length === 0 && taskDeadlines.length === 0) {
                           return (
@@ -936,7 +998,9 @@ const DocumentAgent: React.FC = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-800">{task.title}</p>
-                                  <p className="text-xs text-blue-600 mt-0.5">Deadline: {task.deadline}</p>
+                                  <p className="text-xs text-blue-600 mt-0.5">
+                                    Due: {taskDateLabel(task)}
+                                  </p>
                                 </div>
                                 <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityColors[task.priority?.toLowerCase() || "medium"]}`}>
                                   {task.priority || "Medium"}

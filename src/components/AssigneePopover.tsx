@@ -26,16 +26,20 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   userApi,
   taskAssignApi,
   inviteApi,
+  agentRegistryApi,
   TaskItem,
   UserSearchResult,
   InviteItem,
   InviteStatus,
+  AgentRegistryEntry,
   getErrorMessage,
 } from "@/services/api";
 
@@ -65,6 +69,15 @@ function getAssigneeLabel(task: TaskItem): string {
   return "Unassigned";
 }
 
+/** Pretty agent name from a registry key (e.g. "legal_document" → "Legal Document"). */
+function agentDisplayName(key: string): string {
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((s) => s[0]?.toUpperCase() + s.slice(1))
+    .join(" ");
+}
+
 function initials(label: string): string {
   const cleaned = label.replace(/[<>]/g, "").trim();
   if (!cleaned) return "?";
@@ -85,6 +98,10 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<InviteItem | null>(null);
+  // Phase 6: tab between "people" and "agents".
+  const [tab, setTab] = useState<"people" | "agents">("people");
+  const [agentRegistry, setAgentRegistry] = useState<AgentRegistryEntry[]>([]);
+  const [agentRegistryLoaded, setAgentRegistryLoaded] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +109,10 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
 
   const assigneeLabel = getAssigneeLabel(task);
   const isPending = task.assignee_kind === "email_invite";
-  const isUnassigned = !task.assigned_to && !task.assigned_to_email;
+  const isAgent = !!task.assigned_to_agent;
+  const hasHuman = !!(task.assigned_to || task.assigned_to_email);
+  const isUnassigned = !hasHuman && !isAgent;
+  const agentLabel = isAgent ? agentDisplayName(String(task.assigned_to_agent)) : "";
 
   // ── Close on outside-click / Escape ───────────────────────────────────
   useEffect(() => {
@@ -119,9 +139,12 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
       setQuery("");
       setResults([]);
       setError(null);
+      // Default to the right tab based on the current assignment so the
+      // user always lands where it makes sense to edit from.
+      setTab(isAgent && !hasHuman ? "agents" : "people");
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [open]);
+  }, [open, isAgent, hasHuman]);
 
   // ── Fetch the pending-invite metadata when this task has one ──────────
   useEffect(() => {
@@ -207,13 +230,63 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
     }
   };
 
+  // ── Phase 6: agent assignment ──────────────────────────────────────
+  const loadAgentRegistry = useCallback(async () => {
+    if (agentRegistryLoaded) return;
+    try {
+      const r = await agentRegistryApi.list();
+      setAgentRegistry(r);
+      setAgentRegistryLoaded(true);
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Could not load agents"));
+    }
+  }, [agentRegistryLoaded]);
+
+  useEffect(() => {
+    if (open && tab === "agents") {
+      void loadAgentRegistry();
+    }
+  }, [open, tab, loadAgentRegistry]);
+
+  const handleAssignToAgent = async (entry: AgentRegistryEntry) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await taskAssignApi.assign(task.id, { agent_key: entry.key });
+      setOpen(false);
+      onAssigned();
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Could not assign agent"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredAgents = useMemo(() => {
+    if (!query.trim()) return agentRegistry;
+    const q = query.trim().toLowerCase();
+    return agentRegistry.filter(
+      (a) =>
+        a.key.toLowerCase().includes(q) ||
+        a.name.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q),
+    );
+  }, [agentRegistry, query]);
+
   const handleUnassign = async () => {
     setSaving(true);
     setError(null);
     try {
-      // Use the generic update endpoint to clear assignment.
+      // Use the generic update endpoint to clear *every* assignment field —
+      // human, email-invite, and agent — plus stale proposal.
       const { taskApi } = await import("@/services/api");
-      await taskApi.updateTask(task.id, { assigned_to: null } as any);
+      await taskApi.updateTask(task.id, {
+        assigned_to: null,
+        assigned_to_email: null,
+        assigned_to_agent: null,
+        assignee_kind: null,
+        agent_proposal: null,
+      } as any);
       setOpen(false);
       onAssigned();
     } catch (e: unknown) {
@@ -243,9 +316,18 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
             ? "px-2 py-0.5 text-[11px] hover:bg-purple-50"
             : "px-2.5 py-1 text-xs hover:bg-purple-50 border border-gray-200",
           isPending && "bg-amber-50 hover:bg-amber-100 border-amber-200",
+          isAgent && !hasHuman && "bg-purple-50 hover:bg-purple-100 border-purple-200",
           isUnassigned && "text-gray-400 hover:text-purple-600",
         )}
-        title={isPending ? "Invite is pending" : isUnassigned ? "Assign someone" : "Change assignee"}
+        title={
+          isPending
+            ? "Invite is pending"
+            : isAgent && !hasHuman
+            ? `Assigned to ${agentLabel} agent — click to change`
+            : isUnassigned
+            ? "Assign someone or an agent"
+            : "Change assignee"
+        }
       >
         {isUnassigned ? (
           <>
@@ -262,12 +344,32 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
               Pending
             </span>
           </>
+        ) : isAgent && !hasHuman ? (
+          <>
+            <span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0">
+              <Bot size={9} />
+            </span>
+            <span className="text-purple-700 truncate max-w-[160px]">{agentLabel}</span>
+            <span className="text-[9px] uppercase tracking-wide bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
+              Agent
+            </span>
+          </>
         ) : (
           <>
             <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[9px] font-semibold">
               {initials(assigneeLabel)}
             </span>
             <span className="text-violet-700 truncate max-w-[140px]">{assigneeLabel}</span>
+            {/* Phase 6: when a human AND an agent are co-assigned, add a small bot chip. */}
+            {isAgent && (
+              <span
+                className="ml-0.5 inline-flex items-center gap-1 rounded-full bg-purple-50 px-1.5 py-0.5 text-[9px] text-purple-700 border border-purple-100"
+                title={`${agentLabel} agent is co-assigned`}
+              >
+                <Bot size={9} />
+                {agentLabel}
+              </span>
+            )}
           </>
         )}
       </button>
@@ -287,7 +389,7 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
               <span className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
                 Assignee
               </span>
-              {!isUnassigned && (
+              {(!isUnassigned || task.assigned_to_agent) && (
                 <button
                   type="button"
                   onClick={handleUnassign}
@@ -297,6 +399,37 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
                   Unassign
                 </button>
               )}
+            </div>
+
+            {/* Phase 6: tab switcher ─ People vs Agents ──────────────────── */}
+            <div className="flex border-b border-gray-100 bg-gray-50/60">
+              <button
+                type="button"
+                onClick={() => setTab("people")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors",
+                  tab === "people"
+                    ? "text-purple-700 border-b-2 border-purple-500 bg-white"
+                    : "text-gray-500 hover:text-gray-700",
+                )}
+              >
+                <UserIcon size={12} /> People
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("agents")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors",
+                  tab === "agents"
+                    ? "text-purple-700 border-b-2 border-purple-500 bg-white"
+                    : "text-gray-500 hover:text-gray-700",
+                )}
+              >
+                <Sparkles size={12} /> Agents
+                {task.assigned_to_agent && (
+                  <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-purple-500" />
+                )}
+              </button>
             </div>
 
             {/* Pending invite metadata strip */}
@@ -331,7 +464,11 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search name or email…"
+                  placeholder={
+                    tab === "people"
+                      ? "Search name or email…"
+                      : "Search agents by capability…"
+                  }
                   className="w-full px-3 py-2 pr-7 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300"
                 />
                 {query && (
@@ -353,69 +490,131 @@ export const AssigneePopover: React.FC<Props> = ({ task, onAssigned, variant = "
 
             {/* Results */}
             <div className="max-h-64 overflow-y-auto">
-              {searching && (
-                <div className="px-3 py-4 flex items-center justify-center text-gray-400 text-xs">
-                  <Loader2 size={14} className="animate-spin mr-1.5" /> Searching…
-                </div>
-              )}
+              {tab === "people" && (
+                <>
+                  {searching && (
+                    <div className="px-3 py-4 flex items-center justify-center text-gray-400 text-xs">
+                      <Loader2 size={14} className="animate-spin mr-1.5" /> Searching…
+                    </div>
+                  )}
 
-              {!searching && results.length > 0 && (
-                <ul className="py-1">
-                  {results.map((u) => (
-                    <li key={u.id}>
+                  {!searching && results.length > 0 && (
+                    <ul className="py-1">
+                      {results.map((u) => (
+                        <li key={u.id}>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => handleAssignToUser(u)}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-purple-50 transition-colors text-left disabled:opacity-50"
+                          >
+                            <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-semibold shrink-0">
+                              {initials(u.full_name || u.email)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-gray-900 truncate">{u.full_name || u.email.split("@")[0]}</p>
+                              <p className="text-[11px] text-gray-500 truncate">{u.email}</p>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {!searching && query.trim() && results.length === 0 && !showInviteCta && (
+                    <div className="px-3 py-3 text-center text-[11px] text-gray-400">
+                      No matching teammates. Type a full email to invite someone.
+                    </div>
+                  )}
+
+                  {showInviteCta && (
+                    <div className="p-2 border-t border-gray-100 bg-gradient-to-b from-purple-50/40 to-purple-50/0">
                       <button
                         type="button"
                         disabled={saving}
-                        onClick={() => handleAssignToUser(u)}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-purple-50 transition-colors text-left disabled:opacity-50"
+                        onClick={handleInviteByEmail}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm transition-colors disabled:opacity-60"
                       >
-                        <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-semibold shrink-0">
-                          {initials(u.full_name || u.email)}
+                        {saving ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Send size={14} />
+                        )}
+                        <span className="flex-1 text-left">
+                          Invite <span className="font-medium">{query.trim()}</span>
                         </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-gray-900 truncate">{u.full_name || u.email.split("@")[0]}</p>
-                          <p className="text-[11px] text-gray-500 truncate">{u.email}</p>
-                        </div>
+                        <Mail size={12} className="opacity-70" />
                       </button>
-                    </li>
-                  ))}
-                </ul>
+                      <p className="text-[10px] text-purple-600/70 mt-1.5 text-center">
+                        They'll get an email to join Lumicoria and pick up this task.
+                      </p>
+                    </div>
+                  )}
+
+                  {!searching && !query.trim() && (
+                    <div className="px-3 py-3 text-center text-[11px] text-gray-400">
+                      Start typing to find teammates or invite someone new.
+                    </div>
+                  )}
+                </>
               )}
 
-              {!searching && query.trim() && results.length === 0 && !showInviteCta && (
-                <div className="px-3 py-3 text-center text-[11px] text-gray-400">
-                  No matching teammates. Type a full email to invite someone.
-                </div>
-              )}
+              {tab === "agents" && (
+                <>
+                  {!agentRegistryLoaded && (
+                    <div className="px-3 py-4 flex items-center justify-center text-gray-400 text-xs">
+                      <Loader2 size={14} className="animate-spin mr-1.5" /> Loading agents…
+                    </div>
+                  )}
 
-              {showInviteCta && (
-                <div className="p-2 border-t border-gray-100 bg-gradient-to-b from-purple-50/40 to-purple-50/0">
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={handleInviteByEmail}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm transition-colors disabled:opacity-60"
-                  >
-                    {saving ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Send size={14} />
-                    )}
-                    <span className="flex-1 text-left">
-                      Invite <span className="font-medium">{query.trim()}</span>
-                    </span>
-                    <Mail size={12} className="opacity-70" />
-                  </button>
-                  <p className="text-[10px] text-purple-600/70 mt-1.5 text-center">
-                    They'll get an email to join Lumicoria and pick up this task.
-                  </p>
-                </div>
-              )}
+                  {agentRegistryLoaded && filteredAgents.length === 0 && (
+                    <div className="px-3 py-3 text-center text-[11px] text-gray-400">
+                      No agents match that search.
+                    </div>
+                  )}
 
-              {!searching && !query.trim() && (
-                <div className="px-3 py-3 text-center text-[11px] text-gray-400">
-                  Start typing to find teammates or invite someone new.
-                </div>
+                  {agentRegistryLoaded && filteredAgents.length > 0 && (
+                    <ul className="py-1">
+                      {filteredAgents.map((agent) => {
+                        const active = task.assigned_to_agent === agent.key;
+                        return (
+                          <li key={agent.key}>
+                            <button
+                              type="button"
+                              disabled={saving || active}
+                              onClick={() => handleAssignToAgent(agent)}
+                              className={cn(
+                                "w-full flex items-start gap-2 px-3 py-2 transition-colors text-left disabled:opacity-50",
+                                active ? "bg-purple-50" : "hover:bg-purple-50",
+                              )}
+                            >
+                              <span className="mt-0.5 w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] shrink-0">
+                                <Bot size={12} />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-sm text-gray-900 truncate">{agent.name}</p>
+                                  {active && (
+                                    <span className="text-[9px] uppercase tracking-wide bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
+                                      Assigned
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-gray-500 line-clamp-2">{agent.description}</p>
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
+                  <div className="px-3 py-2 border-t border-gray-100 bg-purple-50/30">
+                    <p className="text-[10px] text-purple-700/80 leading-snug">
+                      Assigning an agent triggers a draft proposal. You'll review and approve before anything is final.
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </motion.div>
