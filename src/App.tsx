@@ -130,6 +130,7 @@ const AppRoutes = () => {
         <Route path="/agents/my-agents/:agentId" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
         <Route path="/wellbeing" element={<ProtectedRoute><NewWellbeing /></ProtectedRoute>} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/pricing/teams" element={<Pricing />} />
         <Route path="/models" element={<Models />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />

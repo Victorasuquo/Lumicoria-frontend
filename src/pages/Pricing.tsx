@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Check, Minus, ArrowRight, Shield, ChevronRight, Lock, CreditCard } from 'lucide-react';
+import { Check, Minus, ArrowRight, Shield, ChevronRight, Lock, CreditCard, Users, Building2 } from 'lucide-react';
 import { billingApi, type PlanInfo } from '@/services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /* ═══════════════════════════════════════════════════════════════════
    Feature comparison rows
@@ -69,6 +69,139 @@ const PLAN_DESCRIPTIONS: Record<string, string> = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
+   Team plans (presentation-only — adds on top of the individual plans).
+   These render when the audience toggle is set to "For Teams" and on
+   the dedicated /pricing/teams route.
+   ═══════════════════════════════════════════════════════════════════ */
+
+type TeamPlanCard = {
+    key: 'team' | 'business' | 'team-enterprise';
+    name: string;
+    tagline: string;
+    pricePerSeat: number | null;      // null = custom / contact sales
+    seatsMin: number;
+    seatsLabel: string;
+    highlighted?: boolean;
+    cta: 'trial' | 'contact';
+    logo: string;
+    cardBorder: string;
+    checkColor: string;
+    btnClass: string;
+    features: string[];
+};
+
+const TEAM_PLANS: TeamPlanCard[] = [
+    {
+        key: 'team',
+        name: 'Team',
+        tagline: 'Small teams getting productive together',
+        pricePerSeat: 25,
+        seatsMin: 3,
+        seatsLabel: '3 to 25 seats',
+        cta: 'trial',
+        logo: '/images/lumicoria-logo-primary.png',
+        cardBorder: 'border-purple-200 hover:border-purple-300 hover:shadow-sm',
+        checkColor: 'text-purple-500',
+        btnClass: 'bg-purple-600 text-white hover:bg-purple-700',
+        features: [
+            'All 21 agents',
+            '1,500 runs / seat / month (pooled)',
+            '200 docs / seat / month',
+            '25 MB upload limit',
+            'Shared projects + workspaces',
+            'Member roles (owner, admin, member, viewer)',
+            'Bulk email invites',
+            'Activity log — 30 days',
+            'Email support',
+        ],
+    },
+    {
+        key: 'business',
+        name: 'Business',
+        tagline: 'Growing organisations that need to subdivide and govern',
+        pricePerSeat: 45,
+        seatsMin: 5,
+        seatsLabel: '5 to 200 seats',
+        highlighted: true,
+        cta: 'trial',
+        logo: '/images/lumicoria-logo-gradient.png',
+        cardBorder: 'border-purple-300 ring-1 ring-purple-200 hover:shadow-md',
+        checkColor: 'text-purple-600',
+        btnClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-95',
+        features: [
+            'Everything in Team',
+            '3,000 runs / seat / month (pooled)',
+            '500 docs / seat / month',
+            '50 MB upload limit',
+            'Multiple teams inside one organisation',
+            'Project-level agent assignment',
+            'Advanced analytics + CSV export',
+            'Activity log — 1 year',
+            'SSO with Google Workspace',
+            'API access',
+            'Priority email + chat support',
+            '1-hour onboarding session included',
+        ],
+    },
+    {
+        key: 'team-enterprise',
+        name: 'Enterprise',
+        tagline: 'Large organisations with governance, residency, integration',
+        pricePerSeat: null,
+        seatsMin: 0,
+        seatsLabel: 'Unlimited seats',
+        cta: 'contact',
+        logo: '/images/lumicoria-logo-mono.png',
+        cardBorder: 'border-gray-300 hover:border-gray-400 hover:shadow-sm',
+        checkColor: 'text-gray-700',
+        btnClass: 'border border-gray-900 text-gray-900 hover:bg-gray-50',
+        features: [
+            'Everything in Business',
+            'Unlimited runs and documents',
+            '100 MB upload limit (custom on request)',
+            '99.9% uptime SLA with credits',
+            'SAML SSO (Okta, Azure AD, Ping)',
+            'SCIM provisioning + de-provisioning',
+            'Audit log export (CSV + SIEM webhook)',
+            'Data residency (US, EU, Africa)',
+            'IP allowlist',
+            'Custom DPA and BAA',
+            'Annual invoicing, NET 30 terms',
+            'Dedicated customer success manager',
+            'Sandbox environment',
+            'Custom retention + deletion policy',
+        ],
+    },
+];
+
+const TEAM_FEATURE_ROWS: {
+    label: string; team: string | boolean; business: string | boolean; enterprise: string | boolean;
+}[] = [
+    { label: 'Seats',                              team: '3 to 25',            business: '5 to 200',         enterprise: 'Unlimited' },
+    { label: 'Agents',                             team: 'All 21',             business: 'All 21',           enterprise: 'All 21' },
+    { label: 'Runs / seat / month (pooled)',       team: '1,500',              business: '3,000',            enterprise: 'Unlimited' },
+    { label: 'Documents / seat / month (pooled)',  team: '200',                business: '500',              enterprise: 'Unlimited' },
+    { label: 'Max File Upload',                    team: '25 MB',              business: '50 MB',            enterprise: '100 MB+' },
+    { label: 'Shared projects + workspaces',       team: true,                 business: true,               enterprise: true },
+    { label: 'Member roles',                       team: '4 roles',            business: '4 roles + custom', enterprise: 'Custom roles' },
+    { label: 'Bulk email invites',                 team: true,                 business: true,               enterprise: true },
+    { label: 'Multiple teams in one org',          team: false,                business: true,               enterprise: true },
+    { label: 'Project-level agent assignment',     team: false,                business: true,               enterprise: true },
+    { label: 'Advanced analytics + CSV export',    team: false,                business: true,               enterprise: true },
+    { label: 'Activity log retention',             team: '30 days',            business: '1 year',           enterprise: 'Custom' },
+    { label: 'Single sign-on (Google Workspace)',  team: false,                business: true,               enterprise: true },
+    { label: 'SAML SSO + SCIM',                    team: false,                business: false,              enterprise: true },
+    { label: 'API access',                         team: false,                business: true,               enterprise: true },
+    { label: 'Audit log export (SIEM)',            team: false,                business: false,              enterprise: true },
+    { label: 'Data residency',                     team: false,                business: false,              enterprise: 'US / EU / Africa' },
+    { label: 'IP allowlist',                       team: false,                business: false,              enterprise: true },
+    { label: 'Uptime SLA',                         team: false,                business: false,              enterprise: '99.9%' },
+    { label: 'Onboarding session',                 team: false,                business: '1 hour',           enterprise: 'Dedicated CSM' },
+    { label: 'Custom DPA + BAA',                   team: false,                business: false,              enterprise: true },
+    { label: 'Annual invoicing (NET 30)',          team: false,                business: false,              enterprise: true },
+];
+
+/* ═══════════════════════════════════════════════════════════════════
    FAQs
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -87,11 +220,36 @@ const faqs = [
 
 const Pricing = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [plans, setPlans] = useState<PlanInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [showComparison, setShowComparison] = useState(false);
+
+    // Phase 10 — audience toggle. /pricing defaults to Individuals; /pricing/teams
+    // defaults to Teams.  Switching the toggle updates the URL so people can share
+    // a direct link to the version they were looking at.
+    const [audience, setAudience] = useState<'individuals' | 'teams'>(
+        location.pathname.startsWith('/pricing/teams') ? 'teams' : 'individuals'
+    );
+    useEffect(() => {
+        const onTeams = location.pathname.startsWith('/pricing/teams');
+        setAudience(onTeams ? 'teams' : 'individuals');
+    }, [location.pathname]);
+
+    const switchAudience = (next: 'individuals' | 'teams') => {
+        setAudience(next);
+        navigate(next === 'teams' ? '/pricing/teams' : '/pricing', { replace: true });
+    };
+
+    const getTeamDisplayPrice = (plan: TeamPlanCard): string => {
+        if (plan.pricePerSeat === null) return 'Custom';
+        if (billingCycle === 'yearly') {
+            return `$${Math.round(plan.pricePerSeat * 0.85)}`;
+        }
+        return `$${plan.pricePerSeat}`;
+    };
 
     useEffect(() => {
         billingApi.getPlans()
@@ -104,7 +262,7 @@ const Pricing = () => {
         if (plan.price_monthly === null || plan.price_monthly === undefined) return 'Custom';
         if (plan.price_monthly === 0) return '$0';
         if (billingCycle === 'yearly') {
-            const yearly = Math.round(plan.price_monthly * 12 * 0.8);
+            const yearly = Math.round(plan.price_monthly * 12 * 0.85);
             return `$${Math.round(yearly / 12)}`;
         }
         return `$${plan.price_monthly}`;
@@ -139,6 +297,32 @@ const Pricing = () => {
                     </div>
                 </motion.div>
 
+                {/* ═══ AUDIENCE TOGGLE (Phase 10) ═══ */}
+                <div className="flex items-center justify-center mb-4">
+                    <div className="inline-flex items-center gap-1 rounded-full border border-purple-100 bg-purple-50/40 p-1">
+                        <button
+                            onClick={() => switchAudience('individuals')}
+                            className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${audience === 'individuals'
+                                ? 'bg-white text-purple-700 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <Users size={14} />
+                            For Individuals
+                        </button>
+                        <button
+                            onClick={() => switchAudience('teams')}
+                            className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${audience === 'teams'
+                                ? 'bg-white text-purple-700 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <Building2 size={14} />
+                            For Teams
+                        </button>
+                    </div>
+                </div>
+
                 {/* ═══ BILLING TOGGLE ═══ */}
                 <div className="flex items-center justify-center mb-10">
                     <div className="inline-flex items-center gap-1 rounded-full bg-gray-100 p-1">
@@ -160,14 +344,15 @@ const Pricing = () => {
                         >
                             Yearly
                             <span className="rounded-full bg-gray-900 text-white px-2 py-0.5 text-[10px] font-semibold">
-                                -20%
+                                -15%
                             </span>
                         </button>
                     </div>
                 </div>
 
                 {/* ═══ PLAN CARDS ═══ */}
-                {loading ? (
+                {audience === 'individuals' && (
+                loading ? (
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="rounded-2xl border border-gray-100 p-6 space-y-4 animate-pulse">
@@ -229,7 +414,7 @@ const Pricing = () => {
                                         </div>
                                         {billingCycle === 'yearly' && plan.price_monthly !== null && plan.price_monthly > 0 && (
                                             <p className="text-xs text-gray-400 mb-4">
-                                                ${Math.round(plan.price_monthly * 12 * 0.8)}/year
+                                                ${Math.round(plan.price_monthly * 12 * 0.85)}/year
                                             </p>
                                         )}
                                         {(billingCycle !== 'yearly' || !plan.price_monthly) && <div className="mb-4" />}
@@ -297,6 +482,95 @@ const Pricing = () => {
                             );
                         })}
                     </div>
+                )
+                )}
+
+                {/* ═══ TEAM PLAN CARDS (Phase 10 — Teams audience) ═══ */}
+                {audience === 'teams' && (
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {TEAM_PLANS.map((plan, index) => (
+                            <motion.div
+                                key={plan.key}
+                                initial={{ opacity: 0, y: 24 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.08 }}
+                            >
+                                <div className={`
+                                    relative flex flex-col h-full rounded-2xl border bg-white p-6
+                                    transition-all duration-300 hover:-translate-y-0.5
+                                    ${plan.cardBorder}
+                                `}>
+                                    {plan.highlighted && (
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                            <span className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+                                                Most Popular
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <img
+                                        src={plan.logo}
+                                        alt={plan.name}
+                                        className="h-10 w-10 rounded-xl object-cover mb-4 mt-1"
+                                    />
+
+                                    <h3 className="text-base font-semibold text-gray-900 mb-1">{plan.name}</h3>
+                                    <p className="text-xs text-gray-400 mb-4">{plan.tagline}</p>
+
+                                    <div className="mb-1 flex items-end gap-1.5">
+                                        <span className="text-3xl font-bold text-gray-900">{getTeamDisplayPrice(plan)}</span>
+                                        {plan.pricePerSeat !== null ? (
+                                            <span className="text-sm text-gray-400 mb-0.5">/ seat / mo</span>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 mb-1">contact us</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">{plan.seatsLabel}</p>
+                                    {billingCycle === 'yearly' && plan.pricePerSeat !== null ? (
+                                        <p className="text-xs text-gray-400 mb-3">
+                                            Billed annually · ${Math.round(plan.pricePerSeat * 12 * 0.85)}/seat/year
+                                        </p>
+                                    ) : (
+                                        <div className="mb-3" />
+                                    )}
+
+                                    <Separator className="mb-5" />
+
+                                    <ul className="flex-1 space-y-3 text-sm mb-6">
+                                        {plan.features.map((feature, fi) => (
+                                            <li key={fi} className="flex items-start gap-2.5 text-gray-600">
+                                                <Check className={`h-4 w-4 mt-0.5 shrink-0 ${plan.checkColor}`} />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {plan.cta === 'contact' ? (
+                                        <Button
+                                            variant="outline"
+                                            className={`w-full rounded-lg text-sm font-semibold ${plan.btnClass}`}
+                                            onClick={() => window.location.href = 'mailto:sales@lumicoria.ai'}
+                                        >
+                                            Contact Sales <ArrowRight className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            className={`w-full rounded-lg text-sm font-semibold ${plan.btnClass}`}
+                                            onClick={() => navigate('/signup?plan=' + plan.key)}
+                                        >
+                                            Start Free Trial <ArrowRight className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    )}
+
+                                    {plan.pricePerSeat !== null && (
+                                        <p className="mt-3 text-[11px] text-gray-400 text-center">
+                                            Minimum {plan.seatsMin} seats · 14-day trial · No card required
+                                        </p>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
                 )}
 
                 {/* ═══ COMPARE ALL FEATURES ═══ */}
@@ -310,7 +584,7 @@ const Pricing = () => {
                     </button>
                 </div>
 
-                {showComparison && (
+                {showComparison && audience === 'individuals' && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -336,6 +610,40 @@ const Pricing = () => {
                                                 <td className="py-3.5 px-4 text-center"><FeatureCell value={row.free} /></td>
                                                 <td className="py-3.5 px-4 text-center"><FeatureCell value={row.starter} /></td>
                                                 <td className="py-3.5 px-4 text-center bg-gray-50/50"><FeatureCell value={row.pro} /></td>
+                                                <td className="py-3.5 px-4 text-center"><FeatureCell value={row.enterprise} /></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {showComparison && audience === 'teams' && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-6"
+                    >
+                        <div className="rounded-2xl border border-purple-100 bg-white overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[700px]">
+                                    <thead>
+                                        <tr className="border-b border-purple-100 bg-purple-50/40">
+                                            <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider w-[260px]">Feature</th>
+                                            <th className="text-center py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Team</th>
+                                            <th className="text-center py-4 px-4 text-xs font-semibold text-purple-700 uppercase tracking-wider bg-purple-50">Business</th>
+                                            <th className="text-center py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Enterprise</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {TEAM_FEATURE_ROWS.map((row, i) => (
+                                            <tr key={row.label} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-purple-50/10'}`}>
+                                                <td className="py-3.5 px-6 text-sm text-gray-700 font-medium">{row.label}</td>
+                                                <td className="py-3.5 px-4 text-center"><FeatureCell value={row.team} /></td>
+                                                <td className="py-3.5 px-4 text-center bg-purple-50/40"><FeatureCell value={row.business} /></td>
                                                 <td className="py-3.5 px-4 text-center"><FeatureCell value={row.enterprise} /></td>
                                             </tr>
                                         ))}
