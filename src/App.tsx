@@ -45,6 +45,7 @@ import Organization from "./pages/Organization";
 import IntegrationsHub from "./pages/IntegrationsHub";
 import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
+import Enterprise from "./pages/Enterprise";
 
 // Agent pages — lazy loaded
 const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
@@ -112,6 +113,9 @@ const AppRoutes = () => {
     <Routes>
       {/* Blog post page — standalone layout with BlogNav (no MainNav/Footer) */}
       <Route path="/blog/:slug" element={<Suspense fallback={<AgentPageFallback />}><BlogPostPage /></Suspense>} />
+
+      {/* Enterprise marketing — full-bleed, no MainNav/Footer */}
+      <Route path="/enterprise" element={<Enterprise />} />
 
       {/* Public hosted support portal — full-bleed, branded, NO MainLayout. */}
       <Route path="/portal/:slug" element={<Suspense fallback={<AgentPageFallback />}><SupportPortal /></Suspense>} />
