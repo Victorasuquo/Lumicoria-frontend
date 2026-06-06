@@ -31,6 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -179,6 +180,12 @@ export default function MainNav() {
         <div className="flex items-center">
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
+              {/* Workspace switcher — lg+ only to keep mobile clean */}
+              <div className="hidden lg:block">
+                <ErrorBoundary>
+                  <WorkspaceSwitcher />
+                </ErrorBoundary>
+              </div>
               {/* Notification Center */}
               <ErrorBoundary>
                 <NotificationCenter />

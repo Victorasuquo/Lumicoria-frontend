@@ -47,6 +47,27 @@ import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
 import Enterprise from "./pages/Enterprise";
 
+// Workspace surface (Phase G)
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
+const WorkspaceLayoutLazy = lazy(() => import("./components/workspace/WorkspaceLayout").then(m => ({ default: m.WorkspaceLayout })));
+const WorkspaceHome = lazy(() => import("./pages/workspace/WorkspaceHome"));
+const WorkspaceMembers = lazy(() => import("./pages/workspace/WorkspaceMembers"));
+const WorkspaceActivity = lazy(() => import("./pages/workspace/WorkspaceActivity"));
+const TeamsList = lazy(() => import("./pages/workspace/TeamsList"));
+const TeamDetail = lazy(() => import("./pages/workspace/TeamDetail"));
+const ProjectsList = lazy(() => import("./pages/workspace/ProjectsList"));
+const ProjectDetail = lazy(() => import("./pages/workspace/ProjectDetail"));
+const AdminBilling = lazy(() => import("./pages/workspace/admin/AdminBilling"));
+const AdminAudit = lazy(() => import("./pages/workspace/admin/AdminAudit"));
+const AdminTokens = lazy(() => import("./pages/workspace/admin/AdminTokens"));
+const AdminWebhooks = lazy(() => import("./pages/workspace/admin/AdminWebhooks"));
+const AdminSso = lazy(() => import("./pages/workspace/admin/AdminSso"));
+const AdminScim = lazy(() => import("./pages/workspace/admin/AdminScim"));
+const AdminDomains = lazy(() => import("./pages/workspace/admin/AdminDomains"));
+const AdminSecurity = lazy(() => import("./pages/workspace/admin/AdminSecurity"));
+const AdminAutomations = lazy(() => import("./pages/workspace/admin/AdminAutomations"));
+const AdminNotifications = lazy(() => import("./pages/workspace/admin/AdminNotifications"));
+
 // Agent pages — lazy loaded
 const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
 const MeetingAssistant = lazy(() => import("./pages/agents/MeetingAssistant"));
@@ -151,6 +172,29 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
+        {/* Workspace surface — Phase G (Protected, lazy-loaded) */}
+        <Route path="/workspace" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WorkspaceLayoutLazy /></Suspense></ProtectedRoute>}>
+          <Route index element={<Suspense fallback={<AgentPageFallback />}><WorkspaceHome /></Suspense>} />
+          <Route path="members" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceMembers /></Suspense>} />
+          <Route path="activity" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceActivity /></Suspense>} />
+          <Route path="teams" element={<Suspense fallback={<AgentPageFallback />}><TeamsList /></Suspense>} />
+          <Route path="teams/new" element={<Suspense fallback={<AgentPageFallback />}><TeamsList /></Suspense>} />
+          <Route path="teams/:teamId" element={<Suspense fallback={<AgentPageFallback />}><TeamDetail /></Suspense>} />
+          <Route path="projects" element={<Suspense fallback={<AgentPageFallback />}><ProjectsList /></Suspense>} />
+          <Route path="projects/new" element={<Suspense fallback={<AgentPageFallback />}><ProjectsList /></Suspense>} />
+          <Route path="projects/:projectId" element={<Suspense fallback={<AgentPageFallback />}><ProjectDetail /></Suspense>} />
+          <Route path="admin/billing" element={<Suspense fallback={<AgentPageFallback />}><AdminBilling /></Suspense>} />
+          <Route path="admin/audit" element={<Suspense fallback={<AgentPageFallback />}><AdminAudit /></Suspense>} />
+          <Route path="admin/api-tokens" element={<Suspense fallback={<AgentPageFallback />}><AdminTokens /></Suspense>} />
+          <Route path="admin/webhooks" element={<Suspense fallback={<AgentPageFallback />}><AdminWebhooks /></Suspense>} />
+          <Route path="admin/sso" element={<Suspense fallback={<AgentPageFallback />}><AdminSso /></Suspense>} />
+          <Route path="admin/scim" element={<Suspense fallback={<AgentPageFallback />}><AdminScim /></Suspense>} />
+          <Route path="admin/domains" element={<Suspense fallback={<AgentPageFallback />}><AdminDomains /></Suspense>} />
+          <Route path="admin/security" element={<Suspense fallback={<AgentPageFallback />}><AdminSecurity /></Suspense>} />
+          <Route path="admin/automations" element={<Suspense fallback={<AgentPageFallback />}><AdminAutomations /></Suspense>} />
+          <Route path="admin/notifications" element={<Suspense fallback={<AgentPageFallback />}><AdminNotifications /></Suspense>} />
+        </Route>
+
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
@@ -210,11 +254,13 @@ const App = () => (
     <TooltipProvider>
       <Router>
         <AuthProvider>
-          <WellbeingProvider>
-            <AppRoutes />
-            <MoodPromptModal />
-            <CoachBubble />
-          </WellbeingProvider>
+          <WorkspaceProvider>
+            <WellbeingProvider>
+              <AppRoutes />
+              <MoodPromptModal />
+              <CoachBubble />
+            </WellbeingProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </Router>
     </TooltipProvider>
