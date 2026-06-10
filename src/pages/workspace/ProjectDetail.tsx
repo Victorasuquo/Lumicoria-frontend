@@ -12,17 +12,20 @@ import {
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT, FADE_UP, initials } from "@/components/workspace/tokens";
 
-type Tab = "overview" | "tasks" | "agents" | "documents" | "activity" | "analytics" | "members" | "settings";
+type Tab = "overview" | "tasks" | "agents" | "documents" | "chat" | "activity" | "analytics" | "members" | "settings";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "tasks", label: "Tasks" },
   { id: "agents", label: "Agents" },
   { id: "documents", label: "Documents" },
+  { id: "chat", label: "Chat" },
   { id: "activity", label: "Activity" },
   { id: "analytics", label: "Analytics" },
   { id: "members", label: "Members" },
   { id: "settings", label: "Settings" },
 ];
+
+import ChatPanel from "@/components/workspace/ChatPanel";
 
 const TabBar: React.FC<{ active: Tab; onChange: (t: Tab) => void }> = ({ active, onChange }) => (
   <div style={{
@@ -362,6 +365,8 @@ export const ProjectDetail: React.FC = () => {
           ))}
         </GlassCard>
       )}
+
+      {tab === "chat" && <ChatPanel orgId={activeOrgId} projectId={projectId} />}
 
       {tab === "activity" && (
         <GlassCard padding={6}>
