@@ -1,737 +1,772 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Building2,
+  Check,
+  ChevronRight,
+  Database,
+  FileCheck,
+  Fingerprint,
+  KeyRound,
+  Lock,
+  Mail,
+  Network,
+  ShieldCheck,
+  SlidersHorizontal,
+  Workflow,
+} from "lucide-react";
 
-// Brand tokens (mirrors src/index.css)
-const PURPLE = "#6C4AB0";
-const PURPLE_DEEP = "#3B2D6A";
-const PURPLE_LIGHT = "#9B87F5";
-const SKY = "#0EA5E9";
-const TEAL = "#38BDF8";
-const INK = "#0F172A";
-const SLATE_50 = "#F8FAFC";
-const SLATE_200 = "#E2E8F0";
-const SLATE_400 = "#94A3B8";
-const SLATE_600 = "#475569";
-
-const BRAND_GRADIENT = `linear-gradient(135deg, ${PURPLE} 0%, ${SKY} 100%)`;
-const AURORA_GRADIENT = `radial-gradient(60% 80% at 20% 10%, ${PURPLE_LIGHT}40 0%, transparent 60%), radial-gradient(50% 70% at 85% 25%, ${SKY}30 0%, transparent 60%), radial-gradient(60% 70% at 50% 90%, ${PURPLE}25 0%, transparent 65%)`;
-
-const FADE_UP = {
-  initial: { opacity: 0, y: 12 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { type: "spring" as const, stiffness: 220, damping: 24 },
-};
-
-// Pricing (kept in sync with Pricing.tsx + backend PLAN_LIMITS)
 const TEAM_PER_SEAT = 39;
 const BUSINESS_PER_SEAT = 79;
 const ENTERPRISE_PER_SEAT = 129;
 const ENTERPRISE_FLOOR = 1500;
 const ANNUAL_DISCOUNT = 0.15;
 
-type CompetitorRow = {
-  feature: string;
-  lumicoria: string;
-  chatgpt: string;
-  copilot: string;
-  glean: string;
-  notion: string;
+const FADE_UP = {
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { type: "spring" as const, stiffness: 210, damping: 26 },
 };
 
-const COMPARISON: CompetitorRow[] = [
+type ComparisonRow = {
+  feature: string;
+  lumicoria: string;
+  typical: string;
+  impact: string;
+};
+
+const COMPARISON: ComparisonRow[] = [
   {
-    feature: "Starting per-seat / month",
-    lumicoria: `$${ENTERPRISE_PER_SEAT}`,
-    chatgpt: "$60",
-    copilot: "$30",
-    glean: "$45",
-    notion: "$24",
+    feature: "Agent portfolio",
+    lumicoria: "21 specialized agents included",
+    typical: "Single assistant, copilots, or add-on packs",
+    impact: "One governed workspace for every function",
   },
   {
-    feature: "Specialised AI agents (out of the box)",
-    lumicoria: "21 (free on every plan)",
-    chatgpt: "GPT only",
-    copilot: "M365 Copilots",
-    glean: "Search-led",
-    notion: "Q&A only",
+    feature: "Custom agents",
+    lumicoria: "Unlimited project-bound builds",
+    typical: "Builder access, paid services, or limited templates",
+    impact: "Specialist workflows without vendor sprawl",
   },
   {
-    feature: "Custom agents (per project)",
-    lumicoria: "Unlimited",
-    chatgpt: "GPTs (org)",
-    copilot: "Add-ons",
-    glean: "—",
-    notion: "Limited",
+    feature: "Knowledge base",
+    lumicoria: "Org, team, and project RAG with citations",
+    typical: "Search-led or locked to one suite",
+    impact: "Answers carry sources and permissions",
   },
-  { feature: "Shared knowledge base", lumicoria: "Yes — vector + RAG", chatgpt: "Workspace", copilot: "M365 only", glean: "Yes", notion: "Within Notion" },
-  { feature: "Automation rules engine", lumicoria: "Yes", chatgpt: "—", copilot: "Power Automate (extra)", glean: "—", notion: "Buttons/Forms" },
-  { feature: "SSO / SAML 2.0", lumicoria: "Yes", chatgpt: "Yes", copilot: "Yes", glean: "Yes", notion: "Plus tier" },
-  { feature: "SCIM 2.0 provisioning", lumicoria: "Yes", chatgpt: "Yes", copilot: "Yes", glean: "Yes", notion: "Plus tier" },
-  { feature: "Audit log export to SIEM", lumicoria: "Yes (Splunk/Datadog)", chatgpt: "Yes", copilot: "M365 only", glean: "Yes", notion: "Plus tier" },
-  { feature: "Data residency (US / EU / IN)", lumicoria: "Yes", chatgpt: "EU only", copilot: "Yes", glean: "Yes", notion: "EU only" },
-  { feature: "API access", lumicoria: "Yes", chatgpt: "Yes", copilot: "Limited", glean: "Yes", notion: "Limited" },
-  { feature: "On-prem / private cloud", lumicoria: "Custom contract", chatgpt: "—", copilot: "M365 GCC only", glean: "Yes", notion: "—" },
-  { feature: "Response-time SLA", lumicoria: "24/7, 1-hr P1", chatgpt: "Business hrs", copilot: "M365 SLA", glean: "Business hrs", notion: "Business hrs" },
+  {
+    feature: "Identity and access",
+    lumicoria: "SAML SSO, SCIM, domain auto-join",
+    typical: "Available only on top enterprise tiers",
+    impact: "Fast rollout with clean offboarding",
+  },
+  {
+    feature: "Audit and compliance",
+    lumicoria: "Immutable activity log and SIEM export",
+    typical: "Partial logs or admin-only reports",
+    impact: "Security can trace every agent action",
+  },
+  {
+    feature: "Deployment path",
+    lumicoria: "SaaS, private cloud, or on-prem contract",
+    typical: "SaaS-first with limited isolation options",
+    impact: "Room for regulated and high-control teams",
+  },
 ];
 
-const FEATURES = [
-  { title: "21 platform agents, free for the team", body: "Document, meeting, legal, research, vision, wellbeing, and more — every plan ships with the full lineup. No per-agent licence." },
-  { title: "Custom agents per project", body: "Spin up purpose-built agents inside any project. Pick the model, set autonomy, attach a knowledge base. Cost flows to the org budget." },
-  { title: "Shared organisation knowledge base", body: "Documents you upload at org, team, or project scope become RAG-ready instantly. Citations always travel with the answer." },
-  { title: "SSO + SCIM out of the box", body: "Plug in Okta, Azure AD, or any SAML 2.0 IdP. Auto-provision and de-provision users via SCIM 2.0. Domain auto-join keeps onboarding tight." },
-  { title: "Data residency you control", body: "Pin your data to US, EU, or India. Customer-managed encryption keys available on contract." },
-  { title: "Audit export to your SIEM", body: "Stream every action — task touched, agent invoked, document opened — to Splunk, Datadog, or any HEC-compatible sink." },
-  { title: "Automation rules engine", body: "If a task moves to ‘blocked’, ping the lead. If a contract uploads, run the legal agent. Build it in minutes, no code." },
-  { title: "Real-time chat with agents", body: "Invite an agent into a project channel. Tag it with `/run`. It answers in the thread, with sources, in real time." },
-  { title: "Enterprise SLA + 24/7 support", body: "1-hour P1 response, dedicated CSM, quarterly business reviews, and onboarding workshops baked into every Enterprise contract." },
+const CAPABILITIES = [
+  {
+    icon: Fingerprint,
+    meta: "Identity",
+    title: "SSO, SCIM, and domain controls",
+    body: "Connect Okta, Azure AD, or any SAML 2.0 provider. Provision seats, enforce domain rules, and remove access the moment a user leaves.",
+    span: "lg:col-span-3",
+  },
+  {
+    icon: ShieldCheck,
+    meta: "Governance",
+    title: "Agent autonomy that admins can actually govern",
+    body: "Set each agent to suggest, propose, or execute by project. Permission boundaries follow the workspace instead of living in a prompt.",
+    span: "lg:col-span-3",
+  },
+  {
+    icon: Database,
+    meta: "Knowledge",
+    title: "Shared RAG with source-level citations",
+    body: "Upload documents at org, team, or project scope and keep answers tied to the files your team is allowed to read.",
+    span: "lg:col-span-2",
+  },
+  {
+    icon: Workflow,
+    meta: "Automation",
+    title: "Rules that move work, not just text",
+    body: "Trigger agents when contracts upload, tasks stall, tickets escalate, or project status changes.",
+    span: "lg:col-span-2",
+  },
+  {
+    icon: FileCheck,
+    meta: "Audit",
+    title: "Exportable logs for security review",
+    body: "Stream agent runs, file access, billing activity, and admin changes to your SIEM.",
+    span: "lg:col-span-2",
+  },
+  {
+    icon: Network,
+    meta: "Deployment",
+    title: "Private cloud and on-prem options",
+    body: "For regulated teams, Lumicoria Custom scopes isolated deployments, BYOK, and model routing under one contract.",
+    span: "lg:col-span-3",
+  },
+  {
+    icon: SlidersHorizontal,
+    meta: "Controls",
+    title: "Budgets by agent, team, and project",
+    body: "Track spend as it happens, forecast usage, and keep high-autonomy agents inside approved operating limits.",
+    span: "lg:col-span-3",
+  },
 ];
 
 const AGENT_REQUEST_CHIPS = [
   "Legal contract review",
-  "Sales prospecting + outreach",
-  "RFP / RFI response",
+  "Sales prospecting and outreach",
+  "RFP response drafting",
   "Compliance audit prep",
   "Research synthesis",
   "Customer success enablement",
 ];
 
 const FAQ = [
-  { q: "How is pricing structured?", a: "Per seat, billed monthly or annually. Annual saves 15%. Enterprise carries a $1,500/mo floor below 12 seats; above 12 seats it's pure per-seat economics." },
-  { q: "Is the data we send used to train models?", a: "No. Customer data is never used to train any third-party or Lumicoria model. You retain ownership of your inputs and outputs." },
-  { q: "Can we bring our own LLM keys?", a: "Yes. Enterprise contracts support BYOK across OpenAI, Anthropic, Google, Perplexity, Mistral, and self-hosted models." },
-  { q: "What's the deployment model?", a: "Multi-tenant SaaS by default. Private-cloud and on-prem deployments are available under a Lumicoria Custom contract via lumicoria.com." },
-  { q: "How fast can we be live?", a: "A free pilot ships same day. SSO + SCIM rollout for a 250-seat tenant typically completes in under a week." },
-  { q: "What integrations are supported?", a: "Slack, Microsoft Teams, Google Workspace, Notion, Linear, Jira, Asana, Trello, Monday, GitHub, Figma, Salesforce, HubSpot — and outbound webhooks for everything else." },
-  { q: "Do you offer a DPA / BAA?", a: "Yes. SOC 2 Type II is in progress (Q3 audit), ISO 27001 is in progress (Q4), GDPR DPA is available on request, and HIPAA BAA ships with the Enterprise contract." },
-  { q: "What about API access?", a: "Yes. Every paid plan ships with API access; Enterprise gets bumped rate limits, webhook delivery guarantees, and machine accounts." },
-  { q: "Can agents be restricted by project?", a: "Yes. Project leads control which agents (platform or custom) are active in a project, and at what autonomy level (suggest / propose / execute)." },
-  { q: "How are credits / cost tracked?", a: "Every agent run records tokens and cost in real time. Admins see live spend by agent, team, project, and seat — with cost forecasts and per-agent budgets." },
-  { q: "What if we need an agent you don't have?", a: "Tell us the workflow. We'll either build it as a custom agent in your org, or scope a fully bespoke Lumicoria deployment via lumicoria.com." },
-  { q: "Can we cancel?", a: "Yes — month-to-month subscriptions can be cancelled at any time and run to the end of the period. Annual contracts renew unless cancelled before the renewal window." },
+  {
+    q: "How is Enterprise priced?",
+    a: "Enterprise is priced per seat with monthly or annual billing. Annual billing saves 15 percent. A $1,500 monthly floor applies below 12 seats.",
+  },
+  {
+    q: "Is customer data used to train models?",
+    a: "No. Customer inputs, outputs, documents, and agent runs are not used to train Lumicoria or third-party models.",
+  },
+  {
+    q: "Can we bring our own model keys?",
+    a: "Yes. Enterprise contracts can route through your OpenAI, Anthropic, Google, Perplexity, Mistral, or self-hosted model credentials.",
+  },
+  {
+    q: "How quickly can a pilot start?",
+    a: "A pilot can start the same day. SSO, SCIM, and workspace rollout for a 250-seat tenant typically completes in under a week.",
+  },
+  {
+    q: "Do you support DPA, BAA, and security review?",
+    a: "Yes. DPA is available on request, BAA is available on Enterprise contracts, and SOC 2 Type II plus ISO 27001 work is in progress.",
+  },
+  {
+    q: "Can agents be restricted by project?",
+    a: "Yes. Project leads decide which platform or custom agents are available, what knowledge they can access, and what autonomy level they receive.",
+  },
 ];
 
-function Pill({ children, kind = "purple" }: { children: React.ReactNode; kind?: "purple" | "ghost" | "outline" }) {
-  if (kind === "outline") {
-    return (
-      <span
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "6px 12px", borderRadius: 9999,
-          border: `1px solid ${PURPLE}30`, color: PURPLE_DEEP,
-          fontWeight: 600, fontSize: 12, letterSpacing: 0.2,
-          background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)",
-        }}
-      >
-        {children}
-      </span>
-    );
-  }
-  if (kind === "ghost") {
-    return (
-      <span style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        padding: "6px 12px", borderRadius: 9999, color: PURPLE_DEEP,
-        fontWeight: 600, fontSize: 12, letterSpacing: 0.2,
-      }}>
-        {children}
-      </span>
-    );
-  }
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "6px 12px", borderRadius: 9999,
-      color: "white", background: BRAND_GRADIENT,
-      fontWeight: 600, fontSize: 12, letterSpacing: 0.2,
-      boxShadow: "0 6px 18px rgba(108,74,176,0.25)",
-    }}>
+function ActionLink({
+  href,
+  children,
+  variant = "primary",
+  external = false,
+  className = "",
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "primary" | "secondary" | "light" | "ghost";
+  external?: boolean;
+  className?: string;
+}) {
+  const variants = {
+    primary:
+      "bg-[#6C4AB0] text-white shadow-[0_18px_42px_rgba(50,36,99,0.28)] hover:bg-[#5b3d99] focus-visible:ring-[#9B87F5]",
+    secondary:
+      "border border-slate-200 bg-white text-slate-950 hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-[#6C4AB0]",
+    light:
+      "bg-white text-[#352563] shadow-[0_18px_42px_rgba(0,0,0,0.22)] hover:bg-slate-100 focus-visible:ring-white",
+    ghost:
+      "border border-white/20 bg-white/10 text-white hover:bg-white/20 focus-visible:ring-white",
+  };
+  const classes = [
+    "inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+    variants[variant],
+    className,
+  ].join(" ");
+
+  const content = (
+    <>
       {children}
-    </span>
+      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+    </>
+  );
+
+  if (href.startsWith("/")) {
+    return (
+      <Link to={href} className={classes}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      className={classes}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+    >
+      {content}
+    </a>
   );
 }
 
-function GlassCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function SectionHeader({
+  eyebrow,
+  title,
+  body,
+  align = "left",
+  tone = "light",
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  align?: "left" | "center";
+  tone?: "light" | "dark";
+}) {
   return (
-    <div
-      style={{
-        background: "rgba(255,255,255,0.78)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,0.6)",
-        borderRadius: 24,
-        boxShadow: "0 8px 32px rgba(15,23,42,0.07)",
-        ...style,
-      }}
-    >
-      {children}
+    <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
+      <p className={`text-sm font-semibold ${tone === "dark" ? "text-[#c9b6f4]" : "text-[#6C4AB0]"}`}>
+        {eyebrow}
+      </p>
+      <h2 className={`mt-3 text-3xl font-semibold leading-tight sm:text-4xl ${tone === "dark" ? "text-white" : "text-slate-950"}`}>
+        {title}
+      </h2>
+      <p className={`mt-4 max-w-[65ch] text-base leading-7 sm:text-lg ${tone === "dark" ? "text-white/70" : "text-slate-600"}`}>
+        {body}
+      </p>
     </div>
   );
 }
 
-function PrimaryCTA({ href, children }: { href: string; children: React.ReactNode }) {
+function MetricCard({ value, label }: { value: string; label: string }) {
   return (
-    <a
-      href={href}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        padding: "14px 22px", borderRadius: 9999,
-        color: "white", background: BRAND_GRADIENT,
-        fontWeight: 600, fontSize: 15, letterSpacing: 0.2,
-        boxShadow: "0 14px 36px rgba(108,74,176,0.35)",
-        textDecoration: "none",
-      }}
-    >
-      {children}
-    </a>
+    <div className="rounded-lg border border-white/20 bg-white/[0.08] p-4 text-white shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-5">
+      <div className="font-mono text-3xl font-semibold tabular-nums sm:text-4xl">{value}</div>
+      <div className="mt-2 text-sm leading-5 text-white/70">{label}</div>
+    </div>
   );
 }
 
-function GhostCTA({ href, children, external = false }: { href: string; children: React.ReactNode; external?: boolean }) {
+function CapabilityCard({
+  icon: Icon,
+  meta,
+  title,
+  body,
+  span,
+}: {
+  icon: React.ElementType;
+  meta: string;
+  title: string;
+  body: string;
+  span: string;
+}) {
   return (
-    <a
-      href={href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noopener noreferrer" : undefined}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        padding: "13px 22px", borderRadius: 9999,
-        color: PURPLE_DEEP, background: "rgba(255,255,255,0.65)",
-        border: `1px solid ${PURPLE}33`,
-        fontWeight: 600, fontSize: 15, letterSpacing: 0.2,
-        textDecoration: "none", backdropFilter: "blur(10px)",
-      }}
+    <motion.article
+      {...FADE_UP}
+      className={`rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.06)] ${span}`}
     >
-      {children}
-    </a>
+      <div className="flex items-start justify-between gap-4">
+        <div className="rounded-lg bg-[#6C4AB0]/10 p-3 text-[#4e3588]">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <span className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500">
+          {meta}
+        </span>
+      </div>
+      <h3 className="mt-5 text-xl font-semibold leading-snug text-slate-950">{title}</h3>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{body}</p>
+    </motion.article>
   );
 }
 
 const Enterprise: React.FC = () => {
   const [seats, setSeats] = useState(50);
-  const [comparePrice, setComparePrice] = useState(60); // ChatGPT Enterprise default
+  const [comparePrice, setComparePrice] = useState(160);
   const [cadence, setCadence] = useState<"monthly" | "annual">("annual");
+  const [requestText, setRequestText] = useState("");
+  const [requestChip, setRequestChip] = useState<string | null>(null);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    const description = document.querySelector('meta[name="description"]');
+    const previousDescription = description?.getAttribute("content") ?? null;
+
+    document.title = "Lumicoria Enterprise - Governed AI agents for teams";
+    if (description) {
+      description.setAttribute(
+        "content",
+        "Lumicoria Enterprise brings governed AI agents, SSO, SCIM, audit logs, RAG, automation, and private deployment paths to teams."
+      );
+    }
+
+    return () => {
+      document.title = previousTitle;
+      if (description && previousDescription) {
+        description.setAttribute("content", previousDescription);
+      }
+    };
+  }, []);
 
   const annualMultiplier = cadence === "annual" ? 1 - ANNUAL_DISCOUNT : 1;
   const lumicoriaMonthly = Math.max(ENTERPRISE_PER_SEAT * annualMultiplier * seats, ENTERPRISE_FLOOR);
   const lumicoriaAnnual = lumicoriaMonthly * 12;
   const competitorMonthly = comparePrice * seats;
   const competitorAnnual = competitorMonthly * 12;
-  const annualSavings = Math.max(competitorAnnual - lumicoriaAnnual, 0);
+  const annualDelta = competitorAnnual - lumicoriaAnnual;
+  const annualSavings = Math.max(annualDelta, 0);
   const threeYearSavings = annualSavings * 3;
 
-  const [requestText, setRequestText] = useState("");
-  const [requestChip, setRequestChip] = useState<string | null>(null);
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const planSnapshot = useMemo(
+    () => [
+      { label: "Team", value: `$${TEAM_PER_SEAT}/seat`, detail: "Shared projects" },
+      { label: "Business", value: `$${BUSINESS_PER_SEAT}/seat`, detail: "Advanced analytics" },
+      { label: "Enterprise", value: `$${ENTERPRISE_PER_SEAT}/seat`, detail: "Full governance" },
+    ],
+    []
+  );
 
-  const submitRequest = async () => {
+  const submitRequest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     try {
       await fetch("/api/v1/org-billing/quote", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: "enterprise", cadence, seats }),
+        body: JSON.stringify({ plan: "enterprise", cadence, seats, request: requestText }),
       });
-    } catch { /* preview only */ }
+    } catch {
+      // Preview mode still shows the composed handoff state.
+    }
     setRequestSubmitted(true);
   };
 
-  const heroVisible = useMemo(() => true, []);
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        color: INK,
-        fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        background: `${SLATE_50}`,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Aurora background */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed", inset: 0, zIndex: 0,
-          background: AURORA_GRADIENT,
-          opacity: 0.85,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Lightweight top bar (no MainNav) */}
-      <header
-        style={{
-          position: "relative", zIndex: 5,
-          padding: "20px 32px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-950 antialiased">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: BRAND_GRADIENT, boxShadow: "0 6px 16px rgba(108,74,176,0.35)",
-            }} />
-            <span style={{ fontFamily: "'Space Grotesk', 'DM Sans', sans-serif", fontWeight: 700, fontSize: 20, color: INK }}>
+        Skip to content
+      </a>
+
+      <section className="relative isolate overflow-hidden bg-[#0b1020] text-white">
+        <img
+          src="/images/dashboard_hero.png"
+          alt="Lumicoria dashboard preview"
+          className="absolute inset-0 h-full w-full object-cover opacity-20 grayscale"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,11,26,0.96),rgba(15,20,40,0.88),rgba(11,16,32,0.72))]" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#f5f7fb] to-transparent" />
+
+        <header className="relative z-20 mx-auto flex max-w-[1320px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex min-w-0 items-center gap-3">
+            <img
+              src="/images/lumicoria-logo-gradient.png"
+              alt="Lumicoria"
+              className="h-10 w-10 rounded-lg shadow-[0_12px_34px_rgba(108,74,176,0.38)]"
+            />
+            <span className="text-lg font-semibold text-white sm:text-xl">
               Lumicoria
             </span>
+          </Link>
+          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 text-sm font-medium text-white/75 backdrop-blur-md md:flex">
+            <Link className="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white" to="/pricing">
+              Pricing
+            </Link>
+            <Link className="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white" to="/agents">
+              Agents
+            </Link>
+            <a
+              className="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white"
+              href="https://lumicoria.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Custom
+            </a>
+          </nav>
+          <ActionLink href="#contact-sales" variant="light" className="px-4 py-2.5 sm:px-5">
+            Sales
+          </ActionLink>
+        </header>
+
+        <div className="relative z-10 mx-auto max-w-[1320px] px-4 pb-16 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pb-20">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white/80 backdrop-blur-md">
+              <BadgeCheck className="h-4 w-4 text-[#b9a7ff]" aria-hidden="true" />
+              Enterprise from ${ENTERPRISE_PER_SEAT}/seat with governed rollout
+            </div>
+            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-none text-white sm:text-6xl lg:text-7xl">
+              Governed AI agents for enterprise teams.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75 sm:text-xl">
+              Run Lumicoria's platform agents and unlimited custom builds across every project, with identity,
+              audit, data residency, and deployment controls ready for security review.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ActionLink href="mailto:enterprise@lumicoria.ai?subject=Lumicoria%20Enterprise%20inquiry" variant="light">
+                Talk to sales
+              </ActionLink>
+              <ActionLink href="/signup" variant="ghost">
+                Start a pilot
+              </ActionLink>
+            </div>
           </div>
-        </Link>
-        <nav style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 14, color: SLATE_600 }}>
-          <Link to="/pricing" style={{ color: SLATE_600, textDecoration: "none" }}>Pricing</Link>
-          <Link to="/agents" style={{ color: SLATE_600, textDecoration: "none" }}>Agents</Link>
-          <a href="https://lumicoria.com" target="_blank" rel="noopener noreferrer" style={{ color: SLATE_600, textDecoration: "none" }}>Custom</a>
-          <PrimaryCTA href="#contact-sales">Talk to sales</PrimaryCTA>
-        </nav>
-      </header>
 
-      {/* Hero */}
-      <section
-        style={{
-          position: "relative", zIndex: 1,
-          maxWidth: 1200, margin: "0 auto", padding: "64px 32px 48px",
-          textAlign: "center",
-        }}
-      >
-        <motion.div {...FADE_UP}>
-          <Pill kind="outline">Lumicoria Enterprise · per-seat from ${ENTERPRISE_PER_SEAT}/mo</Pill>
-        </motion.div>
-        <motion.h1
-          {...FADE_UP}
-          style={{
-            fontFamily: "'Space Grotesk', 'DM Sans', sans-serif",
-            fontSize: "clamp(40px, 6vw, 72px)",
-            fontWeight: 700,
-            letterSpacing: -1.2,
-            lineHeight: 1.05,
-            marginTop: 18, marginBottom: 18,
-            background: BRAND_GRADIENT,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Enterprise AI collaboration<br/>that pays for itself.
-        </motion.h1>
-        <motion.p
-          {...FADE_UP}
-          style={{
-            maxWidth: 760, margin: "0 auto",
-            fontSize: 18, lineHeight: 1.55, color: SLATE_600,
-          }}
-        >
-          Run 21 specialised agents and unlimited custom builds across every project, team, and seat —
-          governed by SSO, SCIM, audit export, and the SLA your security team actually asked for.
-        </motion.p>
-        <motion.div {...FADE_UP} style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
-          <PrimaryCTA href="#contact-sales">Talk to sales</PrimaryCTA>
-          <GhostCTA href="/signup">Start a free pilot</GhostCTA>
-        </motion.div>
-
-        {/* Live counter strip */}
-        <motion.div
-          {...FADE_UP}
-          style={{
-            display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16,
-            marginTop: 64, maxWidth: 800, marginInline: "auto",
-          }}
-        >
-          {[
-            { n: "21", lab: "Platform agents on day one" },
-            { n: "920+", lab: "API endpoints, multi-tenant" },
-            { n: "24/7", lab: "P1 response, 1-hour SLA" },
-          ].map((m) => (
-            <GlassCard key={m.lab} style={{ padding: 20, textAlign: "center" }}>
-              <div style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: 700, fontSize: 36, color: PURPLE_DEEP, letterSpacing: -0.5,
-              }}>{m.n}</div>
-              <div style={{ fontSize: 13, color: SLATE_600, marginTop: 6 }}>{m.lab}</div>
-            </GlassCard>
-          ))}
-        </motion.div>
+          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard value="21" label="Platform agents included from day one" />
+            <MetricCard value="1 hr" label="P1 response target on Enterprise" />
+            <MetricCard value="3" label="US, EU, and India residency options" />
+            <MetricCard value="24/7" label="Coverage for critical escalations" />
+          </div>
+        </div>
       </section>
 
-      {/* Comparison table */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "48px 32px" }}>
-        <motion.h2 {...FADE_UP} style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 36, fontWeight: 700, letterSpacing: -0.6, color: INK,
-          textAlign: "center", marginBottom: 12,
-        }}>
-          Side-by-side with the field
-        </motion.h2>
-        <motion.p {...FADE_UP} style={{ textAlign: "center", color: SLATE_600, fontSize: 16, maxWidth: 720, margin: "0 auto 36px" }}>
-          Pricing and feature data current as of {new Date().toLocaleString("default", { month: "long", year: "numeric" })}.
-          Lumicoria includes everything below at Enterprise; competitors typically tier or unbundle.
-        </motion.p>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: "rgba(255,255,255,0.6)" }}>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: SLATE_600, fontWeight: 600 }}>Feature</th>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: PURPLE_DEEP, fontWeight: 700 }}>Lumicoria</th>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: SLATE_600, fontWeight: 600 }}>ChatGPT Enterprise</th>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: SLATE_600, fontWeight: 600 }}>MS Copilot</th>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: SLATE_600, fontWeight: 600 }}>Glean</th>
-                    <th style={{ textAlign: "left", padding: "16px 18px", color: SLATE_600, fontWeight: 600 }}>Notion AI</th>
+      <main id="main" className="relative">
+        <section className="mx-auto max-w-[1320px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <SectionHeader
+              eyebrow="Procurement fit"
+              title="Built for teams comparing AI suites, not just chat tools."
+              body="The Enterprise page now leads with what buyers ask for: identity, governance, knowledge controls, auditability, and deployment flexibility."
+            />
+            <div className="grid gap-3 sm:grid-cols-3">
+              {planSnapshot.map((plan) => (
+                <div key={plan.label} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-500">{plan.label}</div>
+                  <div className="mt-2 font-mono text-2xl font-semibold tabular-nums text-slate-950">
+                    {plan.value}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600">{plan.detail}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <motion.div {...FADE_UP} className="mt-10 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-x-auto">
+              <table className="min-w-[880px] w-full border-collapse text-left text-sm">
+                <thead className="bg-slate-950 text-white">
+                  <tr>
+                    <th className="px-5 py-4 font-semibold">Buying criterion</th>
+                    <th className="px-5 py-4 font-semibold">Lumicoria Enterprise</th>
+                    <th className="px-5 py-4 font-semibold">Typical AI suite</th>
+                    <th className="px-5 py-4 font-semibold">Operational impact</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {COMPARISON.map((row, idx) => (
-                    <tr key={row.feature} style={{ borderTop: `1px solid ${SLATE_200}` }}>
-                      <td style={{ padding: "12px 18px", color: INK, fontWeight: 500 }}>{row.feature}</td>
-                      <td style={{ padding: "12px 18px", color: PURPLE_DEEP, fontWeight: 600 }}>{row.lumicoria}</td>
-                      <td style={{ padding: "12px 18px", color: SLATE_600 }}>{row.chatgpt}</td>
-                      <td style={{ padding: "12px 18px", color: SLATE_600 }}>{row.copilot}</td>
-                      <td style={{ padding: "12px 18px", color: SLATE_600 }}>{row.glean}</td>
-                      <td style={{ padding: "12px 18px", color: SLATE_600 }}>{row.notion}</td>
+                  {COMPARISON.map((row) => (
+                    <tr key={row.feature} className="border-t border-slate-200">
+                      <td className="px-5 py-4 font-semibold text-slate-950">{row.feature}</td>
+                      <td className="px-5 py-4 text-[#4e3588]">{row.lumicoria}</td>
+                      <td className="px-5 py-4 text-slate-600">{row.typical}</td>
+                      <td className="px-5 py-4 text-slate-600">{row.impact}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </GlassCard>
-        </motion.div>
-      </section>
+          </motion.div>
+        </section>
 
-      {/* Savings calculator */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "32px 32px 48px" }}>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{ padding: 32 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 32, alignItems: "center" }}>
-              <div>
-                <Pill>See your savings</Pill>
-                <h3 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 28, fontWeight: 700, marginTop: 14, marginBottom: 8, color: INK, letterSpacing: -0.5,
-                }}>How much does Lumicoria save you?</h3>
-                <p style={{ color: SLATE_600, fontSize: 15, marginBottom: 22, lineHeight: 1.5 }}>
-                  Compare against the per-seat list price of the AI suite you're currently evaluating.
-                  Numbers update live.
-                </p>
+        <section className="mx-auto max-w-[1320px] px-4 pb-16 sm:px-6 lg:px-8 lg:pb-20">
+          <motion.div {...FADE_UP} className="grid gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="border-b border-slate-200 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+              <p className="text-sm font-semibold text-[#6C4AB0]">Cost modeler</p>
+              <h2 className="mt-3 text-3xl font-semibold leading-tight text-slate-950">
+                Model your Enterprise contract before the first sales call.
+              </h2>
+              <p className="mt-4 max-w-[65ch] text-base leading-7 text-slate-600">
+                Compare Lumicoria against the current per-seat cost of the AI tools your team is evaluating.
+                The slider keeps finance, security, and operations in the same conversation.
+              </p>
 
-                <label style={{ display: "block", marginBottom: 18 }}>
-                  <span style={{ display: "block", color: SLATE_600, fontSize: 13, marginBottom: 6 }}>Seats</span>
+              <div className="mt-8 space-y-6">
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Seats</span>
                   <input
-                    type="range" min={5} max={500} value={seats}
-                    onChange={(e) => setSeats(parseInt(e.target.value, 10))}
-                    style={{ width: "100%" }}
+                    type="range"
+                    min={12}
+                    max={1000}
+                    value={seats}
+                    onChange={(event) => setSeats(parseInt(event.target.value, 10))}
+                    className="mt-3 h-2 w-full accent-[#6C4AB0]"
                   />
-                  <div style={{ marginTop: 4, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22, color: PURPLE_DEEP }}>
+                  <span className="mt-3 block font-mono text-3xl font-semibold tabular-nums text-slate-950">
                     {seats.toLocaleString()} seats
-                  </div>
-                </label>
-
-                <label style={{ display: "block", marginBottom: 18 }}>
-                  <span style={{ display: "block", color: SLATE_600, fontSize: 13, marginBottom: 6 }}>
-                    Competitor per-seat / month
                   </span>
-                  <input
-                    type="number" min={10} max={500} value={comparePrice}
-                    onChange={(e) => setComparePrice(parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: 140, padding: "10px 12px",
-                      borderRadius: 12, border: `1px solid ${SLATE_200}`,
-                      fontSize: 15, fontFamily: "'Space Grotesk', sans-serif",
-                      background: "white",
-                    }}
-                  />
                 </label>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  {(["monthly", "annual"] as const).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCadence(c)}
-                      style={{
-                        padding: "10px 16px", borderRadius: 9999,
-                        border: `1px solid ${PURPLE}33`,
-                        background: cadence === c ? BRAND_GRADIENT : "rgba(255,255,255,0.6)",
-                        color: cadence === c ? "white" : PURPLE_DEEP,
-                        fontWeight: 600, fontSize: 13, cursor: "pointer",
-                      }}
-                    >
-                      {c === "annual" ? "Annual (−15%)" : "Monthly"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div style={{
-                  display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16,
-                }}>
-                  <GlassCard style={{ padding: 18 }}>
-                    <div style={{ fontSize: 12, color: SLATE_400, textTransform: "uppercase", letterSpacing: 1 }}>Lumicoria</div>
-                    <div style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 26, color: PURPLE_DEEP }}>
-                      ${Math.round(lumicoriaMonthly).toLocaleString()}/mo
-                    </div>
-                    <div style={{ fontSize: 12, color: SLATE_600, marginTop: 2 }}>
-                      ${Math.round(lumicoriaAnnual).toLocaleString()}/yr
-                    </div>
-                  </GlassCard>
-                  <GlassCard style={{ padding: 18 }}>
-                    <div style={{ fontSize: 12, color: SLATE_400, textTransform: "uppercase", letterSpacing: 1 }}>Competitor</div>
-                    <div style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 26, color: SLATE_600 }}>
-                      ${Math.round(competitorMonthly).toLocaleString()}/mo
-                    </div>
-                    <div style={{ fontSize: 12, color: SLATE_600, marginTop: 2 }}>
-                      ${Math.round(competitorAnnual).toLocaleString()}/yr
-                    </div>
-                  </GlassCard>
-                </div>
-                <div style={{ marginTop: 16, padding: 20, borderRadius: 18, background: BRAND_GRADIENT, color: "white" }}>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.9 }}>Estimated savings</div>
-                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 36, marginTop: 4 }}>
-                    ${Math.round(annualSavings).toLocaleString()}/yr
-                  </div>
-                  <div style={{ marginTop: 4, opacity: 0.9, fontSize: 13 }}>
-                    ${Math.round(threeYearSavings).toLocaleString()} over 3 years
-                  </div>
-                </div>
-                <div style={{ marginTop: 14, fontSize: 12, color: SLATE_400, textAlign: "center" }}>
-                  Enterprise floor: ${ENTERPRISE_FLOOR.toLocaleString()}/mo applies under 12 seats.
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </motion.div>
-      </section>
-
-      {/* Feature grid */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "48px 32px" }}>
-        <motion.h2 {...FADE_UP} style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 36, fontWeight: 700, letterSpacing: -0.6, color: INK,
-          textAlign: "center", marginBottom: 36,
-        }}>
-          Everything an enterprise team needs, in one tenant
-        </motion.h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
-          {FEATURES.map((f) => (
-            <motion.div key={f.title} {...FADE_UP}>
-              <GlassCard style={{ padding: 22, height: "100%" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 12, background: BRAND_GRADIENT, marginBottom: 14 }} />
-                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 700, color: INK, marginBottom: 8 }}>
-                  {f.title}
-                </h3>
-                <p style={{ color: SLATE_600, fontSize: 14, lineHeight: 1.55 }}>{f.body}</p>
-              </GlassCard>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Request agents */}
-      <section id="request-agents" style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "32px 32px" }}>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{ padding: 32 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 32, alignItems: "center" }}>
-              <div>
-                <Pill>Request a custom agent</Pill>
-                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 700, marginTop: 14, marginBottom: 8, letterSpacing: -0.5 }}>
-                  Tell us the workflow.<br/>We'll build the agent.
-                </h3>
-                <p style={{ color: SLATE_600, fontSize: 15, lineHeight: 1.55 }}>
-                  Describe the job your team would hand to a smart specialist. Our agent team turns it into
-                  a project-bound agent on your tenant, with the right model, sources, and approval flow.
-                </p>
-                <div style={{ marginTop: 18, display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {AGENT_REQUEST_CHIPS.map((chip) => (
-                    <button
-                      key={chip}
-                      onClick={() => { setRequestChip(chip); setRequestText(chip); }}
-                      style={{
-                        padding: "8px 14px", borderRadius: 9999, fontSize: 13,
-                        border: requestChip === chip ? `2px solid ${PURPLE}` : `1px solid ${PURPLE}33`,
-                        background: requestChip === chip ? "white" : "rgba(255,255,255,0.5)",
-                        color: PURPLE_DEEP, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                {requestSubmitted ? (
-                  <div style={{ padding: 24, borderRadius: 18, background: "white", border: `1px solid ${PURPLE}33` }}>
-                    <div style={{ fontWeight: 700, color: PURPLE_DEEP, fontSize: 18, marginBottom: 6 }}>Got it.</div>
-                    <div style={{ color: SLATE_600, fontSize: 14 }}>
-                      Our sales team will reach out within one business day with a build estimate and a starter
-                      tenant for you to try.
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <textarea
-                      value={requestText}
-                      onChange={(e) => setRequestText(e.target.value)}
-                      placeholder="e.g. ‘Review every inbound MSA against our standard playbook and surface clause-level deltas.’"
-                      rows={6}
-                      style={{
-                        width: "100%", padding: 16,
-                        borderRadius: 16, border: `1px solid ${SLATE_200}`,
-                        fontSize: 14, lineHeight: 1.5,
-                        background: "white", color: INK,
-                        fontFamily: "Inter, sans-serif", resize: "vertical",
-                      }}
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Current AI suite per-seat / month</span>
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className="text-lg font-semibold text-slate-500">$</span>
+                    <input
+                      type="number"
+                      min={10}
+                      max={500}
+                      value={comparePrice}
+                      onChange={(event) => setComparePrice(parseFloat(event.target.value) || 0)}
+                      className="w-32 rounded-lg border border-slate-200 bg-white px-4 py-3 font-mono text-base tabular-nums text-slate-950 outline-none transition focus:border-[#6C4AB0] focus:ring-2 focus:ring-[#6C4AB0]/20"
                     />
-                    <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                      <PrimaryCTA href="#" >
-                        <span onClick={(e) => { e.preventDefault(); submitRequest(); }}>Send to sales</span>
-                      </PrimaryCTA>
-                      <GhostCTA href="https://lumicoria.com" external>
-                        Need a fully custom build → Lumicoria Custom
-                      </GhostCTA>
-                    </div>
-                  </>
-                )}
+                  </div>
+                </label>
+
+                <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+                  {(["monthly", "annual"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setCadence(option)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold transition active:scale-[0.98] ${
+                        cadence === option
+                          ? "bg-slate-950 text-white shadow-sm"
+                          : "text-slate-600 hover:text-slate-950"
+                      }`}
+                    >
+                      {option === "annual" ? "Annual - 15%" : "Monthly"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </GlassCard>
-        </motion.div>
-      </section>
 
-      {/* Custom build CTA */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "16px 32px 32px" }}>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{ padding: 28, display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start" }}>
-            <Pill kind="outline">Bespoke deployment</Pill>
-            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: -0.4 }}>
-              Need a deployment with your data, your models, your branding?
-            </h3>
-            <p style={{ color: SLATE_600, fontSize: 15, lineHeight: 1.55, maxWidth: 720 }}>
-              Lumicoria Custom is our enterprise services arm. Private cloud, on-prem, regulated industries,
-              bring-your-own-model — all under a single contract.
-            </p>
-            <GhostCTA href="https://lumicoria.com" external>Talk to Lumicoria Custom →</GhostCTA>
-          </GlassCard>
-        </motion.div>
-      </section>
+            <div className="bg-slate-950 p-6 text-white sm:p-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5">
+                  <div className="text-sm font-semibold text-white/60">Lumicoria</div>
+                  <div className="mt-3 font-mono text-3xl font-semibold tabular-nums">
+                    ${Math.round(lumicoriaMonthly).toLocaleString()}/mo
+                  </div>
+                  <div className="mt-1 text-sm text-white/60">
+                    ${Math.round(lumicoriaAnnual).toLocaleString()}/yr
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5">
+                  <div className="text-sm font-semibold text-white/60">Current suite</div>
+                  <div className="mt-3 font-mono text-3xl font-semibold tabular-nums">
+                    ${Math.round(competitorMonthly).toLocaleString()}/mo
+                  </div>
+                  <div className="mt-1 text-sm text-white/60">
+                    ${Math.round(competitorAnnual).toLocaleString()}/yr
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 rounded-lg bg-white p-6 text-slate-950">
+                <div className="text-sm font-semibold text-slate-500">
+                  Estimated annual savings
+                </div>
+                <div className="mt-3 font-mono text-5xl font-semibold tabular-nums text-[#352563]">
+                  ${Math.round(annualSavings).toLocaleString()}
+                </div>
+                <div className="mt-3 text-sm leading-6 text-slate-600">
+                  ${Math.round(threeYearSavings).toLocaleString()} over 3 years. If the model shows no savings,
+                  use it as a transparent budget comparison instead of a forced claim.
+                </div>
+              </div>
+              <div className="mt-4 flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.06] p-4 text-sm leading-6 text-white/70">
+                <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#c9b6f4]" aria-hidden="true" />
+                Enterprise floor: ${ENTERPRISE_FLOOR.toLocaleString()}/mo applies under 12 seats. Annual contracts can include BYOK, DPA, BAA, and private deployment scope.
+              </div>
+            </div>
+          </motion.div>
+        </section>
 
-      {/* Compliance + security */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "32px 32px" }}>
-        <motion.div {...FADE_UP} style={{ textAlign: "center" }}>
-          <Pill kind="outline">Trust &amp; security</Pill>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 700, marginTop: 10, marginBottom: 8, letterSpacing: -0.5 }}>
-            Built for the security team's threat model
-          </h3>
-          <p style={{ color: SLATE_600, fontSize: 15, lineHeight: 1.55, maxWidth: 720, margin: "0 auto" }}>
-            Customer data is never used to train any model. Every action lands in an immutable audit log.
-            Encryption is industry-standard everywhere data sits or moves.
-          </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
-            {[
-              "SOC 2 Type II (in progress, Q3 audit)",
-              "ISO 27001 (in progress, Q4)",
-              "GDPR — DPA on request",
-              "HIPAA — BAA on Enterprise contract",
-            ].map((b) => (
-              <span key={b} style={{
-                padding: "10px 16px", borderRadius: 9999,
-                background: "white", border: `1px solid ${PURPLE}22`,
-                color: PURPLE_DEEP, fontWeight: 600, fontSize: 13,
-              }}>
-                {b}
-              </span>
+        <section className="mx-auto max-w-[1320px] px-4 pb-16 sm:px-6 lg:px-8 lg:pb-20">
+          <SectionHeader
+            eyebrow="Platform controls"
+            title="The premium part is not the gloss. It is the operating model."
+            body="Enterprise teams need a page that feels calm under scrutiny. These modules surface the controls admins, security reviewers, and department leads expect before rollout."
+            align="center"
+          />
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            {CAPABILITIES.map((capability) => (
+              <CapabilityCard key={capability.title} {...capability} />
             ))}
           </div>
-        </motion.div>
-      </section>
+        </section>
 
-      {/* FAQ */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: "48px 32px" }}>
-        <motion.h2 {...FADE_UP} style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 36, fontWeight: 700, letterSpacing: -0.6, color: INK,
-          textAlign: "center", marginBottom: 36,
-        }}>
-          Questions, answered straight.
-        </motion.h2>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{ padding: 8 }}>
-            {FAQ.map((item, idx) => (
-              <details key={item.q} style={{
-                padding: "18px 22px",
-                borderBottom: idx < FAQ.length - 1 ? `1px solid ${SLATE_200}` : "none",
-              }}>
-                <summary style={{
-                  cursor: "pointer", listStyle: "none",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontWeight: 600, color: INK, fontSize: 16,
-                }}>
-                  {item.q}
-                  <span style={{ color: PURPLE, fontSize: 20, marginLeft: 16 }}>+</span>
-                </summary>
-                <p style={{ marginTop: 12, color: SLATE_600, fontSize: 14, lineHeight: 1.6 }}>{item.a}</p>
-              </details>
-            ))}
-          </GlassCard>
-        </motion.div>
-      </section>
-
-      {/* Final CTA */}
-      <section id="contact-sales" style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto", padding: "32px 32px 80px" }}>
-        <motion.div {...FADE_UP}>
-          <GlassCard style={{
-            padding: 48,
-            background: `linear-gradient(135deg, ${PURPLE_DEEP} 0%, ${PURPLE} 60%, ${SKY} 100%)`,
-            border: "1px solid rgba(255,255,255,0.25)",
-            color: "white", textAlign: "center",
-          }}>
-            <h3 style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 36, fontWeight: 700, letterSpacing: -0.6, marginBottom: 14,
-            }}>
-              Ready to put 21 agents on your team?
-            </h3>
-            <p style={{ opacity: 0.85, maxWidth: 640, margin: "0 auto", fontSize: 16, lineHeight: 1.55, marginBottom: 24 }}>
-              Same-day pilot. Full SSO + SCIM rollout in under a week. Dedicated CSM and quarterly reviews
-              baked into the contract.
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-              <a
-                href="mailto:enterprise@lumicoria.ai?subject=Lumicoria%20Enterprise%20inquiry"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "14px 22px", borderRadius: 9999,
-                  background: "white", color: PURPLE_DEEP,
-                  fontWeight: 700, fontSize: 15, textDecoration: "none",
-                  boxShadow: "0 14px 36px rgba(0,0,0,0.25)",
-                }}
-              >
-                Talk to sales
-              </a>
-              <Link
-                to="/signup"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "14px 22px", borderRadius: 9999,
-                  background: "rgba(255,255,255,0.15)", color: "white",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  fontWeight: 600, fontSize: 15, textDecoration: "none",
-                }}
-              >
-                Start free pilot
-              </Link>
+        <section id="request-agents" className="mx-auto max-w-[1320px] px-4 pb-16 sm:px-6 lg:px-8 lg:pb-20">
+          <motion.div {...FADE_UP} className="grid overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="border-b border-slate-200 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+              <p className="text-sm font-semibold text-[#6C4AB0]">Custom agent request</p>
+              <h2 className="mt-3 text-3xl font-semibold leading-tight text-slate-950">
+                Describe the workflow. We turn it into a governed agent.
+              </h2>
+              <p className="mt-4 max-w-[65ch] text-base leading-7 text-slate-600">
+                Custom agents live inside your tenant, inherit project permissions, and can be scoped to the
+                model, documents, approval flow, and autonomy level your team approves.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {AGENT_REQUEST_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setRequestChip(chip);
+                      setRequestText(chip);
+                      setRequestSubmitted(false);
+                    }}
+                    className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition active:scale-[0.98] ${
+                      requestChip === chip
+                        ? "border-[#6C4AB0] bg-[#6C4AB0]/10 text-[#352563]"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950"
+                    }`}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </div>
-          </GlassCard>
-        </motion.div>
-      </section>
 
-      {/* Footer */}
-      <footer style={{
-        position: "relative", zIndex: 1,
-        padding: "32px", textAlign: "center",
-        color: SLATE_400, fontSize: 13,
-      }}>
-        <div>© {new Date().getFullYear()} Lumicoria AI. Enterprise contracts via <a href="https://lumicoria.com" target="_blank" rel="noopener noreferrer" style={{ color: PURPLE_DEEP, textDecoration: "none" }}>lumicoria.com</a>.</div>
+            <form onSubmit={submitRequest} className="p-6 sm:p-8">
+              {requestSubmitted ? (
+                <div className="rounded-lg border border-[#6C4AB0]/20 bg-[#6C4AB0]/10 p-6">
+                  <div className="flex items-center gap-3 text-lg font-semibold text-[#352563]">
+                    <Check className="h-5 w-5" aria-hidden="true" />
+                    Request captured
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    The Enterprise team will respond within one business day with rollout fit, build scope,
+                    and a pilot path.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="agent-request" className="text-sm font-semibold text-slate-700">
+                    Workflow brief
+                  </label>
+                  <textarea
+                    id="agent-request"
+                    value={requestText}
+                    onChange={(event) => {
+                      setRequestText(event.target.value);
+                      setRequestSubmitted(false);
+                    }}
+                    placeholder="Review every inbound MSA against our playbook and surface clause-level deltas for legal approval."
+                    rows={7}
+                    className="mt-3 w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#6C4AB0] focus:ring-2 focus:ring-[#6C4AB0]/20"
+                  />
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="submit"
+                      disabled={!requestText.trim()}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[#6C4AB0] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_42px_rgba(50,36,99,0.22)] transition hover:-translate-y-0.5 hover:bg-[#5b3d99] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                    >
+                      Send to sales
+                      <Mail className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                    <ActionLink href="https://lumicoria.com" variant="secondary" external>
+                      Fully custom deployment
+                    </ActionLink>
+                  </div>
+                </>
+              )}
+            </form>
+          </motion.div>
+        </section>
+
+        <section className="bg-slate-950 px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto grid max-w-[1320px] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <SectionHeader
+              eyebrow="Trust and security"
+              title="Designed for the security team's threat model."
+              body="Customer data is not used to train models. Every meaningful action lands in an audit trail, and Enterprise contracts can include regional residency, BAA, DPA, and private deployment terms."
+              tone="dark"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["SAML SSO", "SAML 2.0 with IdP-led controls"],
+                ["SCIM", "Automated provisioning and offboarding"],
+                ["Audit export", "SIEM-ready security event stream"],
+                ["Data residency", "US, EU, and India hosting options"],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-lg border border-white/10 bg-white/[0.06] p-5">
+                  <Lock className="h-5 w-5 text-[#c9b6f4]" aria-hidden="true" />
+                  <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/70">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-[1320px] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionHeader
+              eyebrow="Straight answers"
+              title="What procurement usually asks next."
+              body="The FAQ is intentionally direct. No inflated claims, no feature fog, just the questions that decide whether a pilot can move forward."
+            />
+            <motion.div {...FADE_UP} className="rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+              {FAQ.map((item, index) => (
+                <details key={item.q} className="group border-b border-slate-200 last:border-b-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-base font-semibold text-slate-950 transition hover:bg-slate-50">
+                    {item.q}
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition group-open:rotate-90" aria-hidden="true" />
+                  </summary>
+                  <p className="px-5 pb-5 text-sm leading-6 text-slate-600">{item.a}</p>
+                </details>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        <section id="contact-sales" className="mx-auto max-w-[1320px] px-4 pb-16 sm:px-6 lg:px-8 lg:pb-20">
+          <motion.div {...FADE_UP} className="relative overflow-hidden rounded-lg bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.22)] sm:p-10 lg:p-12">
+            <img
+              src="/images/dashboard_hero.png"
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-y-0 right-0 hidden h-full w-1/2 object-cover opacity-[0.12] grayscale lg:block"
+            />
+            <div className="relative max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-sm font-semibold text-white/75">
+                <Building2 className="h-4 w-4 text-[#c9b6f4]" aria-hidden="true" />
+                Enterprise rollout
+              </div>
+              <h2 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl">
+                Put governed agents into one department this week.
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-white/70 sm:text-lg">
+                Start with a pilot, prove the workflows, then expand across teams with SSO, SCIM,
+                audit exports, and a dedicated rollout plan.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <ActionLink href="mailto:enterprise@lumicoria.ai?subject=Lumicoria%20Enterprise%20inquiry" variant="light">
+                  Talk to sales
+                </ActionLink>
+                <ActionLink href="/signup" variant="ghost">
+                  Start free pilot
+                </ActionLink>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      </main>
+
+      <footer className="border-t border-slate-200 bg-white px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1320px] flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <div>© {new Date().getFullYear()} Lumicoria AI. Enterprise contracts via lumicoria.com.</div>
+          <div className="flex flex-wrap gap-4">
+            <Link className="transition hover:text-slate-950" to="/privacy">Privacy</Link>
+            <Link className="transition hover:text-slate-950" to="/terms">Terms</Link>
+            <Link className="transition hover:text-slate-950" to="/security">Security</Link>
+            <Link className="transition hover:text-slate-950" to="/contact">Contact</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );
