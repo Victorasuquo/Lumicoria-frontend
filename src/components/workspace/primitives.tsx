@@ -17,21 +17,39 @@ import { tokens, BRAND_GRADIENT, planLabel, roleLabel, initials } from "./tokens
 export const GlassCard: React.FC<React.HTMLAttributes<HTMLDivElement> & { padding?: number | string; tone?: "default" | "soft" | "dark" }> = ({
   children, style, padding, tone = "default", ...rest
 }) => {
-  const base: React.CSSProperties = {
-    background: tone === "dark"
-      ? "linear-gradient(135deg, #1E1B36 0%, #2A2350 100%)"
-      : tone === "soft"
-        ? "rgba(255,255,255,0.6)"
-        : "rgba(255,255,255,0.78)",
-    color: tone === "dark" ? "#F8FAFC" : tokens.INK,
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    border: tone === "dark" ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.6)",
-    borderRadius: tokens.R_XL,
-    boxShadow: tokens.SHADOW_CARD,
-    padding,
-    ...style,
-  };
+  // Cleaner editorial chrome — closer to /portal pages.  Less glass, no
+  // backdrop blur on default cards (kept for soft + dark hero variants).
+  const base: React.CSSProperties = tone === "dark"
+    ? {
+        background: "linear-gradient(135deg, #1E1B36 0%, #2A2350 100%)",
+        color: "#F8FAFC",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 16,
+        boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
+        padding,
+        ...style,
+      }
+    : tone === "soft"
+      ? {
+          background: "rgba(255,255,255,0.65)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          color: tokens.INK,
+          border: "1px solid rgba(226,232,240,0.85)",
+          borderRadius: 16,
+          boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+          padding,
+          ...style,
+        }
+      : {
+          background: "#ffffff",
+          color: tokens.INK,
+          border: "1px solid rgba(226,232,240,0.85)",
+          borderRadius: 16,
+          boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+          padding,
+          ...style,
+        };
   return <div style={base} {...rest}>{children}</div>;
 };
 

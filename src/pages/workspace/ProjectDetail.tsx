@@ -11,6 +11,12 @@ import {
   AgentChip, EmptyState, Skeleton,
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT, FADE_UP, initials } from "@/components/workspace/tokens";
+import InviteDialog from "@/components/workspace/InviteDialog";
+import MemberRowActions from "@/components/workspace/MemberRowActions";
+import TaskCreateDialog from "@/components/workspace/TaskCreateDialog";
+import { toast } from "sonner";
+
+const PROJECT_ROLES = ["viewer", "reviewer", "editor", "lead"];
 
 type Tab = "overview" | "tasks" | "agents" | "documents" | "chat" | "activity" | "analytics" | "members" | "settings";
 const TABS: Array<{ id: Tab; label: string }> = [
@@ -52,10 +58,14 @@ const LANE_LABELS: Record<string, string> = { todo: "To do", in_progress: "In pr
 const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, projectId }) => {
   const [tasks, setTasks] = useState<Array<Record<string, any>>>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createStatus, setCreateStatus] = useState<string>("todo");
+
+  const load = () => {
     setLoading(true);
     projectV2Api.tasks(orgId, projectId).then(r => setTasks(r as any)).finally(() => setLoading(false));
-  }, [orgId, projectId]);
+  };
+  useEffect(load, [orgId, projectId]);
 
   if (loading) {
     return (
@@ -72,10 +82,22 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
   }
 
   if (tasks.length === 0) {
-    return <EmptyState title="No tasks yet" body="Tasks created in this project show up here in a kanban." action={<Button>New task</Button>} />;
+    return (
+      <>
+        <EmptyState title="No tasks yet" body="Tasks created in this project show up here in a kanban." action={
+          <Button onClick={() => { setCreateStatus("todo"); setCreateOpen(true); }}>+ New task</Button>
+        } />
+        <TaskCreateDialog
+          open={createOpen} onClose={() => setCreateOpen(false)}
+          projectId={projectId} defaultStatus={createStatus}
+          onCreated={() => { toast.success("Task created."); load(); }}
+        />
+      </>
+    );
   }
 
   return (
+    <>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
       {TASK_LANES.map(lane => {
         const items = tasks.filter(t => (t.status || "todo") === lane);
@@ -83,7 +105,14 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
           <GlassCard key={lane} padding={14}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: tokens.SLATE_500, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase" }}>{LANE_LABELS[lane]}</span>
-              <span style={{ fontSize: 11, color: tokens.SLATE_500, fontWeight: 700 }}>{items.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: tokens.SLATE_500, fontWeight: 700 }}>{items.length}</span>
+                <button
+                  onClick={() => { setCreateStatus(lane); setCreateOpen(true); }}
+                  className="text-xs font-bold text-[#6C4AB0] hover:text-[#3B2D6A] px-1.5 leading-none"
+                  aria-label={`Add task to ${lane}`}
+                >+</button>
+              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 40 }}>
               {items.map(t => {
@@ -119,6 +148,12 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
         );
       })}
     </div>
+    <TaskCreateDialog
+      open={createOpen} onClose={() => setCreateOpen(false)}
+      projectId={projectId} defaultStatus={createStatus}
+      onCreated={() => { toast.success("Task created."); load(); }}
+    />
+    </>
   );
 };
 
@@ -247,6 +282,7 @@ export const ProjectDetail: React.FC = () => {
   const [activity, setActivity] = useState<Array<Record<string, any>>>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -299,7 +335,7 @@ export const ProjectDetail: React.FC = () => {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Button tone="outline" size="sm" onClick={() => setTab("agents")}>Manage agents</Button>
-              <Button tone="primary" size="sm" onClick={() => setTab("members")}>Invite</Button>
+              <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
             </div>
           </div>
         </GlassCard>
@@ -414,13 +450,22 @@ export const ProjectDetail: React.FC = () => {
 
       {tab === "members" && (
         <GlassCard padding={6}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "12px 16px", borderBottom: `1px solid ${tokens.SLATE_200}`,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase", color: tokens.SLATE_500 }}>
+              {members.length} {members.length === 1 ? "member" : "members"}
+            </span>
+            <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>+ Invite members</Button>
+          </div>
           {members.length === 0 ? (
             <div style={{ padding: 24 }}>
-              <EmptyState title="Just you" body="Invite members from the workspace to collaborate on this project." action={<Button>Invite</Button>} />
+              <EmptyState title="Just you" body="Invite members from the workspace to collaborate on this project." action={<Button onClick={() => setInviteOpen(true)}>Invite</Button>} />
             </div>
           ) : members.map((m, idx) => (
             <div key={m.user_id} style={{
-              display: "grid", gridTemplateColumns: "auto 1fr auto auto", gap: 12, alignItems: "center",
+              display: "grid", gridTemplateColumns: "auto 1fr auto auto auto", gap: 12, alignItems: "center",
               padding: "12px 16px",
               borderBottom: idx < members.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
             }}>
@@ -431,9 +476,38 @@ export const ProjectDetail: React.FC = () => {
               </div>
               <RoleChip role={m.role} />
               <span style={{ fontSize: 12, color: tokens.SLATE_500 }}>{m.joined_at ? new Date(m.joined_at).toLocaleDateString() : ""}</span>
+              <MemberRowActions
+                currentRole={m.role}
+                roleChoices={PROJECT_ROLES}
+                onChangeRole={async (next) => {
+                  try {
+                    await projectV2Api.updateMemberRole(activeOrgId!, projectId!, m.user_id, next as any);
+                    setMembers(prev => prev.map(x => x.user_id === m.user_id ? { ...x, role: next as any } : x));
+                    toast.success("Role updated.");
+                  } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not change role."); }
+                }}
+                onRemove={async () => {
+                  try {
+                    await projectV2Api.removeMember(activeOrgId!, projectId!, m.user_id);
+                    setMembers(prev => prev.filter(x => x.user_id !== m.user_id));
+                    toast.success("Removed from project.");
+                  } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not remove member."); }
+                }}
+              />
             </div>
           ))}
         </GlassCard>
+      )}
+
+      {project && activeOrgId && (
+        <InviteDialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          scope="project"
+          orgId={activeOrgId}
+          projectId={projectId}
+          onInvited={() => { toast.success("Invitations sent."); }}
+        />
       )}
 
       {tab === "settings" && (

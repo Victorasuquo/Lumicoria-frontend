@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { teamApi, type Team } from "@/services/workspaceApi";
@@ -78,7 +78,11 @@ export const TeamsList: React.FC = () => {
   const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [search, setSearch] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const [showCreate, setShowCreate] = useState(
+    searchParams.get("new") !== null || location.pathname.endsWith("/new")
+  );
   const [loading, setLoading] = useState(true);
 
   const load = async () => {

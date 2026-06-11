@@ -6,6 +6,8 @@ import {
   EmptyState, Skeleton,
 } from "@/components/workspace/primitives";
 import { tokens } from "@/components/workspace/tokens";
+import InviteDialog from "@/components/workspace/InviteDialog";
+import { toast } from "sonner";
 
 interface OrgMember {
   id?: string;
@@ -25,6 +27,7 @@ export const WorkspaceMembers: React.FC = () => {
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
     if (!activeOrgId) return;
@@ -52,7 +55,12 @@ export const WorkspaceMembers: React.FC = () => {
         eyebrow="Members"
         title={`Everyone in ${activeOrg?.name || "this workspace"}`}
         subtitle="Full workspace directory. Filter by name or email."
-        right={<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members" style={{ width: 280 }} />}
+        right={
+          <div style={{ display: "flex", gap: 8 }}>
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members" style={{ width: 280 }} />
+            <Button tone="primary" onClick={() => setInviteOpen(true)}>+ Invite</Button>
+          </div>
+        }
       />
 
       {loading ? (
@@ -83,6 +91,16 @@ export const WorkspaceMembers: React.FC = () => {
             );
           })}
         </GlassCard>
+      )}
+
+      {activeOrgId && (
+        <InviteDialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          scope="org"
+          orgId={activeOrgId}
+          onInvited={() => { toast.success("Invitations sent."); }}
+        />
       )}
     </div>
   );

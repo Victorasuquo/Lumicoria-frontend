@@ -11,6 +11,11 @@ import {
   RoleChip, AgentChip, EmptyState, Skeleton,
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT, FADE_UP, initials, planLabel } from "@/components/workspace/tokens";
+import InviteDialog from "@/components/workspace/InviteDialog";
+import MemberRowActions from "@/components/workspace/MemberRowActions";
+import { toast } from "sonner";
+
+const TEAM_ROLES = ["viewer", "operator", "editor", "team_admin"];
 
 type Tab = "overview" | "members" | "projects" | "agents" | "activity" | "analytics" | "settings";
 const TABS: Array<{ id: Tab; label: string }> = [
@@ -49,6 +54,7 @@ export const TeamDetail: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectV2[]>([]);
   const [agents, setAgents] = useState<Array<{ agent_key?: string; custom_agent_id?: string; autonomy_level?: string; enabled?: boolean }>>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
@@ -106,7 +112,7 @@ export const TeamDetail: React.FC = () => {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Button tone="outline" size="sm" onClick={() => navigate(`/workspace/projects/new?team=${team.id}`)}>New project</Button>
-              <Button tone="primary" size="sm" onClick={() => setTab("members")}>Invite</Button>
+              <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
             </div>
           </div>
         </GlassCard>
@@ -136,13 +142,22 @@ export const TeamDetail: React.FC = () => {
 
       {tab === "members" && (
         <GlassCard padding={6}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "12px 16px", borderBottom: `1px solid ${tokens.SLATE_200}`,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase", color: tokens.SLATE_500 }}>
+              {members.length} {members.length === 1 ? "member" : "members"}
+            </span>
+            <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>+ Invite members</Button>
+          </div>
           {members.length === 0 ? (
             <div style={{ padding: 24 }}>
-              <EmptyState title="Just you so far" body="Invite people from the workspace to this team." action={<Button>Invite members</Button>} />
+              <EmptyState title="Just you so far" body="Invite people from the workspace to this team." action={<Button onClick={() => setInviteOpen(true)}>Invite members</Button>} />
             </div>
           ) : members.map((m, idx) => (
             <div key={m.user_id} style={{
-              display: "grid", gridTemplateColumns: "auto 1fr auto auto", gap: 12, alignItems: "center",
+              display: "grid", gridTemplateColumns: "auto 1fr auto auto auto", gap: 12, alignItems: "center",
               padding: "12px 16px",
               borderBottom: idx < members.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
             }}>
@@ -153,9 +168,38 @@ export const TeamDetail: React.FC = () => {
               </div>
               <RoleChip role={m.role} />
               <span style={{ fontSize: 12, color: tokens.SLATE_500 }}>{m.joined_at ? new Date(m.joined_at).toLocaleDateString() : ""}</span>
+              <MemberRowActions
+                currentRole={m.role}
+                roleChoices={TEAM_ROLES}
+                onChangeRole={async (next) => {
+                  try {
+                    await teamApi.updateMemberRole(activeOrgId!, teamId!, m.user_id, next as any);
+                    setMembers(prev => prev.map(x => x.user_id === m.user_id ? { ...x, role: next as any } : x));
+                    toast.success("Role updated.");
+                  } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not change role."); }
+                }}
+                onRemove={async () => {
+                  try {
+                    await teamApi.removeMember(activeOrgId!, teamId!, m.user_id);
+                    setMembers(prev => prev.filter(x => x.user_id !== m.user_id));
+                    toast.success("Removed from team.");
+                  } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not remove member."); }
+                }}
+              />
             </div>
           ))}
         </GlassCard>
+      )}
+
+      {team && activeOrgId && (
+        <InviteDialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          scope="team"
+          orgId={activeOrgId}
+          teamId={teamId}
+          onInvited={() => { toast.success("Invitations sent."); }}
+        />
       )}
 
       {tab === "projects" && (

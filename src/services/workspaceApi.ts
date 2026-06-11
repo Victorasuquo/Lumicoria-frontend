@@ -476,6 +476,10 @@ export const projectV2Api = {
   removeMember: async (orgId: ID, projectId: ID, userId: ID): Promise<void> => {
     await api.delete(`/organizations/${orgId}/projects/${projectId}/members/${userId}`);
   },
+  updateMemberRole: async (orgId: ID, projectId: ID, userId: ID, role: ProjectRole): Promise<ProjectMember> => {
+    const { data } = await api.patch(`/organizations/${orgId}/projects/${projectId}/members/${userId}/role`, { role });
+    return data as ProjectMember;
+  },
   agents: async (orgId: ID, projectId: ID): Promise<ProjectAgent[]> => {
     const { data } = await api.get(`/organizations/${orgId}/projects/${projectId}/agents`);
     return data as ProjectAgent[];

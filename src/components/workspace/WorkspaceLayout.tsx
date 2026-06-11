@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { tokens, BRAND_GRADIENT, AURORA_GRADIENT, initials } from "./tokens";
+import { tokens, BRAND_GRADIENT, initials } from "./tokens";
 import { GlassCard, PlanBadge, SeatCounter, Skeleton } from "./primitives";
 import { teamApi, projectV2Api, type Team, type ProjectV2 } from "@/services/workspaceApi";
 
@@ -80,14 +80,10 @@ export const WorkspaceLayout: React.FC = () => {
   return (
     <div style={{
       minHeight: "100vh", position: "relative",
-      background: tokens.SLATE_50,
+      // Match the editorial portal feel — clean off-white, no aurora wash.
+      background: "#FAFAFB",
       fontFamily: tokens.BODY_STACK, color: tokens.INK,
     }}>
-      <div aria-hidden style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: AURORA_GRADIENT, opacity: 0.7,
-      }} />
-
       <div style={{
         position: "relative", zIndex: 1,
         display: "grid",
