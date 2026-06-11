@@ -15,6 +15,7 @@ import { taskApi, TaskItem } from "@/services/api";
 import TodayPanel from "@/components/TodayPanel";
 import AssigneePopover from "@/components/AssigneePopover";
 import AgentProposalPanel from "@/components/AgentProposalPanel";
+import CommentsThread from "@/components/workspace/CommentsThread";
 
 /* ── Config ────────────────────────────────────────────────── */
 
@@ -494,6 +495,13 @@ const Tasks: React.FC = () => {
                       onChanged={() => fetchTasks()}
                     />
                   )}
+
+                  {/* Phase C: Comments thread */}
+                  <CommentsThread
+                    resourceType="task"
+                    resourceId={selectedTask.id}
+                    orgId={(selectedTask as any).organization_id}
+                  />
 
                   {/* Tags */}
                   {selectedTask.tags && selectedTask.tags.length > 0 && (

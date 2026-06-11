@@ -73,6 +73,8 @@ export const WorkspaceLayout: React.FC = () => {
     { to: "/workspace/admin/security", label: "Session policy" },
     { to: "/workspace/admin/automations", label: "Automations" },
     { to: "/workspace/admin/notifications", label: "Notifications" },
+    { to: "/workspace/admin/branding", label: "Branding" },
+    { to: "/workspace/admin/integrations", label: "Integrations" },
   ]), []);
 
   return (

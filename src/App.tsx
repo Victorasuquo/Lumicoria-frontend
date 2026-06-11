@@ -67,6 +67,9 @@ const AdminDomains = lazy(() => import("./pages/workspace/admin/AdminDomains"));
 const AdminSecurity = lazy(() => import("./pages/workspace/admin/AdminSecurity"));
 const AdminAutomations = lazy(() => import("./pages/workspace/admin/AdminAutomations"));
 const AdminNotifications = lazy(() => import("./pages/workspace/admin/AdminNotifications"));
+const AdminBranding = lazy(() => import("./pages/workspace/admin/AdminBranding"));
+const AdminIntegrations = lazy(() => import("./pages/workspace/admin/AdminIntegrations"));
+const CommandPalette = lazy(() => import("./components/workspace/CommandPalette"));
 
 // Agent pages — lazy loaded
 const DocumentAgent = lazy(() => import("./pages/agents/DocumentAgent"));
@@ -193,6 +196,8 @@ const AppRoutes = () => {
           <Route path="admin/security" element={<Suspense fallback={<AgentPageFallback />}><AdminSecurity /></Suspense>} />
           <Route path="admin/automations" element={<Suspense fallback={<AgentPageFallback />}><AdminAutomations /></Suspense>} />
           <Route path="admin/notifications" element={<Suspense fallback={<AgentPageFallback />}><AdminNotifications /></Suspense>} />
+          <Route path="admin/branding" element={<Suspense fallback={<AgentPageFallback />}><AdminBranding /></Suspense>} />
+          <Route path="admin/integrations" element={<Suspense fallback={<AgentPageFallback />}><AdminIntegrations /></Suspense>} />
         </Route>
 
         {/* Protected Routes */}
@@ -259,6 +264,7 @@ const App = () => (
               <AppRoutes />
               <MoodPromptModal />
               <CoachBubble />
+              <Suspense fallback={null}><CommandPalette /></Suspense>
             </WellbeingProvider>
           </WorkspaceProvider>
         </AuthProvider>
