@@ -14,6 +14,7 @@ import { tokens, BRAND_GRADIENT, FADE_UP, initials } from "@/components/workspac
 import InviteDialog from "@/components/workspace/InviteDialog";
 import MemberRowActions from "@/components/workspace/MemberRowActions";
 import TaskCreateDialog from "@/components/workspace/TaskCreateDialog";
+import AvatarUpload from "@/components/workspace/AvatarUpload";
 import { toast } from "sonner";
 
 const PROJECT_ROLES = ["viewer", "reviewer", "editor", "lead"];
@@ -316,12 +317,22 @@ export const ProjectDetail: React.FC = () => {
       <motion.div {...FADE_UP}>
         <GlassCard padding={26}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{
-              width: 56, height: 56, borderRadius: 18,
-              background: project.color || BRAND_GRADIENT,
-              color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700, fontSize: 20,
-            }}>{initials(project.name)}</span>
+            <AvatarUpload
+              scope="project"
+              scopeId={project.id}
+              orgId={activeOrgId}
+              currentUrl={project.cover_image_url}
+              fallbackName={project.name}
+              size={56}
+              rounded="lg"
+              onUploaded={async (url) => {
+                try {
+                  const updated = await projectV2Api.update(activeOrgId!, project.id, { cover_image_url: url } as any);
+                  setProject(updated);
+                  toast.success("Cover updated.");
+                } catch { /* still local-updated */ }
+              }}
+            />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <BrandPill tone="outline">{project.status}</BrandPill>

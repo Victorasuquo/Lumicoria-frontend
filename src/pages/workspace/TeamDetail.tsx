@@ -13,6 +13,7 @@ import {
 import { tokens, BRAND_GRADIENT, FADE_UP, initials, planLabel } from "@/components/workspace/tokens";
 import InviteDialog from "@/components/workspace/InviteDialog";
 import MemberRowActions from "@/components/workspace/MemberRowActions";
+import AvatarUpload from "@/components/workspace/AvatarUpload";
 import { toast } from "sonner";
 
 const TEAM_ROLES = ["viewer", "operator", "editor", "team_admin"];
@@ -93,12 +94,22 @@ export const TeamDetail: React.FC = () => {
       <motion.div {...FADE_UP}>
         <GlassCard padding={26}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{
-              width: 56, height: 56, borderRadius: 18,
-              background: team.color || BRAND_GRADIENT,
-              color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700, fontSize: 20,
-            }}>{initials(team.name)}</span>
+            <AvatarUpload
+              scope="team"
+              scopeId={team.id}
+              orgId={activeOrgId}
+              currentUrl={team.logo_url}
+              fallbackName={team.name}
+              size={56}
+              rounded="lg"
+              onUploaded={async (url) => {
+                try {
+                  const updated = await teamApi.update(activeOrgId!, team.id, { logo_url: url } as any);
+                  setTeam(updated);
+                  toast.success("Logo updated.");
+                } catch { /* still local-updated */ }
+              }}
+            />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <BrandPill tone="outline">Team · {team.member_ids.length} members</BrandPill>

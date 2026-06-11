@@ -155,19 +155,28 @@ export const SeatCounter: React.FC<{ used: number; purchased: number; style?: Re
 
 // ── Avatar / MemberStack / AgentChip ────────────────────────────────
 
-export const MemberAvatar: React.FC<{ name?: string | null; src?: string | null; size?: number }> = ({ name, src, size = 32 }) => (
-  <div style={{
-    width: size, height: size, borderRadius: tokens.R_PILL,
-    background: src ? `url(${src})` : BRAND_GRADIENT,
-    backgroundSize: "cover", backgroundPosition: "center",
-    color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
-    fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: 0.5,
-    border: "2px solid white", boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
-    flexShrink: 0,
-  }}>
-    {src ? null : initials(name)}
-  </div>
-);
+import { resolveAvatarUrl } from "@/services/api";
+
+export const MemberAvatarRaw: React.FC<{ name?: string | null; src?: string | null; size?: number }> = ({ name, src, size = 32 }) => {
+  // Backend may return /uploads/avatars/foo.png (relative) or a full URL.
+  // resolveAvatarUrl handles both; we cache-bust by query-string to avoid
+  // stale browser cache after upload.
+  const resolved = resolveAvatarUrl(src || undefined);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: tokens.R_PILL,
+      background: resolved ? `url(${resolved}) center/cover no-repeat` : BRAND_GRADIENT,
+      color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: 0.5,
+      border: "2px solid white", boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
+      flexShrink: 0,
+    }}>
+      {resolved ? null : initials(name)}
+    </div>
+  );
+};
+
+export const MemberAvatar = MemberAvatarRaw;
 
 export const MemberStack: React.FC<{ members: Array<{ name?: string | null; avatar_url?: string | null }>; max?: number; size?: number }> = ({ members, max = 5, size = 28 }) => {
   const visible = members.slice(0, max);

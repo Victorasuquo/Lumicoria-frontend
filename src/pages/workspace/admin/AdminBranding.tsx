@@ -5,6 +5,7 @@ import {
   GlassCard, SectionHeader, Button, Input, Textarea, Skeleton, BrandPill,
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT } from "@/components/workspace/tokens";
+import AvatarUpload from "@/components/workspace/AvatarUpload";
 
 interface OrgBranding {
   primary_color?: string;
@@ -15,7 +16,7 @@ interface OrgBranding {
 }
 
 export const AdminBranding: React.FC = () => {
-  const { activeOrgId, activeOrg } = useWorkspace();
+  const { activeOrgId, activeOrg, refresh } = useWorkspace();
   const [branding, setBranding] = useState<OrgBranding>({
     primary_color: tokens.PURPLE, accent_color: tokens.SKY,
   });
@@ -98,10 +99,36 @@ export const AdminBranding: React.FC = () => {
                 <Input value={branding.accent_color || ""} onChange={e => setBranding(b => ({ ...b, accent_color: e.target.value }))} />
               </div>
             </label>
-            <label style={{ gridColumn: "1 / -1" }}>
-              <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Logo URL</div>
-              <Input value={branding.logo_url || ""} onChange={e => setBranding(b => ({ ...b, logo_url: e.target.value }))} placeholder="https://" />
-            </label>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 8, fontWeight: 600 }}>Workspace logo</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                {activeOrgId && (
+                  <AvatarUpload
+                    scope="org"
+                    scopeId={activeOrgId}
+                    currentUrl={branding.logo_url}
+                    fallbackName={activeOrg?.name}
+                    size={64}
+                    rounded="lg"
+                    onUploaded={(url) => {
+                      setBranding(b => ({ ...b, logo_url: url }));
+                      // Refresh the context so sidebar + switcher pick up the new logo.
+                      void refresh();
+                    }}
+                  />
+                )}
+                <div style={{ flex: 1 }}>
+                  <Input
+                    value={branding.logo_url || ""}
+                    onChange={e => setBranding(b => ({ ...b, logo_url: e.target.value }))}
+                    placeholder="…or paste a URL"
+                  />
+                  <div style={{ fontSize: 11, color: tokens.SLATE_500, marginTop: 6 }}>
+                    PNG / JPG / SVG, max 5 MB. Click the tile to upload.
+                  </div>
+                </div>
+              </div>
+            </div>
             <label style={{ gridColumn: "1 / -1" }}>
               <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Favicon URL</div>
               <Input value={branding.favicon_url || ""} onChange={e => setBranding(b => ({ ...b, favicon_url: e.target.value }))} placeholder="https://" />
