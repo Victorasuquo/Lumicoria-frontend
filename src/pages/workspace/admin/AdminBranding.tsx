@@ -6,11 +6,13 @@ import {
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT } from "@/components/workspace/tokens";
 import AvatarUpload from "@/components/workspace/AvatarUpload";
+import CoverUpload from "@/components/workspace/CoverUpload";
 
 interface OrgBranding {
   primary_color?: string;
   accent_color?: string;
   logo_url?: string | null;
+  cover_url?: string | null;
   email_footer?: string;
   favicon_url?: string | null;
 }
@@ -34,7 +36,7 @@ export const AdminBranding: React.FC = () => {
       api.get(`/organizations/${activeOrgId}/branding`).then(r => r.data).catch(() => null),
       api.get(`/emails/branding/${activeOrgId}`).then(r => r.data).catch(() => null),
     ]).then(([b, e]) => {
-      if (b?.branding) setBranding({ ...b.branding, logo_url: b.logo_url });
+      if (b?.branding) setBranding({ ...b.branding, logo_url: b.logo_url, cover_url: b.cover_url });
       if (e) setEmailBranding(e);
     }).finally(() => setLoading(false));
   }, [activeOrgId]);
@@ -59,10 +61,38 @@ export const AdminBranding: React.FC = () => {
       <SectionHeader
         eyebrow="Brand"
         title="Workspace branding"
-        subtitle="Colours, logo, and email footer applied across the in-app surface and transactional emails."
+        subtitle="Cover image, colours, logo, and email footer applied across the in-app surface and transactional emails."
       />
 
-      {/* Preview card */}
+      {/* Cover banner — click or drop a wide image */}
+      {activeOrgId && (
+        <CoverUpload
+          scope="org"
+          scopeId={activeOrgId}
+          currentUrl={branding.cover_url}
+          height={180}
+          rounded={20}
+          overlay="dark"
+          onUploaded={(url) => {
+            setBranding(b => ({ ...b, cover_url: url }));
+            void refresh();
+          }}
+        >
+          <div style={{ color: "white" }}>
+            <BrandPill tone="outline" style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.35)", color: "white" }}>Cover</BrandPill>
+            <h2 style={{
+              margin: "10px 0 4px", fontFamily: tokens.DISPLAY_STACK,
+              fontWeight: 700, fontSize: 28, letterSpacing: -0.6,
+              textShadow: "0 2px 16px rgba(15,23,42,0.4)",
+            }}>{activeOrg?.name || "Workspace"}</h2>
+            <p style={{ margin: 0, opacity: 0.9, fontSize: 13, textShadow: "0 1px 8px rgba(15,23,42,0.4)" }}>
+              Click "Change cover" or drop an image to update the workspace banner.
+            </p>
+          </div>
+        </CoverUpload>
+      )}
+
+      {/* Preview card — shows accent colours */}
       <GlassCard padding={28} style={{
         background: `linear-gradient(135deg, ${branding.primary_color || tokens.PURPLE} 0%, ${branding.accent_color || tokens.SKY} 100%)`,
         color: "white",

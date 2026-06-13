@@ -776,3 +776,15 @@ export const enterpriseApi = {
   requestCompliance: (orgId: ID, payload: { document_type: string; contact_email: string; notes?: string }) =>
     api.post(`/enterprise/${orgId}/compliance/request`, payload).then(r => r.data),
 };
+
+/**
+ * Presence — REST companion to the /ws/presence WebSocket.
+ * Use only when a one-shot snapshot is enough (e.g. an admin dashboard);
+ * the live RealtimeContext already streams every change over WS.
+ */
+export const presenceApi = {
+  snapshot: (orgId: ID) =>
+    api.get<{ organization_id: string; online_user_ids: string[] }>(
+      `/ws/presence/snapshot`, { params: { organization_id: orgId } },
+    ).then(r => r.data),
+};
