@@ -2251,6 +2251,41 @@ export const activityApi = {
     });
     return response.data;
   },
+
+  myAudit: async (params: {
+    limit?: number;
+    skip?: number;
+    activity_type?: string;
+    severity?: string;
+    start_date?: string;
+    end_date?: string;
+  } = {}): Promise<ActivityEntry[]> => {
+    const r = await api.get<ActivityEntry[]>('/activity/me/audit', { params });
+    return r.data;
+  },
+
+  myAuditExportUrl: (params: {
+    activity_type?: string;
+    severity?: string;
+    start_date?: string;
+    end_date?: string;
+  } = {}): string => {
+    const usp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v) usp.set(k, String(v)); });
+    const base = (api.defaults?.baseURL || '').replace(/\/$/, '');
+    const qs = usp.toString();
+    return `${base}/activity/me/audit/export${qs ? `?${qs}` : ''}`;
+  },
+
+  myAuditExport: async (params: {
+    activity_type?: string;
+    severity?: string;
+    start_date?: string;
+    end_date?: string;
+  } = {}): Promise<Blob> => {
+    const r = await api.get('/activity/me/audit/export', { params, responseType: 'blob' });
+    return r.data as Blob;
+  },
 };
 
 // Security API

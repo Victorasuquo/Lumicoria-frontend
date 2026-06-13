@@ -5,6 +5,7 @@ import {
   GlassCard, SectionHeader, Button, BrandPill, StatusDot, EmptyState, Skeleton,
 } from "@/components/workspace/primitives";
 import { tokens } from "@/components/workspace/tokens";
+import { toast } from "sonner";
 
 interface Provider { key: string; name: string; category: string; }
 interface Connection {
@@ -47,22 +48,38 @@ export const AdminIntegrations: React.FC = () => {
         `/integrations-v2/${key}/org/${activeOrgId}/oauth/start?organization_id=${activeOrgId}`,
         { return_url: window.location.href },
       );
-      // In production: redirect to the provider auth URL.  For now we
-      // surface the state so the team can wire each provider's OAuth flow.
-      alert(`OAuth state issued. Hand off to ${key}:\n${data.authorize_url_hint}`);
+      const url = data?.authorize_url || data?.authorize_url_hint;
+      if (url && /^https?:\/\//i.test(url)) {
+        toast.success(`Redirecting to ${key}…`);
+        window.location.href = url;
+      } else {
+        toast.success(`OAuth handoff ready for ${key}. Check the partner console.`);
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || `Could not start ${key} connection.`);
     } finally { setBusyKey(null); }
   };
 
   const disconnect = async (provider: string) => {
     if (!activeOrgId || !confirm(`Disconnect ${provider}?`)) return;
-    await api.delete(`/integrations-v2/${provider}/org/${activeOrgId}?organization_id=${activeOrgId}`);
-    setConnections(prev => prev.filter(c => c.provider !== provider));
+    try {
+      await api.delete(`/integrations-v2/${provider}/org/${activeOrgId}?organization_id=${activeOrgId}`);
+      setConnections(prev => prev.filter(c => c.provider !== provider));
+      toast.success(`${provider} disconnected.`);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || `Could not disconnect ${provider}.`);
+    }
   };
 
   const triggerSync = async (provider: string) => {
     if (!activeOrgId) return;
-    await api.post(`/integrations-v2/${provider}/org/${activeOrgId}/sync?organization_id=${activeOrgId}`);
-    await load();
+    try {
+      await api.post(`/integrations-v2/${provider}/org/${activeOrgId}/sync?organization_id=${activeOrgId}`);
+      toast.success(`${provider} sync queued.`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || `Sync failed.`);
+    }
   };
 
   if (!activeOrgId) return null;

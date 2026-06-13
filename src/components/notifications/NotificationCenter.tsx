@@ -19,6 +19,7 @@ import { notificationApi, Notification, NotificationPriority } from '@/services/
 import NotificationItem from './NotificationItem';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { notificationLink, isExternalUrl } from '@/lib/notificationLink';
 
 const NotificationCenter = () => {
     const { user } = useAuth();
@@ -312,8 +313,19 @@ const NotificationCenter = () => {
                                             onRead={handleMarkAsRead}
                                             onDelete={handleDelete}
                                             onClick={(id) => {
+                                                const target = notifications.find(x => x.id === id);
+                                                if (target && !target.read) void handleMarkAsRead(id);
                                                 setOpen(false);
-                                                navigate(`/notifications?id=${id}`);
+                                                if (target) {
+                                                    const href = notificationLink(target);
+                                                    if (isExternalUrl(href)) {
+                                                        window.open(href, "_blank", "noopener,noreferrer");
+                                                    } else {
+                                                        navigate(href);
+                                                    }
+                                                } else {
+                                                    navigate(`/notifications?id=${id}`);
+                                                }
                                             }}
                                         />
                                     ))}
@@ -340,8 +352,19 @@ const NotificationCenter = () => {
                                             onRead={handleMarkAsRead}
                                             onDelete={handleDelete}
                                             onClick={(id) => {
+                                                const target = notifications.find(x => x.id === id);
+                                                if (target && !target.read) void handleMarkAsRead(id);
                                                 setOpen(false);
-                                                navigate(`/notifications?id=${id}`);
+                                                if (target) {
+                                                    const href = notificationLink(target);
+                                                    if (isExternalUrl(href)) {
+                                                        window.open(href, "_blank", "noopener,noreferrer");
+                                                    } else {
+                                                        navigate(href);
+                                                    }
+                                                } else {
+                                                    navigate(`/notifications?id=${id}`);
+                                                }
                                             }}
                                         />
                                     ))}

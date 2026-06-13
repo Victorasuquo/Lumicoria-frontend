@@ -18,6 +18,8 @@ import {
   NotificationType,
   NotificationPriority,
 } from "@/services/api";
+import { notificationLink, isExternalUrl } from "@/lib/notificationLink";
+import { ExternalLink } from "lucide-react";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -375,6 +377,27 @@ const Notifications: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+                    {(() => {
+                      const href = notificationLink(selected);
+                      if (!href || href.startsWith("/notifications?id=")) return null;
+                      return (
+                        <Button
+                          size="sm"
+                          className="text-xs gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                          onClick={() => {
+                            if (!selected.read) markRead(selected.id);
+                            if (isExternalUrl(href)) {
+                              window.open(href, "_blank", "noopener,noreferrer");
+                            } else {
+                              navigate(href);
+                            }
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open
+                        </Button>
+                      );
+                    })()}
                     {!selected.read && (
                       <Button
                         variant="outline"

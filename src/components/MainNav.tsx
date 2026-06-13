@@ -19,6 +19,7 @@ import {
   CalendarDays,
   Mail,
   Building2,
+  ScrollText,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -180,12 +181,7 @@ export default function MainNav() {
         <div className="flex items-center">
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
-              {/* Workspace switcher — lg+ only to keep mobile clean */}
-              <div className="hidden lg:block">
-                <ErrorBoundary>
-                  <WorkspaceSwitcher />
-                </ErrorBoundary>
-              </div>
+              {/* Workspace switcher temporarily hidden — placement under review. */}
               {/* Notification Center */}
               <ErrorBoundary>
                 <NotificationCenter />
@@ -203,11 +199,16 @@ export default function MainNav() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 mt-2 rounded-2xl border-white/20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+                <DropdownMenuContent align="end" className="w-64 mt-2 rounded-2xl border-white/20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
                   <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user?.email}</p>
+                    </div>
+                    <div className="mt-3">
+                      <ErrorBoundary>
+                        <WorkspaceSwitcher />
+                      </ErrorBoundary>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
@@ -245,6 +246,12 @@ export default function MainNav() {
                     <Link to="/integrations" className="flex items-center gap-2">
                       <Plug className="h-4 w-4" />
                       Integrations
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                    <Link to="/audit" className="flex items-center gap-2">
+                      <ScrollText className="h-4 w-4" />
+                      Audit log
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />

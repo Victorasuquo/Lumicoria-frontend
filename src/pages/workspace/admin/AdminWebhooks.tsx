@@ -3,6 +3,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { enterpriseApi, type WebhookRow } from "@/services/workspaceApi";
 import { GlassCard, SectionHeader, Button, Input, EmptyState, Skeleton, BrandPill, StatusDot } from "@/components/workspace/primitives";
 import { tokens } from "@/components/workspace/tokens";
+import { toast } from "sonner";
 
 const EVENTS = [
   "task.created", "task.completed", "project.created", "team.created",
@@ -35,26 +36,56 @@ export const AdminWebhooks: React.FC = () => {
       setRows(prev => [r.webhook, ...prev]);
       setSecret(r.signing_secret);
       setUrl("");
+      toast.success("Webhook created.");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Could not add webhook.");
     } finally { setBusy(false); }
   };
 
   const remove = async (id: string) => {
     if (!activeOrgId) return;
     if (!confirm("Delete this webhook?")) return;
-    await enterpriseApi.deleteWebhook(activeOrgId, id);
-    setRows(prev => prev.filter(r => r.id !== id));
+    try {
+      await enterpriseApi.deleteWebhook(activeOrgId, id);
+      setRows(prev => prev.filter(r => r.id !== id));
+      toast.success("Webhook deleted.");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Could not delete webhook.");
+    }
   };
 
+  const [pingingId, setPingingId] = useState<string | null>(null);
   const ping = async (id: string) => {
     if (!activeOrgId) return;
-    await enterpriseApi.testWebhook(activeOrgId, id);
-    alert("Test event queued — check your endpoint's recent deliveries.");
+    setPingingId(id);
+    try {
+      const res: any = await enterpriseApi.testWebhook(activeOrgId, id);
+      const status = res?.status_code ?? res?.delivery?.status_code;
+      const ok = res?.delivered === true
+        || (typeof status === "number" && status >= 200 && status < 300);
+      if (ok) {
+        toast.success(`Test delivered${status ? ` · HTTP ${status}` : ""}`);
+      } else if (status) {
+        toast.error(`Endpoint replied HTTP ${status}`);
+      } else {
+        toast.success("Test event queued. Check your endpoint's recent deliveries.");
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Send test failed.");
+    } finally {
+      setPingingId(null);
+    }
   };
 
   const toggle = async (r: WebhookRow) => {
     if (!activeOrgId) return;
-    const updated = await enterpriseApi.patchWebhook(activeOrgId, r.id, { enabled: !r.enabled });
-    setRows(prev => prev.map(x => x.id === r.id ? updated : x));
+    try {
+      const updated = await enterpriseApi.patchWebhook(activeOrgId, r.id, { enabled: !r.enabled });
+      setRows(prev => prev.map(x => x.id === r.id ? updated : x));
+      toast.success(updated.enabled ? "Webhook resumed." : "Webhook paused.");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Could not change state.");
+    }
   };
 
   if (!activeOrgId) return null;
@@ -111,7 +142,9 @@ export const AdminWebhooks: React.FC = () => {
             </div>
             <BrandPill tone="ghost">{r.enabled ? "Live" : "Paused"}</BrandPill>
             <Button tone="outline" size="sm" onClick={() => toggle(r)}>{r.enabled ? "Pause" : "Resume"}</Button>
-            <Button tone="ghost" size="sm" onClick={() => ping(r.id)}>Send test</Button>
+            <Button tone="ghost" size="sm" disabled={pingingId === r.id} onClick={() => ping(r.id)}>
+              {pingingId === r.id ? "Sending…" : "Send test"}
+            </Button>
             <Button tone="ghost" size="sm" style={{ color: tokens.RED }} onClick={() => remove(r.id)}>Delete</Button>
           </div>
         ))}

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Sparkles,
   CheckCircle2,
@@ -292,8 +294,44 @@ export default function AgentProposalPanel({ task, onChanged }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 text-[13.5px] leading-relaxed text-gray-800 whitespace-pre-wrap">
-                  {proposal.content || (
+                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 text-[13.5px] leading-relaxed text-gray-800">
+                  {proposal.content ? (
+                    <div className="prose prose-sm max-w-none
+                      prose-headings:text-gray-900 prose-headings:font-semibold prose-headings:tracking-tight
+                      prose-h1:text-[16px] prose-h1:mt-0 prose-h1:mb-2
+                      prose-h2:text-[15px] prose-h2:mt-4 prose-h2:mb-1.5
+                      prose-h3:text-[14px] prose-h3:mt-3 prose-h3:mb-1
+                      prose-p:text-gray-700 prose-p:leading-relaxed prose-p:my-1.5
+                      prose-strong:text-gray-900 prose-strong:font-semibold
+                      prose-em:text-gray-600
+                      prose-ul:my-1.5 prose-ul:space-y-0.5 prose-ol:my-1.5 prose-ol:space-y-0.5
+                      prose-li:text-gray-700 prose-li:my-0.5 prose-li:leading-relaxed prose-li:marker:text-purple-400
+                      prose-code:text-purple-700 prose-code:bg-purple-100/60 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[12px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none
+                      prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:my-2 prose-pre:text-[12px]
+                      prose-a:text-purple-600 prose-a:no-underline hover:prose-a:underline
+                      prose-blockquote:border-purple-300 prose-blockquote:bg-purple-50/60 prose-blockquote:rounded-r-md prose-blockquote:py-0.5 prose-blockquote:not-italic
+                      prose-hr:border-gray-200 prose-hr:my-3
+                      prose-table:text-[12.5px] prose-th:bg-purple-50 prose-th:font-semibold prose-td:py-1.5">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          // Open external links in a new tab safely.
+                          a: ({ href, children, ...props }) => (
+                            <a
+                              href={href}
+                              target={href?.startsWith("http") ? "_blank" : undefined}
+                              rel={href?.startsWith("http") ? "noreferrer noopener" : undefined}
+                              {...props}
+                            >
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {proposal.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
                     <span className="text-gray-400">No content drafted.</span>
                   )}
                 </div>

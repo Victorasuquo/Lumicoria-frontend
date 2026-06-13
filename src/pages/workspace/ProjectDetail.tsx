@@ -15,6 +15,8 @@ import InviteDialog from "@/components/workspace/InviteDialog";
 import MemberRowActions from "@/components/workspace/MemberRowActions";
 import TaskCreateDialog from "@/components/workspace/TaskCreateDialog";
 import AvatarUpload from "@/components/workspace/AvatarUpload";
+import CoverUpload from "@/components/workspace/CoverUpload";
+import MemberAvatarEditable from "@/components/workspace/MemberAvatarEditable";
 import { toast } from "sonner";
 
 const PROJECT_ROLES = ["viewer", "reviewer", "editor", "lead"];
@@ -70,7 +72,7 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
 
   if (loading) {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
         {TASK_LANES.map(l => (
           <GlassCard key={l} padding={16}>
             <Skeleton height={16} />
@@ -99,7 +101,7 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
 
   return (
     <>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
       {TASK_LANES.map(lane => {
         const items = tasks.filter(t => (t.status || "todo") === lane);
         return (
@@ -315,47 +317,64 @@ export const ProjectDetail: React.FC = () => {
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       {/* Header */}
       <motion.div {...FADE_UP}>
-        <GlassCard padding={26}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <CoverUpload
+          scope="project"
+          scopeId={project.id}
+          orgId={activeOrgId}
+          currentUrl={project.cover_image_url}
+          height={180}
+          rounded={20}
+          overlay="dark"
+          onUploaded={(url) => {
+            setProject(prev => prev ? { ...prev, cover_image_url: url } as any : prev);
+            toast.success("Cover updated.");
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
             <AvatarUpload
               scope="project"
               scopeId={project.id}
               orgId={activeOrgId}
-              currentUrl={project.cover_image_url}
+              currentUrl={(project as any).logo_url}
               fallbackName={project.name}
-              size={56}
+              size={64}
               rounded="lg"
-              onUploaded={async (url) => {
-                try {
-                  const updated = await projectV2Api.update(activeOrgId!, project.id, { cover_image_url: url } as any);
-                  setProject(updated);
-                  toast.success("Cover updated.");
-                } catch { /* still local-updated */ }
+              onUploaded={(url) => {
+                setProject(prev => prev ? { ...prev, logo_url: url } as any : prev);
+                toast.success("Logo updated.");
               }}
             />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, color: "white" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <BrandPill tone="outline">{project.status}</BrandPill>
-                <BrandPill tone="ghost">{project.visibility}</BrandPill>
-                {project.strict_mode && <BrandPill tone="ghost" style={{ background: `${tokens.PURPLE}10` }}>Strict mode</BrandPill>}
+                <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12, fontWeight: 700, color: "white", letterSpacing: 0.3, textTransform: "capitalize" }}>
+                  {project.status}
+                </span>
+                <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", fontSize: 12, fontWeight: 600, color: "white", textTransform: "capitalize" }}>
+                  {project.visibility}
+                </span>
+                {project.strict_mode && (
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", fontSize: 12, fontWeight: 600, color: "white" }}>Strict mode</span>
+                )}
               </div>
-              <h1 style={{ margin: "6px 0 0", fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 30, letterSpacing: -0.6 }}>
+              <h1 style={{ margin: "8px 0 0", fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 30, letterSpacing: -0.6, color: "white", textShadow: "0 2px 16px rgba(15,23,42,0.4)" }}>
                 {project.name}
               </h1>
-              {project.description && <p style={{ color: tokens.SLATE_600, fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720 }}>{project.description}</p>}
+              {project.description && (
+                <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.4)" }}>{project.description}</p>
+              )}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Button tone="outline" size="sm" onClick={() => setTab("agents")}>Manage agents</Button>
               <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
             </div>
           </div>
-        </GlassCard>
+        </CoverUpload>
       </motion.div>
 
       <TabBar active={tab} onChange={setTab} />
 
       {tab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
           <GlassCard padding={18}>
             <div style={{ fontSize: 11, fontWeight: 700, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Tasks total</div>
             <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 30, fontWeight: 700, marginTop: 6 }}>{analytics?.tasks?.total ?? 0}</div>
@@ -378,7 +397,15 @@ export const ProjectDetail: React.FC = () => {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               {members.map(m => (
                 <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px 6px 6px", borderRadius: 9999, background: "rgba(255,255,255,0.7)", border: `1px solid ${tokens.SLATE_200}` }}>
-                  <MemberAvatar size={24} name={m.full_name || m.email} src={m.avatar_url} />
+                  <MemberAvatarEditable
+                    userId={m.user_id}
+                    size={24}
+                    name={m.full_name || m.email}
+                    avatarUrl={m.avatar_url}
+                    onSelfUpdated={(url) => {
+                      setMembers(prev => prev.map(x => x.user_id === m.user_id ? { ...x, avatar_url: url } : x));
+                    }}
+                  />
                   <span style={{ fontSize: 12, color: tokens.INK, fontWeight: 600 }}>{m.full_name || m.email || m.user_id.slice(0, 6)}</span>
                   <RoleChip role={m.role} />
                 </div>
@@ -433,7 +460,7 @@ export const ProjectDetail: React.FC = () => {
       )}
 
       {tab === "analytics" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
           <GlassCard padding={20}>
             <div style={{ fontSize: 11, fontWeight: 800, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Tasks</div>
             <div style={{ marginTop: 8, display: "flex", gap: 22 }}>
@@ -480,7 +507,16 @@ export const ProjectDetail: React.FC = () => {
               padding: "12px 16px",
               borderBottom: idx < members.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
             }}>
-              <MemberAvatar name={m.full_name || m.email} src={m.avatar_url} size={36} />
+              <MemberAvatarEditable
+                userId={m.user_id}
+                name={m.full_name || m.email}
+                avatarUrl={m.avatar_url}
+                size={36}
+                onSelfUpdated={(url) => {
+                  setMembers(prev => prev.map(x => x.user_id === m.user_id ? { ...x, avatar_url: url } : x));
+                  toast.success("Profile photo updated");
+                }}
+              />
               <div>
                 <div style={{ fontWeight: 700, color: tokens.INK }}>{m.full_name || m.email || m.user_id}</div>
                 <div style={{ fontSize: 12, color: tokens.SLATE_500 }}>{m.email || "—"}</div>
@@ -554,7 +590,7 @@ const ProjectSettingsForm: React.FC<{ project: ProjectV2; orgId: string; onSaved
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
       <label style={{ gridColumn: "1 / -1" }}>
         <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Name</div>
         <Input value={name} onChange={e => setName(e.target.value)} />

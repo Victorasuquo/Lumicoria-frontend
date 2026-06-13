@@ -13,6 +13,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { tokens, BRAND_GRADIENT, initials } from "./tokens";
 import { GlassCard, PlanBadge, SeatCounter, Skeleton } from "./primitives";
 import { teamApi, projectV2Api, type Team, type ProjectV2 } from "@/services/workspaceApi";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 const SidebarSection: React.FC<{ title: string; right?: React.ReactNode; children: React.ReactNode }> = ({ title, right, children }) => (
   <div style={{ marginTop: 18 }}>
@@ -39,6 +40,7 @@ const navLinkStyle = (active: boolean): React.CSSProperties => ({
 export const WorkspaceLayout: React.FC = () => {
   const { activeOrg, activeOrgId, subscription, loading } = useWorkspace();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [teams, setTeams] = useState<Team[]>([]);
   const [projects, setProjects] = useState<ProjectV2[]>([]);
   const [loadingTree, setLoadingTree] = useState(false);
@@ -87,11 +89,19 @@ export const WorkspaceLayout: React.FC = () => {
       <div style={{
         position: "relative", zIndex: 1,
         display: "grid",
-        gridTemplateColumns: "300px minmax(0, 1fr)",
-        gap: 24, maxWidth: 1480, margin: "0 auto", padding: "24px 24px 48px",
+        // Collapse to a single column under md so the sidebar stacks
+        // above the main content instead of clipping it.
+        gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "300px minmax(0, 1fr)",
+        gap: isMobile ? 16 : 24,
+        maxWidth: 1480, margin: "0 auto",
+        padding: isMobile ? "16px 14px 40px" : "24px 24px 48px",
       }}>
-        {/* Sidebar */}
-        <aside style={{ position: "sticky", top: 88, alignSelf: "flex-start" }}>
+        {/* Sidebar — sticky on desktop, stacked above on mobile */}
+        <aside style={{
+          position: isMobile ? "static" : "sticky",
+          top: isMobile ? undefined : 88,
+          alignSelf: "flex-start",
+        }}>
           <GlassCard padding={16} style={{ maxHeight: "calc(100vh - 112px)", overflow: "auto" }}>
             {/* Active workspace pill */}
             <button

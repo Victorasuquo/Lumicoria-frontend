@@ -14,6 +14,8 @@ import { tokens, BRAND_GRADIENT, FADE_UP, initials, planLabel } from "@/componen
 import InviteDialog from "@/components/workspace/InviteDialog";
 import MemberRowActions from "@/components/workspace/MemberRowActions";
 import AvatarUpload from "@/components/workspace/AvatarUpload";
+import CoverUpload from "@/components/workspace/CoverUpload";
+import MemberAvatarEditable from "@/components/workspace/MemberAvatarEditable";
 import { toast } from "sonner";
 
 const TEAM_ROLES = ["viewer", "operator", "editor", "team_admin"];
@@ -92,15 +94,27 @@ export const TeamDetail: React.FC = () => {
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       {/* Header */}
       <motion.div {...FADE_UP}>
-        <GlassCard padding={26}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <CoverUpload
+          scope="team"
+          scopeId={team.id}
+          orgId={activeOrgId}
+          currentUrl={team.cover_url}
+          height={180}
+          rounded={20}
+          overlay="dark"
+          onUploaded={(url) => {
+            setTeam(prev => prev ? { ...prev, cover_url: url } as Team : prev);
+            toast.success("Cover updated.");
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
             <AvatarUpload
               scope="team"
               scopeId={team.id}
               orgId={activeOrgId}
               currentUrl={team.logo_url}
               fallbackName={team.name}
-              size={56}
+              size={64}
               rounded="lg"
               onUploaded={async (url) => {
                 try {
@@ -110,29 +124,37 @@ export const TeamDetail: React.FC = () => {
                 } catch { /* still local-updated */ }
               }}
             />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, color: "white" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <BrandPill tone="outline">Team · {team.member_ids.length} members</BrandPill>
-                {team.department_tag && <BrandPill tone="ghost">{team.department_tag}</BrandPill>}
-                {team.is_archived && <BrandPill tone="ghost" style={{ background: `${tokens.AMBER}1A`, color: tokens.AMBER }}>Archived</BrandPill>}
+                <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12, fontWeight: 700, color: "white", letterSpacing: 0.3 }}>
+                  Team · {team.member_ids.length} members
+                </span>
+                {team.department_tag && (
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", fontSize: 12, fontWeight: 600, color: "white" }}>{team.department_tag}</span>
+                )}
+                {team.is_archived && (
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: `${tokens.AMBER}33`, border: `1px solid ${tokens.AMBER}88`, fontSize: 12, fontWeight: 700, color: "white" }}>Archived</span>
+                )}
               </div>
-              <h1 style={{ margin: "6px 0 0", fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 30, letterSpacing: -0.6 }}>
+              <h1 style={{ margin: "8px 0 0", fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 30, letterSpacing: -0.6, color: "white", textShadow: "0 2px 16px rgba(15,23,42,0.4)" }}>
                 {team.name}
               </h1>
-              {team.description && <p style={{ color: tokens.SLATE_600, fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720 }}>{team.description}</p>}
+              {team.description && (
+                <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.4)" }}>{team.description}</p>
+              )}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Button tone="outline" size="sm" onClick={() => navigate(`/workspace/projects/new?team=${team.id}`)}>New project</Button>
               <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
             </div>
           </div>
-        </GlassCard>
+        </CoverUpload>
       </motion.div>
 
       <TabBar active={tab} onChange={setTab} />
 
       {tab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
           <GlassCard padding={18}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: tokens.SLATE_500, textTransform: "uppercase" }}>Projects</div>
             <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 32, fontWeight: 700, marginTop: 6 }}>{projects.length}</div>
@@ -172,7 +194,16 @@ export const TeamDetail: React.FC = () => {
               padding: "12px 16px",
               borderBottom: idx < members.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
             }}>
-              <MemberAvatar name={m.full_name || m.email} src={m.avatar_url} size={36} />
+              <MemberAvatarEditable
+                userId={m.user_id}
+                name={m.full_name || m.email}
+                avatarUrl={m.avatar_url}
+                size={36}
+                onSelfUpdated={(url) => {
+                  setMembers(prev => prev.map(x => x.user_id === m.user_id ? { ...x, avatar_url: url } : x));
+                  toast.success("Profile photo updated");
+                }}
+              />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, color: tokens.INK }}>{m.full_name || m.email || m.user_id}</div>
                 <div style={{ fontSize: 12, color: tokens.SLATE_500 }}>{m.email || "—"}</div>
@@ -217,7 +248,7 @@ export const TeamDetail: React.FC = () => {
         projects.length === 0 ? (
           <EmptyState title="No projects in this team yet" body="Spin up a project — the team's agents and members come along automatically." action={<Button onClick={() => navigate(`/workspace/projects/new?team=${team.id}`)}>New project</Button>} />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
             {projects.map(p => (
               <GlassCard
                 key={p.id}
@@ -274,7 +305,7 @@ export const TeamDetail: React.FC = () => {
       )}
 
       {tab === "analytics" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
           <GlassCard padding={20}>
             <div style={{ fontSize: 12, fontWeight: 700, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Tasks</div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
@@ -334,7 +365,7 @@ const TeamSettingsForm: React.FC<{ team: Team; orgId: string; onSaved: (t: Team)
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
       <label>
         <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Name</div>
         <Input value={name} onChange={e => setName(e.target.value)} />

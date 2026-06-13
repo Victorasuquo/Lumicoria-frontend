@@ -112,7 +112,7 @@ export const WorkspaceHome: React.FC = () => {
       </motion.div>
 
       {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <GlassCard key={i} padding={18}><Skeleton height={20} /><Skeleton height={36} style={{ marginTop: 10 }} /></GlassCard>

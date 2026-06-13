@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { organizationApi } from "@/services/api";
 import {
-  GlassCard, SectionHeader, Button, Input, MemberAvatar, RoleChip,
+  GlassCard, SectionHeader, Button, Input, RoleChip,
   EmptyState, Skeleton,
 } from "@/components/workspace/primitives";
 import { tokens } from "@/components/workspace/tokens";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import MemberAvatarEditable from "@/components/workspace/MemberAvatarEditable";
 import { toast } from "sonner";
 
 interface OrgMember {
@@ -78,7 +79,18 @@ export const WorkspaceMembers: React.FC = () => {
                 padding: "12px 18px",
                 borderBottom: idx < filtered.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
               }}>
-                <MemberAvatar name={name} src={avatar} size={36} />
+                <MemberAvatarEditable
+                  userId={m.user_id || m.id}
+                  name={name}
+                  avatarUrl={avatar}
+                  size={36}
+                  onSelfUpdated={(url) => {
+                    setMembers(prev => prev.map(x =>
+                      (x.user_id || x.id) === (m.user_id || m.id) ? { ...x, profile_picture: url, avatar_url: url } : x,
+                    ));
+                    toast.success("Profile photo updated");
+                  }}
+                />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, color: tokens.INK, fontSize: 14 }}>{name}</div>
                   <div style={{ fontSize: 12, color: tokens.SLATE_500 }}>{m.email || "—"}</div>

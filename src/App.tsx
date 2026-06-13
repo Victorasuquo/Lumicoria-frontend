@@ -37,6 +37,7 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
+import Audit from "./pages/Audit";
 import Tasks from "./pages/Tasks";
 import Calendar from "./pages/Calendar";
 import Invites from "./pages/Invites";
@@ -49,6 +50,9 @@ import Enterprise from "./pages/Enterprise";
 
 // Workspace surface (Phase G)
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
+import { RealtimeProvider } from "./contexts/RealtimeContext";
+import { PermissionsProvider } from "./contexts/PermissionsContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
 const WorkspaceLayoutLazy = lazy(() => import("./components/workspace/WorkspaceLayout").then(m => ({ default: m.WorkspaceLayout })));
 const WorkspaceHome = lazy(() => import("./pages/workspace/WorkspaceHome"));
 const WorkspaceMembers = lazy(() => import("./pages/workspace/WorkspaceMembers"));
@@ -212,6 +216,7 @@ const AppRoutes = () => {
         <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/audit" element={<ProtectedRoute><Audit /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
         <Route path="/invites" element={<ProtectedRoute><Invites /></ProtectedRoute>} />
@@ -260,12 +265,18 @@ const App = () => (
       <Router>
         <AuthProvider>
           <WorkspaceProvider>
-            <WellbeingProvider>
-              <AppRoutes />
-              <MoodPromptModal />
-              <CoachBubble />
-              <Suspense fallback={null}><CommandPalette /></Suspense>
-            </WellbeingProvider>
+            <PermissionsProvider>
+              <NotificationsProvider>
+                <RealtimeProvider>
+                  <WellbeingProvider>
+                    <AppRoutes />
+                    <MoodPromptModal />
+                    <CoachBubble />
+                    <Suspense fallback={null}><CommandPalette /></Suspense>
+                  </WellbeingProvider>
+                </RealtimeProvider>
+              </NotificationsProvider>
+            </PermissionsProvider>
           </WorkspaceProvider>
         </AuthProvider>
       </Router>

@@ -61,6 +61,7 @@ export interface ProjectV2 {
   status: ProjectStatus;
   priority?: string | null;
   color?: string | null;
+  logo_url?: string | null;
   cover_image_url?: string | null;
   due_date?: string | null;
   lead_id?: ID | null;
