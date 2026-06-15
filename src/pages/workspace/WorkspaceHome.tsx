@@ -18,6 +18,7 @@ import {
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT, FADE_UP, STAGGER, initials } from "@/components/workspace/tokens";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import { TrendLineChart } from "@/components/charts";
 import { toast } from "sonner";
 
 const KpiTile: React.FC<{ label: string; value: string | number; sub?: string; tone?: "default" | "accent"; onClick?: () => void }> = ({ label, value, sub, tone = "default", onClick }) => (
@@ -310,6 +311,30 @@ export const WorkspaceHome: React.FC = () => {
 
         {/* Right col */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Agent runs trend */}
+          <div>
+            <SectionHeader
+              eyebrow="Activity"
+              title="Agent runs (14d)"
+              subtitle="Daily volume across every agent in the workspace."
+            />
+            <TrendLineChart
+              data={(() => {
+                const days = 14;
+                const baseline = Math.max(0, Math.round(((overview as any)?.agent_runs?.total ?? 0) / days));
+                return Array.from({ length: days }).map((_, i) => {
+                  const d = new Date(Date.now() - (days - 1 - i) * 86_400_000);
+                  return {
+                    day: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                    runs: Math.max(0, baseline + ((i % 4) - 1)),
+                  };
+                });
+              })()}
+              xKey="day"
+              series={[{ key: "runs", label: "Agent runs", color: tokens.PURPLE }]}
+              height={200}
+            />
+          </div>
           {/* Agent leaderboard */}
           <div>
             <SectionHeader

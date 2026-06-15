@@ -156,22 +156,54 @@ export const SeatCounter: React.FC<{ used: number; purchased: number; style?: Re
 // ── Avatar / MemberStack / AgentChip ────────────────────────────────
 
 import { resolveAvatarUrl } from "@/services/api";
+import { useRealtime } from "@/contexts/RealtimeContext";
 
-export const MemberAvatarRaw: React.FC<{ name?: string | null; src?: string | null; size?: number }> = ({ name, src, size = 32 }) => {
+export const MemberAvatarRaw: React.FC<{
+  name?: string | null;
+  src?: string | null;
+  size?: number;
+  userId?: string | null;
+  /** Override presence detection — pass false on rows that aren't
+   *  user-scoped (system, agent) so we don't render a stray dot. */
+  showPresence?: boolean;
+}> = ({ name, src, size = 32, userId, showPresence = true }) => {
   // Backend may return /uploads/avatars/foo.png (relative) or a full URL.
   // resolveAvatarUrl handles both; we cache-bust by query-string to avoid
   // stale browser cache after upload.
   const resolved = resolveAvatarUrl(src || undefined);
+  const { isOnline, ready } = useRealtime();
+  const presenceVisible = showPresence && ready && !!userId;
+  const online = presenceVisible ? isOnline(userId) : false;
+  const dotSize = Math.max(8, Math.round(size * 0.28));
   return (
     <div style={{
-      width: size, height: size, borderRadius: tokens.R_PILL,
-      background: resolved ? `url(${resolved}) center/cover no-repeat` : BRAND_GRADIENT,
-      color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
-      fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: 0.5,
-      border: "2px solid white", boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
+      position: "relative",
+      display: "inline-flex",
       flexShrink: 0,
     }}>
-      {resolved ? null : initials(name)}
+      <div style={{
+        width: size, height: size, borderRadius: tokens.R_PILL,
+        background: resolved ? `url(${resolved}) center/cover no-repeat` : BRAND_GRADIENT,
+        color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: 0.5,
+        border: "2px solid white", boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
+      }}>
+        {resolved ? null : initials(name)}
+      </div>
+      {presenceVisible && (
+        <span
+          aria-label={online ? "Online" : "Offline"}
+          title={online ? "Online" : "Offline"}
+          style={{
+            position: "absolute",
+            right: 0, bottom: 0,
+            width: dotSize, height: dotSize, borderRadius: "50%",
+            background: online ? tokens.GREEN : tokens.SLATE_400,
+            border: "2px solid white",
+            boxShadow: "0 1px 3px rgba(15,23,42,0.18)",
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -365,6 +397,9 @@ export const Skeleton: React.FC<{ width?: number | string; height?: number | str
 if (typeof document !== "undefined" && !document.getElementById("lumi-skeleton-keyframes")) {
   const style = document.createElement("style");
   style.id = "lumi-skeleton-keyframes";
-  style.innerHTML = "@keyframes lumi-skeleton { 0% { background-position: 0% 0%; } 100% { background-position: -200% 0%; } }";
+  style.innerHTML = [
+    "@keyframes lumi-skeleton { 0% { background-position: 0% 0%; } 100% { background-position: -200% 0%; } }",
+    "@keyframes lumi-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.55; } 40% { transform: translateY(-4px); opacity: 1; } }",
+  ].join(" ");
   document.head.appendChild(style);
 }

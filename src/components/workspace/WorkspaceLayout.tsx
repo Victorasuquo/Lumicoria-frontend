@@ -15,6 +15,7 @@ import { GlassCard, PlanBadge, SeatCounter, Skeleton } from "./primitives";
 import { teamApi, projectV2Api, type Team, type ProjectV2 } from "@/services/workspaceApi";
 import { resolveAvatarUrl } from "@/services/api";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import { usePermissions, type Capability } from "@/contexts/PermissionsContext";
 
 const SidebarSection: React.FC<{ title: string; right?: React.ReactNode; children: React.ReactNode }> = ({ title, right, children }) => (
   <div style={{ marginTop: 18 }}>
@@ -65,20 +66,29 @@ export const WorkspaceLayout: React.FC = () => {
   const seatsPurchased = subscription?.seats_purchased ?? 0;
   const showSeats = (subscription?.plan && ["team", "business", "enterprise"].includes(subscription.plan)) && seatsPurchased > 0;
 
-  const adminLinks = useMemo(() => ([
-    { to: "/workspace/admin/billing", label: "Billing & seats" },
-    { to: "/workspace/admin/audit", label: "Audit log" },
-    { to: "/workspace/admin/sso", label: "SSO" },
-    { to: "/workspace/admin/scim", label: "SCIM provisioning" },
-    { to: "/workspace/admin/domains", label: "Domains" },
-    { to: "/workspace/admin/api-tokens", label: "API tokens" },
-    { to: "/workspace/admin/webhooks", label: "Webhooks" },
-    { to: "/workspace/admin/security", label: "Session policy" },
-    { to: "/workspace/admin/automations", label: "Automations" },
-    { to: "/workspace/admin/notifications", label: "Notifications" },
-    { to: "/workspace/admin/branding", label: "Branding" },
-    { to: "/workspace/admin/integrations", label: "Integrations" },
+  const adminLinks = useMemo<Array<{ to: string; label: string; cap: Capability }>>(() => ([
+    { to: "/workspace/admin/billing", label: "Billing & seats", cap: "manage_billing" },
+    { to: "/workspace/admin/audit", label: "Audit log", cap: "view_audit" },
+    { to: "/workspace/admin/sso", label: "SSO", cap: "manage_sso" },
+    { to: "/workspace/admin/scim", label: "SCIM provisioning", cap: "manage_scim" },
+    { to: "/workspace/admin/domains", label: "Domains", cap: "manage_custom_domains" },
+    { to: "/workspace/admin/api-tokens", label: "API tokens", cap: "manage_api_tokens" },
+    { to: "/workspace/admin/webhooks", label: "Webhooks", cap: "manage_webhooks" },
+    { to: "/workspace/admin/security", label: "Session policy", cap: "manage_enterprise_features" },
+    { to: "/workspace/admin/automations", label: "Automations", cap: "manage_automations" },
+    { to: "/workspace/admin/notifications", label: "Notifications", cap: "manage_settings" },
+    { to: "/workspace/admin/branding", label: "Branding", cap: "manage_branding" },
+    { to: "/workspace/admin/integrations", label: "Integrations", cap: "manage_integrations" },
   ]), []);
+
+  const { can, ready: permsReady, isAdmin } = usePermissions();
+  // Hide links the current user can't access.  While the probe is still
+  // in flight (first render) we show the full list to avoid a flash of
+  // empty admin section for admins on slow networks.
+  const visibleAdminLinks = useMemo(() => {
+    if (!permsReady) return adminLinks;
+    return adminLinks.filter(l => can(l.cap));
+  }, [adminLinks, can, permsReady]);
 
   return (
     <div style={{
@@ -213,11 +223,13 @@ export const WorkspaceLayout: React.FC = () => {
               ))}
             </SidebarSection>
 
-            <SidebarSection title="Admin">
-              {adminLinks.map(l => (
-                <NavLink key={l.to} to={l.to} style={({ isActive }) => navLinkStyle(isActive)}>{l.label}</NavLink>
-              ))}
-            </SidebarSection>
+            {(visibleAdminLinks.length > 0 || isAdmin) && (
+              <SidebarSection title="Admin">
+                {visibleAdminLinks.map(l => (
+                  <NavLink key={l.to} to={l.to} style={({ isActive }) => navLinkStyle(isActive)}>{l.label}</NavLink>
+                ))}
+              </SidebarSection>
+            )}
           </GlassCard>
         </aside>
 

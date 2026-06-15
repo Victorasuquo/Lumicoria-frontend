@@ -26,7 +26,7 @@ export const MemberAvatarEditable: React.FC<Props> = ({ userId, name, avatarUrl,
   const { user, refreshUser } = useAuth();
   const isSelf = !!user?.id && !!userId && String(user.id) === String(userId);
   if (!isSelf) {
-    return <MemberAvatar name={name} src={avatarUrl} size={size} />;
+    return <MemberAvatar name={name} src={avatarUrl} size={size} userId={userId} />;
   }
   return (
     <AvatarUpload

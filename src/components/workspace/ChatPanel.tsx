@@ -11,12 +11,14 @@
  * offers to create one.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import api, { BACKEND_ORIGIN } from "@/services/api";
 import {
   GlassCard, Button, Input, EmptyState, Skeleton, MemberAvatar, AgentChip,
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT } from "@/components/workspace/tokens";
+import { useRoomSubscription, useTyping } from "@/contexts/RealtimeContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatMessage {
   id: string;
@@ -53,6 +55,7 @@ interface ChatPanelProps {
 const POST_HEADERS = { "Content-Type": "application/json" };
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ orgId, projectId, teamId }) => {
+  const { user } = useAuth();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -62,6 +65,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ orgId, projectId, teamId }
   const [creating, setCreating] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Realtime presence + typing per active channel.  We key the room on
+  // the channel id so multiple project chats don't bleed typers between
+  // each other.
+  const room = activeId ? `chat:${activeId}` : null;
+  const { typers } = useRoomSubscription(room);
+  const { notify: notifyTyping, stop: stopTyping } = useTyping(room);
+  const othersTyping = useMemo(
+    () => typers.filter(uid => uid !== user?.id),
+    [typers, user?.id],
+  );
 
   const loadChannels = useCallback(async () => {
     setLoading(true);
@@ -224,12 +238,46 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ orgId, projectId, teamId }
             </div>
           ))}
         </div>
+        {/* Typing indicator — shows above the composer when other users
+            in the same channel are currently typing. */}
+        {othersTyping.length > 0 && (
+          <div style={{
+            padding: "6px 18px",
+            fontSize: 12, color: tokens.SLATE_500,
+            display: "flex", alignItems: "center", gap: 8,
+            borderTop: `1px solid ${tokens.SLATE_100}`,
+          }}>
+            <span style={{
+              display: "inline-flex", gap: 3,
+            }} aria-hidden>
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: tokens.PURPLE, animation: "lumi-bounce 0.9s ease-in-out 0s infinite" }} />
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: tokens.PURPLE, animation: "lumi-bounce 0.9s ease-in-out 0.15s infinite" }} />
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: tokens.PURPLE, animation: "lumi-bounce 0.9s ease-in-out 0.3s infinite" }} />
+            </span>
+            <span>
+              {othersTyping.length === 1
+                ? `${othersTyping[0].slice(0, 6)} is typing…`
+                : `${othersTyping.length} people are typing…`}
+            </span>
+          </div>
+        )}
         <div style={{ borderTop: `1px solid ${tokens.SLATE_200}`, padding: 12, display: "flex", gap: 10 }}>
           <Input
             value={draft}
-            onChange={e => setDraft(e.target.value)}
+            onChange={e => {
+              setDraft(e.target.value);
+              if (e.target.value.length > 0) notifyTyping();
+              else stopTyping();
+            }}
+            onBlur={() => stopTyping()}
             placeholder="Write a message. Use /run agent_key prompt to invoke an agent."
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                stopTyping();
+                void send();
+              }
+            }}
           />
           <Button tone="primary" onClick={send} disabled={busy || !draft.trim()}>Send</Button>
         </div>
