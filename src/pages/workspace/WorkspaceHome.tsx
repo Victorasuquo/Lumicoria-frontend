@@ -94,37 +94,77 @@ export const WorkspaceHome: React.FC = () => {
               position: "absolute", inset: 0,
               background: "linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.6) 100%)",
             }} />
-            <div style={{ position: "relative", color: "white" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12, fontWeight: 700, color: "white", letterSpacing: 0.3 }}>
-                  Workspace · {activeOrg?.name}
-                </span>
-                <PlanBadge plan={activeOrg?.plan || "free"} compact />
+            <div style={{ position: "relative", color: "white", display: "flex", alignItems: "flex-end", gap: 18 }}>
+              {/* Org logo tile overlaid on the cover */}
+              <div style={{
+                width: 72, height: 72, borderRadius: 18,
+                background: activeOrg?.logo_url
+                  ? `url(${activeOrg.logo_url}) center/cover no-repeat`
+                  : BRAND_GRADIENT,
+                color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 24, letterSpacing: -0.4,
+                border: "3px solid white", boxShadow: "0 8px 22px rgba(15,23,42,0.25)",
+                flexShrink: 0,
+                cursor: "pointer",
+              }}
+              onClick={() => navigate("/workspace/admin/branding")}
+              title="Change workspace branding"
+              role="button"
+              >
+                {activeOrg?.logo_url ? null : initials(activeOrg?.name || "Workspace")}
               </div>
-              <h1 style={{
-                fontFamily: tokens.DISPLAY_STACK, margin: "12px 0 0",
-                fontSize: 38, fontWeight: 700, letterSpacing: -1, lineHeight: 1.08,
-                color: "white", textShadow: "0 2px 18px rgba(15,23,42,0.45)",
-              }}>
-                Good to see you in {activeOrg?.name || "your workspace"}.
-              </h1>
-              <p style={{ color: "rgba(255,255,255,0.92)", fontSize: 15, lineHeight: 1.55, margin: "8px 0 0", maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.45)" }}>
-                Run projects, govern teams, watch the metrics. Everything here is scoped to {activeOrg?.name}.
-              </p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
-                <Button tone="primary" onClick={() => navigate("/workspace/projects?new=1")}>New project</Button>
-                <Button tone="outline" onClick={() => navigate("/workspace/teams")}>New team</Button>
-                <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => setInviteOpen(true)}>Invite people</Button>
-                <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => navigate("/workspace/admin/billing")}>Manage plan</Button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12, fontWeight: 700, color: "white", letterSpacing: 0.3 }}>
+                    Workspace · {activeOrg?.name}
+                  </span>
+                  <PlanBadge plan={activeOrg?.plan || "free"} compact />
+                </div>
+                <h1 style={{
+                  fontFamily: tokens.DISPLAY_STACK, margin: "10px 0 0",
+                  fontSize: 36, fontWeight: 700, letterSpacing: -1, lineHeight: 1.08,
+                  color: "white", textShadow: "0 2px 18px rgba(15,23,42,0.45)",
+                }}>
+                  Good to see you in {activeOrg?.name || "your workspace"}.
+                </h1>
+                <p style={{ color: "rgba(255,255,255,0.92)", fontSize: 15, lineHeight: 1.55, margin: "8px 0 0", maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.45)" }}>
+                  Run projects, govern teams, watch the metrics. Everything here is scoped to {activeOrg?.name}.
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+                  <Button tone="primary" onClick={() => navigate("/workspace/projects?new=1")}>New project</Button>
+                  <Button tone="outline" onClick={() => navigate("/workspace/teams")}>New team</Button>
+                  <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => setInviteOpen(true)}>Invite people</Button>
+                  <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => navigate("/workspace/admin/billing")}>Manage plan</Button>
+                </div>
               </div>
             </div>
           </div>
         ) : (
           <GlassCard padding={28}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <BrandPill tone="outline">Workspace · {activeOrg?.name}</BrandPill>
-                <PlanBadge plan={activeOrg?.plan || "free"} compact />
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                {/* Org logo tile — no cover variant */}
+                <div
+                  style={{
+                    width: 56, height: 56, borderRadius: 16,
+                    background: activeOrg?.logo_url
+                      ? `url(${activeOrg.logo_url}) center/cover no-repeat`
+                      : BRAND_GRADIENT,
+                    color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: tokens.DISPLAY_STACK, fontWeight: 700, fontSize: 20, letterSpacing: -0.4,
+                    border: "2px solid white", boxShadow: "0 4px 14px rgba(15,23,42,0.12)",
+                    flexShrink: 0, cursor: "pointer",
+                  }}
+                  onClick={() => navigate("/workspace/admin/branding")}
+                  title="Change workspace branding"
+                  role="button"
+                >
+                  {activeOrg?.logo_url ? null : initials(activeOrg?.name || "Workspace")}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <BrandPill tone="outline">Workspace · {activeOrg?.name}</BrandPill>
+                  <PlanBadge plan={activeOrg?.plan || "free"} compact />
+                </div>
               </div>
               <h1 style={{
                 fontFamily: tokens.DISPLAY_STACK, margin: 0,
