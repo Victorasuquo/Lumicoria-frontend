@@ -2253,6 +2253,7 @@ export const activityApi = {
   },
 
   myAudit: async (params: {
+    organization_id?: string;
     limit?: number;
     skip?: number;
     activity_type?: string;
@@ -2265,6 +2266,7 @@ export const activityApi = {
   },
 
   myAuditExportUrl: (params: {
+    organization_id?: string;
     activity_type?: string;
     severity?: string;
     start_date?: string;
@@ -2278,6 +2280,7 @@ export const activityApi = {
   },
 
   myAuditExport: async (params: {
+    organization_id?: string;
     activity_type?: string;
     severity?: string;
     start_date?: string;

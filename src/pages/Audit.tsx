@@ -17,6 +17,7 @@ import {
   Search, RefreshCcw, FileText, Bot, KeyRound, Settings, FolderKanban, ListChecks,
 } from "lucide-react";
 import { activityApi, type ActivityEntry } from "@/services/api";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ const SEVERITIES = ["", "info", "warning", "error", "critical"];
 
 const Audit: React.FC = () => {
   const navigate = useNavigate();
+  const { activeOrgId } = useWorkspace();
   const [rows, setRows] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -76,6 +78,7 @@ const Audit: React.FC = () => {
 
   const params = useMemo(() => {
     const p: Record<string, any> = { limit: 500 };
+    if (activeOrgId) p.organization_id = activeOrgId;
     if (type) p.activity_type = type;
     if (severity) p.severity = severity;
     const r = RANGES.find(x => x.id === range);
@@ -83,7 +86,7 @@ const Audit: React.FC = () => {
       p.start_date = new Date(Date.now() - r.hours * 3600 * 1000).toISOString();
     }
     return p;
-  }, [type, severity, range]);
+  }, [activeOrgId, type, severity, range]);
 
   const load = async () => {
     setLoading(true);
