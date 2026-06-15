@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { tokens, BRAND_GRADIENT, initials, planLabel } from "./tokens";
 import { PlanBadge } from "./primitives";
+import { resolveAvatarUrl } from "@/services/api";
 
 export const WorkspaceSwitcher: React.FC = () => {
   const navigate = useNavigate();
@@ -57,15 +58,22 @@ export const WorkspaceSwitcher: React.FC = () => {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span style={{
-          width: 26, height: 26, borderRadius: 9999,
-          background: activeOrg.logo_url ? `url(${activeOrg.logo_url})` : BRAND_GRADIENT,
-          backgroundSize: "cover", color: "white",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, fontWeight: 700,
-        }}>
-          {activeOrg.logo_url ? null : initials(activeOrg.name)}
-        </span>
+        {(() => {
+          const resolvedLogo = resolveAvatarUrl(activeOrg.logo_url || undefined);
+          return (
+            <span style={{
+              width: 26, height: 26, borderRadius: 9999,
+              background: resolvedLogo
+                ? `url(${resolvedLogo}) center/cover no-repeat`
+                : BRAND_GRADIENT,
+              color: "white",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 700, flexShrink: 0,
+            }}>
+              {resolvedLogo ? null : initials(activeOrg.name)}
+            </span>
+          );
+        })()}
         <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {activeOrg.name}
         </span>
@@ -102,13 +110,20 @@ export const WorkspaceSwitcher: React.FC = () => {
                   border: "none", textAlign: "left", cursor: "pointer", color: tokens.INK,
                 }}
               >
-                <span style={{
-                  width: 30, height: 30, borderRadius: 9999,
-                  background: m.logo_url ? `url(${m.logo_url})` : BRAND_GRADIENT,
-                  backgroundSize: "cover", color: "white",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700,
-                }}>{m.logo_url ? null : initials(m.name)}</span>
+                {(() => {
+                  const resolvedM = resolveAvatarUrl(m.logo_url || undefined);
+                  return (
+                    <span style={{
+                      width: 30, height: 30, borderRadius: 9999,
+                      background: resolvedM
+                        ? `url(${resolvedM}) center/cover no-repeat`
+                        : BRAND_GRADIENT,
+                      color: "white",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 700, flexShrink: 0,
+                    }}>{resolvedM ? null : initials(m.name)}</span>
+                  );
+                })()}
                 <span style={{ flex: 1 }}>
                   <span style={{ display: "block", fontWeight: 600, fontSize: 13 }}>{m.name}</span>
                   <span style={{ display: "block", fontSize: 11, color: tokens.SLATE_500 }}>{planLabel(m.plan)}</span>

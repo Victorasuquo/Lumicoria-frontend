@@ -13,6 +13,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { tokens, BRAND_GRADIENT, initials } from "./tokens";
 import { GlassCard, PlanBadge, SeatCounter, Skeleton } from "./primitives";
 import { teamApi, projectV2Api, type Team, type ProjectV2 } from "@/services/workspaceApi";
+import { resolveAvatarUrl } from "@/services/api";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 
 const SidebarSection: React.FC<{ title: string; right?: React.ReactNode; children: React.ReactNode }> = ({ title, right, children }) => (
@@ -113,13 +114,26 @@ export const WorkspaceLayout: React.FC = () => {
                 cursor: "pointer", textAlign: "left",
               }}
             >
-              <span style={{
-                width: 34, height: 34, borderRadius: 9999,
-                background: activeOrg?.logo_url ? `url(${activeOrg.logo_url})` : BRAND_GRADIENT,
-                backgroundSize: "cover", color: "white",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13, fontWeight: 700,
-              }}>{activeOrg?.logo_url ? null : initials(activeOrg?.name || "Workspace")}</span>
+              {(() => {
+                // Resolve relative paths (e.g. /uploads/avatars/…) against
+                // the backend origin so the tile actually renders.  Show
+                // initials as the fallback layer when no logo is set.
+                const resolvedLogo = resolveAvatarUrl(activeOrg?.logo_url || undefined);
+                return (
+                  <span style={{
+                    width: 34, height: 34, borderRadius: 9999,
+                    background: resolvedLogo
+                      ? `url(${resolvedLogo}) center/cover no-repeat`
+                      : BRAND_GRADIENT,
+                    color: "white",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 13, fontWeight: 700,
+                    flexShrink: 0,
+                  }}>
+                    {resolvedLogo ? null : initials(activeOrg?.name || "Workspace")}
+                  </span>
+                );
+              })()}
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {activeOrg?.name || (loading ? "Loading…" : "No workspace")}
