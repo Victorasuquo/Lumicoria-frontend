@@ -122,13 +122,13 @@ const Hero = () => {
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-12"
           >
             {TRUST.map((t, i) => (
-              <React.Fragment key={t}>
+              <span key={t} className="contents">
                 {i > 0 && <span className="hidden sm:inline h-1 w-1 rounded-full bg-gray-300" />}
                 <span className="flex items-center gap-1.5 text-sm text-gray-500">
                   <Check size={14} className="text-lumicoria-purple shrink-0" />
                   {t}
                 </span>
-              </React.Fragment>
+              </span>
             ))}
           </motion.div>
         </motion.div>

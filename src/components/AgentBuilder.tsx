@@ -288,10 +288,10 @@ const AgentBuilder = () => {
                         const my = (sPt.y + ePt.y) / 2 - 13;
                         const tw = w.label.length * 6 + 16;
                         return (
-                          <>
+                          <g>
                             <rect x={mx - tw / 2} y={my - 8} width={tw} height="16" rx="8" fill="white" stroke="#e4e4e7" strokeWidth="0.8" />
                             <text x={mx} y={my + 3} textAnchor="middle" className="text-[9px] fill-gray-400 font-medium">{w.label}</text>
-                          </>
+                          </g>
                         );
                       })()}
                     </g>
@@ -375,12 +375,12 @@ const AgentBuilder = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between">
               <div className="flex items-center mb-4 sm:mb-0 flex-wrap gap-y-2">
                 {[flowNodes[0], flowNodes[1]].map((node, i) => (
-                  <React.Fragment key={i}>
+                  <span key={i} className="contents">
                     {i > 0 && <ArrowRight size={16} className="mx-1.5 text-gray-300" />}
                     <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center" style={{ border: `1.5px solid ${node.color}60` }}>
                       <img src={node.icon} alt={node.name} className="w-5 h-5 rounded object-contain" />
                     </div>
-                  </React.Fragment>
+                  </span>
                 ))}
                 <ArrowRight size={16} className="mx-1.5 text-gray-300" />
                 <div className="flex gap-1">
