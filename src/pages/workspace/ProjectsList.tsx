@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { projectV2Api, teamApi, type ProjectV2, type Team } from "@/services/workspaceApi";
@@ -110,11 +110,16 @@ export const ProjectsList: React.FC = () => {
   const { activeOrgId } = useWorkspace();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [projects, setProjects] = useState<ProjectV2[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showCreate, setShowCreate] = useState(searchParams.get("new") !== null);
+  // Open the create panel when either ?new is set OR the path ends in
+  // /projects/new (the route TeamDetail navigates to).
+  const [showCreate, setShowCreate] = useState(
+    searchParams.get("new") !== null || location.pathname.endsWith("/new"),
+  );
   const [loading, setLoading] = useState(true);
 
   const defaultTeamId = searchParams.get("team") || undefined;

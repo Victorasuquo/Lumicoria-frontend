@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
-  projectV2Api, agentsV2Api,
+  projectV2Api, agentsV2Api, teamApi,
   type ProjectV2, type ProjectMember, type ProjectAgent, type AnalyticsOverview,
+  type Team,
 } from "@/services/workspaceApi";
 import {
   GlassCard, SectionHeader, BrandPill, Button, Input, MemberAvatar, RoleChip,
@@ -574,15 +575,22 @@ const ProjectSettingsForm: React.FC<{ project: ProjectV2; orgId: string; onSaved
   const [status, setStatus] = useState(project.status);
   const [visibility, setVisibility] = useState(project.visibility);
   const [strict, setStrict] = useState(project.strict_mode);
+  const [teamId, setTeamId] = useState<string>(project.team_id ? String(project.team_id) : "");
+  const [teams, setTeams] = useState<Team[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    teamApi.list(orgId).then(setTeams).catch(() => setTeams([]));
+  }, [orgId]);
 
   const save = async () => {
     setBusy(true); setMsg(null);
     try {
       const updated = await projectV2Api.update(orgId, project.id, {
         name, description, status, visibility, strict_mode: strict,
-      });
+        team_id: teamId || null,
+      } as any);
       onSaved(updated); setMsg("Saved.");
     } catch (e: any) {
       setMsg(e?.response?.data?.detail || e?.message || "Save failed");
@@ -598,6 +606,19 @@ const ProjectSettingsForm: React.FC<{ project: ProjectV2; orgId: string; onSaved
       <label style={{ gridColumn: "1 / -1" }}>
         <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Description</div>
         <Input value={description} onChange={e => setDescription(e.target.value)} />
+      </label>
+      <label style={{ gridColumn: "1 / -1" }}>
+        <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Team</div>
+        <select value={teamId} onChange={e => setTeamId(e.target.value)} style={{
+          width: "100%", padding: "10px 14px", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`,
+          fontSize: 14, background: "white", fontFamily: tokens.BODY_STACK,
+        }}>
+          <option value="">No team (workspace-level)</option>
+          {teams.map(t => <option key={t.id} value={t.id}>{t.name}{t.department_tag ? ` · ${t.department_tag}` : ""}</option>)}
+        </select>
+        <div style={{ fontSize: 11, color: tokens.SLATE_500, marginTop: 6 }}>
+          Move this project into a team so it counts toward that team's projects + analytics.
+        </div>
       </label>
       <label>
         <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Status</div>
