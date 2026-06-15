@@ -17,6 +17,7 @@ interface WorkspaceMembership {
   id: ID;
   name: string;
   logo_url?: string | null;
+  cover_url?: string | null;
   plan?: string | null;
   role?: "owner" | "admin" | "member" | "viewer";
 }
@@ -60,6 +61,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: String((primary as any).id || (primary as any)._id),
           name: (primary as any).name || "Workspace",
           logo_url: (primary as any).logo_url || null,
+          cover_url: (primary as any).cover_url || null,
           plan: (primary as any).plan || null,
         });
       }

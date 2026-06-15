@@ -140,30 +140,48 @@ export const TeamsList: React.FC = () => {
           {filtered.map((t, i) => (
             <motion.div key={t.id} {...STAGGER(i)}>
               <GlassCard
-                padding={20}
+                padding={0}
                 onClick={() => navigate(`/workspace/teams/${t.id}`)}
-                style={{ cursor: "pointer", height: "100%" }}
+                style={{ cursor: "pointer", height: "100%", overflow: "hidden" }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <span style={{
-                    width: 40, height: 40, borderRadius: 14,
-                    background: t.color || BRAND_GRADIENT,
-                    color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: 14,
-                  }}>{initials(t.name)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
-                    {t.department_tag && <BrandPill tone="outline" style={{ marginTop: 4 }}>{t.department_tag}</BrandPill>}
-                  </div>
+                {/* Cover strip */}
+                <div style={{
+                  height: 96,
+                  background: t.cover_url
+                    ? `url(${t.cover_url}) center/cover no-repeat`
+                    : `linear-gradient(135deg, ${t.color || tokens.PURPLE} 0%, ${tokens.SKY} 100%)`,
+                  position: "relative",
+                }}>
+                  {t.cover_url && (
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.18) 100%)" }} />
+                  )}
                 </div>
-                <p style={{ color: tokens.SLATE_600, fontSize: 13, lineHeight: 1.55, margin: 0, minHeight: 40 }}>
-                  {t.description || "—"}
-                </p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-                  <MemberStack members={t.member_ids.slice(0, 5).map(id => ({ name: id }))} size={24} />
-                  <span style={{ fontSize: 12, color: tokens.SLATE_500, fontWeight: 600 }}>
-                    {t.member_ids.length} members · {t.admin_ids.length} admins
-                  </span>
+                <div style={{ padding: 18, paddingTop: 14, position: "relative" }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginTop: -32, marginBottom: 10 }}>
+                    <span style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: t.logo_url
+                        ? `url(${t.logo_url}) center/cover no-repeat`
+                        : (t.color || BRAND_GRADIENT),
+                      color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: 14,
+                      border: "3px solid white", boxShadow: "0 4px 14px rgba(15,23,42,0.12)",
+                      flexShrink: 0,
+                    }}>{t.logo_url ? null : initials(t.name)}</span>
+                    <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
+                      <div style={{ fontWeight: 700, fontSize: 16, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
+                      {t.department_tag && <BrandPill tone="outline" style={{ marginTop: 4 }}>{t.department_tag}</BrandPill>}
+                    </div>
+                  </div>
+                  <p style={{ color: tokens.SLATE_600, fontSize: 13, lineHeight: 1.55, margin: 0, minHeight: 40 }}>
+                    {t.description || "—"}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
+                    <MemberStack members={t.member_ids.slice(0, 5).map(id => ({ name: id }))} size={24} />
+                    <span style={{ fontSize: 12, color: tokens.SLATE_500, fontWeight: 600 }}>
+                      {t.member_ids.length} members · {t.admin_ids.length} admins
+                    </span>
+                  </div>
                 </div>
               </GlassCard>
             </motion.div>

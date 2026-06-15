@@ -80,35 +80,74 @@ export const WorkspaceHome: React.FC = () => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Hero */}
+      {/* Hero — renders on top of the workspace cover if one is set */}
       <motion.div {...FADE_UP}>
-        <GlassCard padding={28}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <BrandPill tone="outline">Workspace · {activeOrg?.name}</BrandPill>
-              <PlanBadge plan={activeOrg?.plan || "free"} compact />
-            </div>
-            <h1 style={{
-              fontFamily: tokens.DISPLAY_STACK, margin: 0,
-              fontSize: 38, fontWeight: 700, letterSpacing: -1, lineHeight: 1.08,
-              color: tokens.INK,
-            }}>
-              Good to see you in{" "}
-              <span style={{ background: BRAND_GRADIENT, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                {activeOrg?.name || "your workspace"}
-              </span>.
-            </h1>
-            <p style={{ color: tokens.SLATE_600, fontSize: 15, lineHeight: 1.55, margin: 0, maxWidth: 720 }}>
-              Run projects, govern teams, watch the metrics. Everything here is scoped to {activeOrg?.name}; switch workspaces from the top-left at any time.
-            </p>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-              <Button tone="primary" onClick={() => navigate("/workspace/projects?new=1")}>New project</Button>
-              <Button tone="outline" onClick={() => navigate("/workspace/teams")}>New team</Button>
-              <Button tone="ghost" onClick={() => setInviteOpen(true)}>Invite people</Button>
-              <Button tone="ghost" onClick={() => navigate("/workspace/admin/billing")}>Manage plan</Button>
+        {activeOrg?.cover_url ? (
+          <div style={{
+            position: "relative", borderRadius: 20, overflow: "hidden",
+            background: `url(${activeOrg.cover_url}) center/cover no-repeat`,
+            minHeight: 260, padding: 32,
+            display: "flex", flexDirection: "column", justifyContent: "flex-end",
+            boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+          }}>
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.6) 100%)",
+            }} />
+            <div style={{ position: "relative", color: "white" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12, fontWeight: 700, color: "white", letterSpacing: 0.3 }}>
+                  Workspace · {activeOrg?.name}
+                </span>
+                <PlanBadge plan={activeOrg?.plan || "free"} compact />
+              </div>
+              <h1 style={{
+                fontFamily: tokens.DISPLAY_STACK, margin: "12px 0 0",
+                fontSize: 38, fontWeight: 700, letterSpacing: -1, lineHeight: 1.08,
+                color: "white", textShadow: "0 2px 18px rgba(15,23,42,0.45)",
+              }}>
+                Good to see you in {activeOrg?.name || "your workspace"}.
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.92)", fontSize: 15, lineHeight: 1.55, margin: "8px 0 0", maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.45)" }}>
+                Run projects, govern teams, watch the metrics. Everything here is scoped to {activeOrg?.name}.
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+                <Button tone="primary" onClick={() => navigate("/workspace/projects?new=1")}>New project</Button>
+                <Button tone="outline" onClick={() => navigate("/workspace/teams")}>New team</Button>
+                <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => setInviteOpen(true)}>Invite people</Button>
+                <Button tone="ghost" style={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => navigate("/workspace/admin/billing")}>Manage plan</Button>
+              </div>
             </div>
           </div>
-        </GlassCard>
+        ) : (
+          <GlassCard padding={28}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <BrandPill tone="outline">Workspace · {activeOrg?.name}</BrandPill>
+                <PlanBadge plan={activeOrg?.plan || "free"} compact />
+              </div>
+              <h1 style={{
+                fontFamily: tokens.DISPLAY_STACK, margin: 0,
+                fontSize: 38, fontWeight: 700, letterSpacing: -1, lineHeight: 1.08,
+                color: tokens.INK,
+              }}>
+                Good to see you in{" "}
+                <span style={{ background: BRAND_GRADIENT, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  {activeOrg?.name || "your workspace"}
+                </span>.
+              </h1>
+              <p style={{ color: tokens.SLATE_600, fontSize: 15, lineHeight: 1.55, margin: 0, maxWidth: 720 }}>
+                Run projects, govern teams, watch the metrics. Everything here is scoped to {activeOrg?.name}; switch workspaces from the top-left at any time.
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+                <Button tone="primary" onClick={() => navigate("/workspace/projects?new=1")}>New project</Button>
+                <Button tone="outline" onClick={() => navigate("/workspace/teams")}>New team</Button>
+                <Button tone="ghost" onClick={() => setInviteOpen(true)}>Invite people</Button>
+                <Button tone="ghost" onClick={() => navigate("/workspace/admin/billing")}>Manage plan</Button>
+              </div>
+            </div>
+          </GlassCard>
+        )}
       </motion.div>
 
       {/* KPIs */}

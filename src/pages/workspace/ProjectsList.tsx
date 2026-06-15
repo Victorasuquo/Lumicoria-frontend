@@ -197,13 +197,35 @@ export const ProjectsList: React.FC = () => {
             return (
               <motion.div key={p.id} {...STAGGER(i)}>
                 <GlassCard
-                  padding={20}
+                  padding={0}
                   onClick={() => navigate(`/workspace/projects/${p.id}`)}
-                  style={{ cursor: "pointer", height: "100%" }}
+                  style={{ cursor: "pointer", height: "100%", overflow: "hidden" }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 9999, background: p.color || tokens.PURPLE }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Cover strip */}
+                  <div style={{
+                    height: 88,
+                    background: (p as any).cover_image_url
+                      ? `url(${(p as any).cover_image_url}) center/cover no-repeat`
+                      : `linear-gradient(135deg, ${p.color || tokens.PURPLE} 0%, ${tokens.SKY} 100%)`,
+                    position: "relative",
+                  }}>
+                    {(p as any).cover_image_url && (
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.18) 100%)" }} />
+                    )}
+                  </div>
+                  <div style={{ padding: 18, paddingTop: 14, position: "relative" }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: -28, marginBottom: 10 }}>
+                    <span style={{
+                      width: 38, height: 38, borderRadius: 12,
+                      background: (p as any).logo_url
+                        ? `url(${(p as any).logo_url}) center/cover no-repeat`
+                        : (p.color || BRAND_GRADIENT),
+                      color: "white", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: 13,
+                      border: "3px solid white", boxShadow: "0 4px 14px rgba(15,23,42,0.12)",
+                      flexShrink: 0,
+                    }}>{(p as any).logo_url ? null : initials(p.name)}</span>
+                    <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
                       <div style={{ fontWeight: 700, fontSize: 16, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
                       <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>{p.visibility} · {p.member_ids.length} members</div>
                     </div>
@@ -226,6 +248,7 @@ export const ProjectsList: React.FC = () => {
                       )}
                     </div>
                     {p.strict_mode && <BrandPill tone="ghost" style={{ background: `${tokens.PURPLE}10` }}>Strict mode</BrandPill>}
+                  </div>
                   </div>
                 </GlassCard>
               </motion.div>
