@@ -73,6 +73,22 @@ const AdminAutomations = lazy(() => import("./pages/workspace/admin/AdminAutomat
 const AdminNotifications = lazy(() => import("./pages/workspace/admin/AdminNotifications"));
 const AdminBranding = lazy(() => import("./pages/workspace/admin/AdminBranding"));
 const AdminIntegrations = lazy(() => import("./pages/workspace/admin/AdminIntegrations"));
+const AdminAnnouncements = lazy(() => import("./pages/workspace/admin/AdminAnnouncements"));
+const AdminTags = lazy(() => import("./pages/workspace/admin/AdminTags"));
+const AdminCustomRoles = lazy(() => import("./pages/workspace/admin/AdminCustomRoles"));
+const AdminEmails = lazy(() => import("./pages/workspace/admin/AdminEmails"));
+const AdminResidency = lazy(() => import("./pages/workspace/admin/AdminResidency"));
+const AdminCompliance = lazy(() => import("./pages/workspace/admin/AdminCompliance"));
+const AdminJit = lazy(() => import("./pages/workspace/admin/AdminJit"));
+const AdminCredits = lazy(() => import("./pages/workspace/admin/AdminCredits"));
+const AdminContracts = lazy(() => import("./pages/workspace/admin/AdminContracts"));
+const AdminOnboardingChecklist = lazy(() => import("./pages/workspace/admin/AdminOnboardingChecklist"));
+const WorkspaceSearch = lazy(() => import("./pages/workspace/WorkspaceSearch"));
+const WorkspaceCalendar = lazy(() => import("./pages/workspace/WorkspaceCalendar"));
+const WorkspaceDashboards = lazy(() => import("./pages/workspace/WorkspaceDashboards"));
+const WorkspaceExports = lazy(() => import("./pages/workspace/WorkspaceExports"));
+const NotificationRules = lazy(() => import("./pages/workspace/NotificationRules"));
+const PendingReviews = lazy(() => import("./pages/workspace/PendingReviews"));
 const CommandPalette = lazy(() => import("./components/workspace/CommandPalette"));
 
 // Agent pages — lazy loaded
@@ -202,6 +218,22 @@ const AppRoutes = () => {
           <Route path="admin/notifications" element={<Suspense fallback={<AgentPageFallback />}><AdminNotifications /></Suspense>} />
           <Route path="admin/branding" element={<Suspense fallback={<AgentPageFallback />}><AdminBranding /></Suspense>} />
           <Route path="admin/integrations" element={<Suspense fallback={<AgentPageFallback />}><AdminIntegrations /></Suspense>} />
+          <Route path="admin/announcements" element={<Suspense fallback={<AgentPageFallback />}><AdminAnnouncements /></Suspense>} />
+          <Route path="admin/tags" element={<Suspense fallback={<AgentPageFallback />}><AdminTags /></Suspense>} />
+          <Route path="admin/custom-roles" element={<Suspense fallback={<AgentPageFallback />}><AdminCustomRoles /></Suspense>} />
+          <Route path="admin/emails" element={<Suspense fallback={<AgentPageFallback />}><AdminEmails /></Suspense>} />
+          <Route path="admin/residency" element={<Suspense fallback={<AgentPageFallback />}><AdminResidency /></Suspense>} />
+          <Route path="admin/compliance" element={<Suspense fallback={<AgentPageFallback />}><AdminCompliance /></Suspense>} />
+          <Route path="admin/jit" element={<Suspense fallback={<AgentPageFallback />}><AdminJit /></Suspense>} />
+          <Route path="admin/credits" element={<Suspense fallback={<AgentPageFallback />}><AdminCredits /></Suspense>} />
+          <Route path="admin/contracts" element={<Suspense fallback={<AgentPageFallback />}><AdminContracts /></Suspense>} />
+          <Route path="admin/onboarding-checklist" element={<Suspense fallback={<AgentPageFallback />}><AdminOnboardingChecklist /></Suspense>} />
+          <Route path="search" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceSearch /></Suspense>} />
+          <Route path="calendar" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceCalendar /></Suspense>} />
+          <Route path="dashboards" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceDashboards /></Suspense>} />
+          <Route path="exports" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceExports /></Suspense>} />
+          <Route path="notifications/rules" element={<Suspense fallback={<AgentPageFallback />}><NotificationRules /></Suspense>} />
+          <Route path="reviews" element={<Suspense fallback={<AgentPageFallback />}><PendingReviews /></Suspense>} />
         </Route>
 
         {/* Protected Routes */}

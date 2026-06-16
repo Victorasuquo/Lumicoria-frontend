@@ -68,17 +68,27 @@ export const WorkspaceLayout: React.FC = () => {
 
   const adminLinks = useMemo<Array<{ to: string; label: string; cap: Capability }>>(() => ([
     { to: "/workspace/admin/billing", label: "Billing & seats", cap: "manage_billing" },
+    { to: "/workspace/admin/credits", label: "Credits", cap: "manage_billing" },
+    { to: "/workspace/admin/contracts", label: "Contracts", cap: "manage_billing" },
     { to: "/workspace/admin/audit", label: "Audit log", cap: "view_audit" },
     { to: "/workspace/admin/sso", label: "SSO", cap: "manage_sso" },
     { to: "/workspace/admin/scim", label: "SCIM provisioning", cap: "manage_scim" },
     { to: "/workspace/admin/domains", label: "Domains", cap: "manage_custom_domains" },
     { to: "/workspace/admin/api-tokens", label: "API tokens", cap: "manage_api_tokens" },
     { to: "/workspace/admin/webhooks", label: "Webhooks", cap: "manage_webhooks" },
+    { to: "/workspace/admin/jit", label: "Just-in-time access", cap: "manage_enterprise_features" },
     { to: "/workspace/admin/security", label: "Session policy", cap: "manage_enterprise_features" },
+    { to: "/workspace/admin/residency", label: "Data residency", cap: "manage_enterprise_features" },
+    { to: "/workspace/admin/compliance", label: "Compliance", cap: "manage_enterprise_features" },
     { to: "/workspace/admin/automations", label: "Automations", cap: "manage_automations" },
     { to: "/workspace/admin/notifications", label: "Notifications", cap: "manage_settings" },
+    { to: "/workspace/admin/emails", label: "Emails", cap: "manage_settings" },
     { to: "/workspace/admin/branding", label: "Branding", cap: "manage_branding" },
+    { to: "/workspace/admin/announcements", label: "Announcements", cap: "manage_settings" },
+    { to: "/workspace/admin/tags", label: "Tags", cap: "manage_settings" },
+    { to: "/workspace/admin/custom-roles", label: "Custom roles", cap: "manage_enterprise_features" },
     { to: "/workspace/admin/integrations", label: "Integrations", cap: "manage_integrations" },
+    { to: "/workspace/admin/onboarding-checklist", label: "Onboarding checklist", cap: "manage_settings" },
   ]), []);
 
   const { can, ready: permsReady, isAdmin } = usePermissions();
@@ -164,6 +174,12 @@ export const WorkspaceLayout: React.FC = () => {
               <NavLink to="/workspace" end style={({ isActive }) => navLinkStyle(isActive)}>Home</NavLink>
               <NavLink to="/workspace/members" style={({ isActive }) => navLinkStyle(isActive)}>Members</NavLink>
               <NavLink to="/workspace/activity" style={({ isActive }) => navLinkStyle(isActive)}>Activity</NavLink>
+              <NavLink to="/workspace/search" style={({ isActive }) => navLinkStyle(isActive)}>Search</NavLink>
+              <NavLink to="/workspace/calendar" style={({ isActive }) => navLinkStyle(isActive)}>Calendar</NavLink>
+              <NavLink to="/workspace/dashboards" style={({ isActive }) => navLinkStyle(isActive)}>Dashboards</NavLink>
+              <NavLink to="/workspace/reviews" style={({ isActive }) => navLinkStyle(isActive)}>Reviews</NavLink>
+              <NavLink to="/workspace/notifications/rules" style={({ isActive }) => navLinkStyle(isActive)}>Notification rules</NavLink>
+              <NavLink to="/workspace/exports" style={({ isActive }) => navLinkStyle(isActive)}>Exports</NavLink>
             </SidebarSection>
 
             <SidebarSection

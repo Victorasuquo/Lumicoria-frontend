@@ -62,6 +62,34 @@ export const STAGGER = (i: number) => ({
   transition: { type: "spring" as const, stiffness: 220, damping: 24, delay: i * 0.04 },
 });
 
+/** Faster stagger for dense lists (30ms step). */
+export const STAGGER_FAST = (i: number) => ({
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  transition: { type: "spring" as const, stiffness: 260, damping: 22, delay: i * 0.03 },
+});
+
+/** Hover-lift for clickable cards.  Subtle: -1px + soft shadow boost. */
+export const HOVER_LIFT = {
+  whileHover: { y: -1, boxShadow: "0 8px 28px rgba(15,23,42,0.10)" },
+  whileTap: { scale: 0.985 },
+  transition: { type: "spring" as const, stiffness: 320, damping: 22 },
+};
+
+/** Press-tap for buttons + chips. */
+export const PRESS_TAP = {
+  whileTap: { scale: 0.97 },
+  transition: { type: "spring" as const, stiffness: 400, damping: 18 },
+};
+
+/** Reveal on scroll (used with framer-motion `whileInView`). */
+export const PAGE_IN = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-40px" },
+  transition: { type: "spring" as const, stiffness: 200, damping: 26 },
+};
+
 export type PlanKey = "free" | "starter" | "professional" | "team" | "business" | "enterprise";
 
 export const planLabel = (p?: string | null): string => {

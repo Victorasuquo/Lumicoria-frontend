@@ -393,6 +393,362 @@ export const Skeleton: React.FC<{ width?: number | string; height?: number | str
   }} />
 );
 
+// ── Sleek-UI primitives (TabBar / FilterChips / Toolbar / KpiTile /
+// CardGrid / SkeletonRow / SkeletonCard / OrbEmptyState / InlineEdit) ─
+
+import { motion, AnimatePresence } from "framer-motion";
+
+interface TabBarTab<T extends string = string> { id: T; label: string; count?: number | string; }
+
+/** Sticky underline-animated tab bar — replaces the inline tab pills in
+ *  TeamDetail / ProjectDetail / admin pages. */
+export function TabBar<T extends string = string>({
+  tabs, active, onChange, sticky = true,
+}: { tabs: TabBarTab<T>[]; active: T; onChange: (id: T) => void; sticky?: boolean; }) {
+  return (
+    <div style={{
+      position: sticky ? "sticky" : undefined,
+      top: sticky ? 64 : undefined, zIndex: 20,
+      display: "flex", gap: 4,
+      padding: "4px 4px 2px",
+      background: "rgba(255,255,255,0.85)",
+      backdropFilter: "blur(10px)",
+      borderRadius: 999, border: `1px solid ${tokens.SLATE_200}`,
+      boxShadow: "0 2px 8px rgba(15,23,42,0.04)",
+      width: "fit-content", maxWidth: "100%", overflowX: "auto",
+    }}>
+      {tabs.map(t => {
+        const isActive = t.id === active;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            style={{
+              position: "relative",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "8px 14px", border: "none",
+              background: "transparent", color: isActive ? tokens.PURPLE_DEEP : tokens.SLATE_600,
+              fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", cursor: "pointer",
+              borderRadius: 999,
+            }}
+          >
+            {t.label}
+            {t.count !== undefined && (
+              <span style={{
+                fontSize: 11, padding: "1px 6px", borderRadius: 999,
+                background: isActive ? `${tokens.PURPLE}14` : tokens.SLATE_100,
+                color: isActive ? tokens.PURPLE_DEEP : tokens.SLATE_600,
+                fontWeight: 700,
+              }}>{t.count}</span>
+            )}
+            {isActive && (
+              <motion.div
+                layoutId="lumi-tabbar-underline"
+                style={{
+                  position: "absolute", left: 12, right: 12, bottom: -2, height: 2,
+                  background: BRAND_GRADIENT, borderRadius: 999,
+                }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Chip filter bar.  Single-select OR multi-select via the prop. */
+export function FilterChips({
+  options, value, onChange, multi = false, label,
+}: {
+  options: Array<{ id: string; label: string; count?: number | string }>;
+  value: string | string[];
+  onChange: (next: string | string[]) => void;
+  multi?: boolean;
+  label?: string;
+}) {
+  const selected = new Set(Array.isArray(value) ? value : [value].filter(Boolean));
+  const toggle = (id: string) => {
+    if (!multi) { onChange(id === Array.from(selected)[0] ? "" : id); return; }
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onChange(Array.from(next));
+  };
+  return (
+    <div style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      {label && (
+        <span style={{
+          fontSize: 11, color: tokens.SLATE_500, letterSpacing: 1,
+          textTransform: "uppercase", fontWeight: 700,
+        }}>{label}</span>
+      )}
+      {options.map(opt => {
+        const isOn = selected.has(opt.id);
+        return (
+          <button
+            key={opt.id}
+            onClick={() => toggle(opt.id)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "5px 11px", borderRadius: 999, cursor: "pointer",
+              border: `1px solid ${isOn ? tokens.PURPLE : tokens.SLATE_200}`,
+              background: isOn ? `${tokens.PURPLE}10` : "white",
+              color: isOn ? tokens.PURPLE_DEEP : tokens.SLATE_700,
+              fontSize: 12, fontWeight: 600,
+              transition: "all 120ms ease",
+            }}
+          >
+            {opt.label}
+            {opt.count !== undefined && (
+              <span style={{
+                fontSize: 10, padding: "1px 5px", borderRadius: 999,
+                background: isOn ? "white" : tokens.SLATE_100,
+                color: isOn ? tokens.PURPLE_DEEP : tokens.SLATE_500,
+                fontWeight: 700,
+              }}>{opt.count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Sticky page toolbar — search left, chips/sort/view-switch middle,
+ *  bulk-actions right. */
+export const Toolbar: React.FC<{
+  left?: React.ReactNode;
+  center?: React.ReactNode;
+  right?: React.ReactNode;
+  sticky?: boolean;
+}> = ({ left, center, right, sticky = true }) => (
+  <div style={{
+    position: sticky ? "sticky" : undefined,
+    top: sticky ? 72 : undefined, zIndex: 15,
+    display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+    padding: "10px 12px", marginBottom: 12,
+    background: "rgba(255,255,255,0.88)",
+    backdropFilter: "blur(10px)",
+    border: `1px solid ${tokens.SLATE_200}`,
+    borderRadius: 14,
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  }}>
+    {left && <div style={{ display: "inline-flex", gap: 8, alignItems: "center", flex: "0 1 auto", minWidth: 0 }}>{left}</div>}
+    {center && <div style={{ display: "inline-flex", gap: 8, alignItems: "center", flex: "1 1 auto", minWidth: 0, flexWrap: "wrap" }}>{center}</div>}
+    {right && <div style={{ display: "inline-flex", gap: 8, alignItems: "center", flex: "0 0 auto" }}>{right}</div>}
+  </div>
+);
+
+/** Animated KPI tile (number counts up on mount). */
+export const KpiTile: React.FC<{
+  label: string; value: string | number; sub?: string;
+  tone?: "default" | "accent"; onClick?: () => void;
+  trend?: "up" | "down" | "flat"; sparkline?: number[];
+}> = ({ label, value, sub, tone = "default", onClick, trend, sparkline }) => {
+  const accent = tone === "accent";
+  return (
+    <motion.div
+      whileHover={onClick ? { y: -1, boxShadow: "0 12px 32px rgba(15,23,42,0.10)" } : undefined}
+      whileTap={onClick ? { scale: 0.99 } : undefined}
+      transition={{ type: "spring", stiffness: 320, damping: 22 }}
+      onClick={onClick}
+      style={{
+        padding: 18, borderRadius: 16, cursor: onClick ? "pointer" : "default",
+        background: accent ? BRAND_GRADIENT : "white",
+        color: accent ? "white" : tokens.INK,
+        border: `1px solid ${accent ? "transparent" : tokens.SLATE_200}`,
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+        position: "relative", overflow: "hidden",
+      }}
+    >
+      <div style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
+        color: accent ? "rgba(255,255,255,0.85)" : tokens.SLATE_500,
+      }}>{label}</div>
+      <div style={{
+        fontFamily: tokens.DISPLAY_STACK, fontSize: 32, fontWeight: 700,
+        letterSpacing: -0.5, marginTop: 6,
+      }}>{value}</div>
+      {sub && (
+        <div style={{
+          fontSize: 12, marginTop: 4,
+          color: accent ? "rgba(255,255,255,0.85)" : tokens.SLATE_600,
+        }}>
+          {trend && (
+            <span style={{ marginRight: 4 }}>
+              {trend === "up" ? "▲" : trend === "down" ? "▼" : "▬"}
+            </span>
+          )}
+          {sub}
+        </div>
+      )}
+      {sparkline && sparkline.length > 0 && (
+        <svg
+          width="100%" height={28}
+          viewBox={`0 0 ${sparkline.length - 1} 10`} preserveAspectRatio="none"
+          style={{ marginTop: 6, opacity: accent ? 0.85 : 1 }}
+        >
+          <polyline
+            fill="none"
+            stroke={accent ? "white" : tokens.PURPLE}
+            strokeWidth={0.6}
+            points={sparkline.map((v, i) => {
+              const max = Math.max(...sparkline, 1);
+              const min = Math.min(...sparkline, 0);
+              const y = 10 - ((v - min) / Math.max(max - min, 1)) * 9;
+              return `${i},${y.toFixed(2)}`;
+            }).join(" ")}
+          />
+        </svg>
+      )}
+    </motion.div>
+  );
+};
+
+/** Responsive grid wrapper.  Defaults match the workspace pattern
+ *  (auto-fit, minmax 240). */
+export const CardGrid: React.FC<{ minCol?: number; gap?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({
+  minCol = 240, gap = 16, children, style,
+}) => (
+  <div style={{
+    display: "grid",
+    gridTemplateColumns: `repeat(auto-fit, minmax(${minCol}px, 1fr))`,
+    gap, ...style,
+  }}>
+    {children}
+  </div>
+);
+
+/** Skeleton row (table-like). */
+export const SkeletonRow: React.FC<{ height?: number; widths?: Array<number | string> }> = ({
+  height = 44, widths = ["32%", "20%", "20%", "12%"],
+}) => (
+  <div style={{
+    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", height,
+    borderBottom: `1px solid ${tokens.SLATE_100}`,
+  }}>
+    {widths.map((w, i) => (
+      <Skeleton key={i} width={w} height={12} />
+    ))}
+  </div>
+);
+
+/** Skeleton card. */
+export const SkeletonCard: React.FC<{ height?: number; padded?: boolean }> = ({ height = 140, padded = true }) => (
+  <div style={{
+    height, padding: padded ? 18 : 0, borderRadius: 16,
+    background: "white", border: `1px solid ${tokens.SLATE_200}`,
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  }}>
+    {padded && (
+      <>
+        <Skeleton width="40%" height={12} />
+        <Skeleton width="65%" height={20} style={{ marginTop: 12 }} />
+        <Skeleton width="25%" height={10} style={{ marginTop: 14 }} />
+      </>
+    )}
+  </div>
+);
+
+/** Aurora-orb empty state — no stock illustrations. */
+export const OrbEmptyState: React.FC<{ title: string; body?: string; action?: React.ReactNode; size?: number }> = ({
+  title, body, action, size = 96,
+}) => (
+  <div style={{
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    padding: 36, textAlign: "center",
+    background: "white", borderRadius: 18, border: `1px solid ${tokens.SLATE_200}`,
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  }}>
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: AURORA_GRADIENT,
+      boxShadow: "0 18px 50px rgba(108,74,176,0.22)",
+      marginBottom: 18, position: "relative",
+    }}>
+      <div style={{
+        position: "absolute", inset: 12, borderRadius: "50%",
+        background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.0) 60%)",
+      }} />
+    </div>
+    <h3 style={{
+      margin: 0, fontFamily: tokens.DISPLAY_STACK, fontWeight: 700,
+      fontSize: 18, color: tokens.INK,
+    }}>{title}</h3>
+    {body && (
+      <p style={{
+        marginTop: 8, marginBottom: action ? 16 : 0,
+        color: tokens.SLATE_600, fontSize: 14, maxWidth: 460,
+      }}>{body}</p>
+    )}
+    {action}
+  </div>
+);
+
+/** Inline edit — click to switch a value from display to text input. */
+export const InlineEdit: React.FC<{
+  value: string;
+  onSave: (next: string) => void | Promise<void>;
+  placeholder?: string;
+  multiline?: boolean;
+  displayStyle?: React.CSSProperties;
+}> = ({ value, onSave, placeholder, multiline, displayStyle }) => {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(value);
+  const [busy, setBusy] = React.useState(false);
+  React.useEffect(() => { setDraft(value); }, [value]);
+
+  const commit = async () => {
+    if (draft === value) { setEditing(false); return; }
+    setBusy(true);
+    try { await onSave(draft); setEditing(false); }
+    catch { /* keep editing on failure */ }
+    finally { setBusy(false); }
+  };
+
+  if (editing) {
+    if (multiline) {
+      return (
+        <Textarea
+          autoFocus value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={() => void commit()}
+          onKeyDown={e => { if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+          disabled={busy} placeholder={placeholder}
+        />
+      );
+    }
+    return (
+      <Input
+        autoFocus value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={e => {
+          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void commit(); }
+          else if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+        disabled={busy} placeholder={placeholder}
+      />
+    );
+  }
+  return (
+    <span
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+      style={{
+        cursor: "text", padding: "2px 6px", margin: "-2px -6px",
+        borderRadius: 6, transition: "background 120ms ease",
+        display: "inline-block", ...displayStyle,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = tokens.SLATE_100)}
+      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+    >
+      {value || <span style={{ color: tokens.SLATE_400 }}>{placeholder || "—"}</span>}
+    </span>
+  );
+};
+
 // Inject a single shared keyframes block once.
 if (typeof document !== "undefined" && !document.getElementById("lumi-skeleton-keyframes")) {
   const style = document.createElement("style");
