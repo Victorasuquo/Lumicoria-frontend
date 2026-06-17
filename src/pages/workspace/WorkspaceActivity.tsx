@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { analyticsV2Api, type ActivityRow } from "@/services/workspaceApi";
 import {
-  GlassCard, SectionHeader, Button, Input, EmptyState, Skeleton, BrandPill,
+  GlassCard, SectionHeader, Button, Input, BrandPill,
+  Toolbar, SkeletonRow, OrbEmptyState,
 } from "@/components/workspace/primitives";
-import { tokens } from "@/components/workspace/tokens";
+import { tokens, STAGGER_FAST } from "@/components/workspace/tokens";
+import { motion } from "framer-motion";
 
 export const WorkspaceActivity: React.FC = () => {
   const { activeOrgId, activeOrg } = useWorkspace();
@@ -33,12 +35,12 @@ export const WorkspaceActivity: React.FC = () => {
         eyebrow="Activity"
         title={`What's happening in ${activeOrg?.name || "this workspace"}`}
         subtitle="A streaming view of recent events. Org admins see everything; members see their own resources."
-        right={
-          <div style={{ display: "flex", gap: 10 }}>
-            <Input value={filterType} onChange={e => setFilterType(e.target.value)} placeholder="filter by activity type" onKeyDown={e => e.key === "Enter" && load()} style={{ width: 240 }} />
-            <Button tone="outline" onClick={load}>Refresh</Button>
-          </div>
-        }
+      />
+
+      <Toolbar
+        left={<Input value={filterType} onChange={e => setFilterType(e.target.value)} placeholder="Filter by activity type" onKeyDown={e => e.key === "Enter" && load()} style={{ width: 280 }} />}
+        center={<span style={{ fontSize: 12, color: tokens.SLATE_500, fontWeight: 600 }}>{rows.length} {rows.length === 1 ? "event" : "events"}</span>}
+        right={<Button tone="outline" onClick={load}>Refresh</Button>}
       />
 
       {accessDenied ? (
@@ -51,11 +53,11 @@ export const WorkspaceActivity: React.FC = () => {
       ) : (
         <GlassCard padding={6}>
           {loading ? (
-            <div style={{ padding: 24 }}><Skeleton height={20} /><Skeleton height={20} style={{ marginTop: 10 }} /></div>
+            <>{Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} widths={["72px", "36%", "20%", "14%"]} />)}</>
           ) : rows.length === 0 ? (
-            <div style={{ padding: 24 }}><EmptyState title="Nothing here yet" body="Once activity starts flowing in this workspace, it will show up live." /></div>
+            <div style={{ padding: 24 }}><OrbEmptyState title="Nothing here yet" body="Once activity starts flowing in this workspace, it will show up live." /></div>
           ) : rows.map((r, idx) => (
-            <div key={r.id || idx} style={{
+            <motion.div key={r.id || idx} {...STAGGER_FAST(idx)} style={{
               display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 14, alignItems: "center",
               padding: "10px 18px",
               borderBottom: idx < rows.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
@@ -72,7 +74,7 @@ export const WorkspaceActivity: React.FC = () => {
                 </div>
               </div>
               <span style={{ fontSize: 11, color: tokens.SLATE_500 }}>{r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</span>
-            </div>
+            </motion.div>
           ))}
         </GlassCard>
       )}

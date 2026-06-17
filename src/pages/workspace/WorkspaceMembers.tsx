@@ -3,9 +3,10 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { organizationApi } from "@/services/api";
 import {
   GlassCard, SectionHeader, Button, Input, RoleChip,
-  EmptyState, Skeleton,
+  Toolbar, SkeletonRow, OrbEmptyState,
 } from "@/components/workspace/primitives";
-import { tokens } from "@/components/workspace/tokens";
+import { tokens, STAGGER_FAST } from "@/components/workspace/tokens";
+import { motion } from "framer-motion";
 import InviteDialog from "@/components/workspace/InviteDialog";
 import MemberAvatarEditable from "@/components/workspace/MemberAvatarEditable";
 import { toast } from "sonner";
@@ -56,25 +57,27 @@ export const WorkspaceMembers: React.FC = () => {
         eyebrow="Members"
         title={`Everyone in ${activeOrg?.name || "this workspace"}`}
         subtitle="Full workspace directory. Filter by name or email."
-        right={
-          <div style={{ display: "flex", gap: 8 }}>
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members" style={{ width: 280 }} />
-            <Button tone="primary" onClick={() => setInviteOpen(true)}>+ Invite</Button>
-          </div>
-        }
+      />
+
+      <Toolbar
+        left={<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members" style={{ width: 320 }} />}
+        center={<span style={{ fontSize: 12, color: tokens.SLATE_500, fontWeight: 600 }}>{filtered.length} {filtered.length === 1 ? "member" : "members"}</span>}
+        right={<Button tone="primary" onClick={() => setInviteOpen(true)}>+ Invite</Button>}
       />
 
       {loading ? (
-        <GlassCard padding={20}><Skeleton height={20} /><Skeleton height={20} style={{ marginTop: 10 }} /></GlassCard>
+        <GlassCard padding={6}>
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} widths={["36px", "32%", "22%", "16%"]} />)}
+        </GlassCard>
       ) : filtered.length === 0 ? (
-        <EmptyState title="No members yet" body="Invite the rest of your team from the Organization screen." />
+        <OrbEmptyState title="No members yet" body="Invite the rest of your team to start collaborating." action={<Button onClick={() => setInviteOpen(true)}>Invite</Button>} />
       ) : (
         <GlassCard padding={6}>
           {filtered.map((m, idx) => {
             const name = m.full_name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || m.email || "Member";
             const avatar = m.profile_picture || m.avatar_url || null;
             return (
-              <div key={m.id || m.user_id || idx} style={{
+              <motion.div key={m.id || m.user_id || idx} {...STAGGER_FAST(idx)} style={{
                 display: "grid", gridTemplateColumns: "auto 1fr auto auto", gap: 14, alignItems: "center",
                 padding: "12px 18px",
                 borderBottom: idx < filtered.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
@@ -99,7 +102,7 @@ export const WorkspaceMembers: React.FC = () => {
                 <span style={{ fontSize: 12, color: tokens.SLATE_500 }}>
                   {m.created_at ? `Joined ${new Date(m.created_at).toLocaleDateString()}` : ""}
                 </span>
-              </div>
+              </motion.div>
             );
           })}
         </GlassCard>

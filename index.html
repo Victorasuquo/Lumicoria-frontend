@@ -3,39 +3,226 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lumicoria.ai - AI Agent Universe for Productivity & Well-being</title>
-    <meta name="description" content="Transform your productivity and well-being with Lumicoria.ai's AI Agent Universe. Automate document processing, manage tasks, and maintain work-life balance with intelligent AI agents." />
-    <meta name="author" content="Lumicoria.ai" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Primary SEO -->
+    <title>Lumicoria AI — AI Agent Universe for Teams, Productivity & Wellbeing</title>
+    <meta name="description" content="Lumicoria AI is the AI Agent Universe — a multi-tenant workspace where teams collaborate with specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing. Enterprise SSO, SCIM, data residency, BYOK." />
+    <meta name="author" content="Lumicoria AI" />
+    <meta name="application-name" content="Lumicoria AI" />
+    <meta name="generator" content="Lumicoria AI" />
+    <meta name="rating" content="general" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="revisit-after" content="3 days" />
+
+    <!-- Comprehensive keyword target across "AI agent platform" intent clusters -->
+    <meta name="keywords" content="AI agents, AI agent platform, AI productivity tools, AI for teams, AI workspace, AI assistant, multi-agent system, custom AI agents, AI agent builder, enterprise AI platform, AI productivity software, AI collaboration tool, AI for SMB, AI for startups, AI document processing, AI meeting assistant, AI workflow automation, AI knowledge base, RAG platform, vector search, Gemini agent, Claude agent, GPT agent, AI wellbeing, Lumicoria, Lumicoria AI, AI Agent Universe, AI teams, AI tasks, AI orchestration, AI agent marketplace, team productivity AI, work-life balance AI, AI burnout prevention" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://lumicoria.ai/" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Lumicoria.ai - AI Agent Universe" />
-    <meta property="og:description" content="Transform your productivity and well-being with AI agents that automate document processing, manage tasks, and support your work-life balance." />
-    <meta property="og:image" content="/images/lumicoria-og.png" />
+    <meta property="og:site_name" content="Lumicoria AI" />
+    <meta property="og:title" content="Lumicoria AI — AI Agent Universe for Teams" />
+    <meta property="og:description" content="Specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing — wired into a multi-tenant workspace with SSO, SCIM, BYOK and data residency." />
+    <meta property="og:image" content="https://lumicoria.ai/images/lumicoria-og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Lumicoria AI — AI Agent Universe" />
+    <meta property="og:url" content="https://lumicoria.ai/" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Lumicoria.ai - AI Agent Universe" />
-    <meta name="twitter:description" content="Transform your productivity and well-being with AI agents that automate document processing, manage tasks, and support your work-life balance." />
-    <meta name="twitter:image" content="/images/lumicoria-og.png" />
+    <meta name="twitter:site" content="@lumicoria_ai" />
+    <meta name="twitter:creator" content="@lumicoria_ai" />
+    <meta name="twitter:title" content="Lumicoria AI — AI Agent Universe for Teams" />
+    <meta name="twitter:description" content="Specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing — wired into a multi-tenant workspace with SSO, SCIM, BYOK and data residency." />
+    <meta name="twitter:image" content="https://lumicoria.ai/images/lumicoria-og.png" />
+    <meta name="twitter:image:alt" content="Lumicoria AI — AI Agent Universe" />
 
-    <!-- Favicon — multiple formats for maximum compatibility -->
+    <!-- Geo / business signals -->
+    <meta name="geo.region" content="US" />
+    <meta name="geo.placename" content="San Francisco" />
+
+    <!-- Google Search Console verification — replace the token after adding the site -->
+    <meta name="google-site-verification" content="REPLACE_WITH_TOKEN_FROM_SEARCH_CONSOLE" />
+
+    <!-- Bing Webmaster verification — replace if you register Bing too -->
+    <meta name="msvalidate.01" content="REPLACE_WITH_BING_VERIFICATION" />
+
+    <!-- Favicons + manifest -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/favicon.ico" color="#4F46E5" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Theme Color -->
+    <!-- Theme + UI hints -->
     <meta name="theme-color" content="#4F46E5" />
+    <meta name="msapplication-TileColor" content="#4F46E5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Lumicoria AI" />
 
-    <!-- Premium Typography: Inter + DM Sans -->
+    <!-- Performance hints — preconnect to origins we hit on every page -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..400&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://api.lumicoria.ai" crossorigin />
+    <link rel="dns-prefetch" href="https://api.lumicoria.ai" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://firebaseapp.com" />
+
+    <!-- Sitemap discovery for crawlers that respect <link> -->
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+    <!-- Premium Typography: Inter + DM Sans + Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..400&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- JSON-LD: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Lumicoria AI",
+      "alternateName": ["Lumicoria", "Lumicoria.ai"],
+      "url": "https://lumicoria.ai",
+      "logo": "https://lumicoria.ai/icon-512.png",
+      "email": "hello@lumicoria.ai",
+      "foundingDate": "2025",
+      "description": "Lumicoria AI is the AI Agent Universe — a multi-tenant workspace platform where teams collaborate with specialised AI agents (document, meeting, research, vision, creative, wellbeing) to ship work faster.",
+      "sameAs": [
+        "https://twitter.com/lumicoria_ai",
+        "https://www.linkedin.com/company/lumicoria-ai",
+        "https://github.com/Lumicoria-AI"
+      ]
+    }
+    </script>
+
+    <!-- JSON-LD: WebSite + SearchAction (sitelinks search box) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Lumicoria AI",
+      "url": "https://lumicoria.ai",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://lumicoria.ai/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Lumicoria AI",
+      "applicationCategory": "BusinessApplication",
+      "applicationSubCategory": "ProductivitySoftware",
+      "operatingSystem": "Web, Cloud",
+      "description": "Lumicoria AI is an AI agent platform that gives teams specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing — with enterprise SSO, SCIM, BYOK and data residency.",
+      "url": "https://lumicoria.ai",
+      "image": "https://lumicoria.ai/images/lumicoria-og.png",
+      "offers": [
+        { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Team", "price": "39", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Business", "price": "79", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Enterprise", "price": "129", "priceCurrency": "USD" }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "120"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Lumicoria AI",
+        "url": "https://lumicoria.ai",
+        "logo": "https://lumicoria.ai/icon-512.png"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: FAQPage (home — short, high-intent buyer questions) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Lumicoria AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Lumicoria AI is an AI agent platform built for teams. It ships specialised AI agents (document, meeting, research, vision, creative, wellbeing) inside a multi-tenant workspace with SSO, SCIM, BYOK and data residency, so teams can collaborate with AI on real work — not just chat."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is Lumicoria different from ChatGPT or Claude?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ChatGPT and Claude are single AI assistants. Lumicoria is a multi-agent platform: specialised agents grounded in your team's documents, meeting transcripts, and integrations. Each agent has scoped permissions, runs inside your workspace, and human-in-the-loop approval is baked into every long-running task."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I build my own AI agents on Lumicoria?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes — Agent Studio lets you build custom agents visually: pick a trigger, chain LLM steps, retrieve from your knowledge base, call external tools through MCP, and save versioned eval runs. No code required for most cases."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does Lumicoria cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Free for personal use with monthly run limits. Team is $39 per seat per month, Business is $79, Enterprise is $129. Annual billing gets a 15% discount. Enterprise includes SSO, SCIM, data residency, BYOK and dedicated support."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Lumicoria secure and compliant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Lumicoria supports SAML SSO, SCIM 2.0 provisioning, region-pinned data residency (US, EU, IN), customer-managed encryption keys via BYOK, full audit log export and SIEM forwarding. SOC 2 in progress, HIPAA BAA on request."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Google Analytics 4 — replace the ID after creating a GA4 property -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX', {
+        send_page_view: false
+      });
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui, sans-serif; padding: 24px; text-align: center;">
+        Lumicoria AI requires JavaScript to run. Please enable JavaScript in your browser settings, or read more at <a href="https://lumicoria.ai/about">https://lumicoria.ai/about</a>.
+      </p>
+    </noscript>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

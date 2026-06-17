@@ -5,9 +5,9 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { teamApi, type Team } from "@/services/workspaceApi";
 import {
   GlassCard, SectionHeader, BrandPill, Button, Input, Textarea,
-  MemberStack, EmptyState, Skeleton,
+  MemberStack, Toolbar, CardGrid, SkeletonCard, OrbEmptyState,
 } from "@/components/workspace/primitives";
-import { tokens, BRAND_GRADIENT, STAGGER, initials } from "@/components/workspace/tokens";
+import { tokens, BRAND_GRADIENT, STAGGER_FAST, HOVER_LIFT, initials } from "@/components/workspace/tokens";
 
 const CreateTeamPanel: React.FC<{ orgId: string; onCreated: (team: Team) => void; onClose: () => void }> = ({ orgId, onCreated, onClose }) => {
   const [name, setName] = useState("");
@@ -111,12 +111,12 @@ export const TeamsList: React.FC = () => {
         eyebrow="Teams"
         title="Teams in this workspace"
         subtitle="Department-style groupings. Each team carries its own projects, agents, and analytics."
-        right={
-          <div style={{ display: "flex", gap: 10 }}>
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams" style={{ width: 220 }} />
-            <Button tone="primary" onClick={() => setShowCreate(true)}>New team</Button>
-          </div>
-        }
+      />
+
+      <Toolbar
+        left={<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams" style={{ width: 280 }} />}
+        center={<span style={{ fontSize: 12, color: tokens.SLATE_500, fontWeight: 600 }}>{filtered.length} {filtered.length === 1 ? "team" : "teams"}</span>}
+        right={<Button tone="primary" onClick={() => setShowCreate(true)}>New team</Button>}
       />
 
       {showCreate && (
@@ -128,17 +128,19 @@ export const TeamsList: React.FC = () => {
       )}
 
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <GlassCard key={i} padding={20}><Skeleton height={20} /><Skeleton height={14} style={{ marginTop: 10 }} /><Skeleton height={14} style={{ marginTop: 6 }} /></GlassCard>
-          ))}
-        </div>
+        <CardGrid minCol={280}>
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} height={220} />)}
+        </CardGrid>
       ) : filtered.length === 0 ? (
-        <EmptyState title="No teams yet" body="Create your first team to group people, projects, and agents." action={<Button onClick={() => setShowCreate(true)}>Create team</Button>} />
+        <OrbEmptyState
+          title="No teams yet"
+          body="Create your first team to group people, projects, and agents."
+          action={<Button onClick={() => setShowCreate(true)}>Create team</Button>}
+        />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+        <CardGrid minCol={280}>
           {filtered.map((t, i) => (
-            <motion.div key={t.id} {...STAGGER(i)}>
+            <motion.div key={t.id} {...STAGGER_FAST(i)} {...HOVER_LIFT}>
               <GlassCard
                 padding={0}
                 onClick={() => navigate(`/workspace/teams/${t.id}`)}

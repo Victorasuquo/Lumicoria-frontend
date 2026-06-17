@@ -2118,6 +2118,99 @@ export const focusFlowApi = {
   },
 };
 
+export const creativeApi = {
+  generate: async (data: any): Promise<any> => {
+    const response = await api.post('/creative/generate', data);
+    return response.data;
+  },
+  generateMarketing: async (data: any): Promise<any> => {
+    const response = await api.post('/creative/marketing', data);
+    return response.data;
+  },
+  generateStory: async (data: any): Promise<any> => {
+    const response = await api.post('/creative/story', data);
+    return response.data;
+  },
+  generateBlog: async (data: any): Promise<any> => {
+    const response = await api.post('/creative/blog', data);
+    return response.data;
+  },
+  generateSocialMedia: async (data: any): Promise<any> => {
+    const response = await api.post('/creative/social-media', data);
+    return response.data;
+  },
+};
+
+export const translationApi = {
+  translate: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate', data);
+    return response.data;
+  },
+  translateDocument: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate/document', data);
+    return response.data;
+  },
+  translateConversation: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate/conversation', data);
+    return response.data;
+  },
+  adaptCulturally: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate/cultural', data);
+    return response.data;
+  },
+  translateTechnical: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate/technical', data);
+    return response.data;
+  },
+  translateLiterary: async (data: any): Promise<any> => {
+    const response = await api.post('/translation/translate/literary', data);
+    return response.data;
+  },
+  getLanguages: async (): Promise<Array<Record<string, any>>> => {
+    const response = await api.get('/translation/languages');
+    return response.data;
+  },
+  getAnalytics: async (timeRange = '7d'): Promise<any> => {
+    const response = await api.get('/translation/analytics', { params: { time_range: timeRange } });
+    return response.data;
+  },
+};
+
+export const socialMediaApi = {
+  analyze: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/analyze', data);
+    return response.data;
+  },
+  analyzeContent: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/analyze/content', data);
+    return response.data;
+  },
+  analyzeTrends: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/analyze/trends', data);
+    return response.data;
+  },
+  analyzeSentiment: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/analyze/sentiment', data);
+    return response.data;
+  },
+  generateContent: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/generate/content', data);
+    return response.data;
+  },
+  analyzeEngagement: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/analyze/engagement', data);
+    return response.data;
+  },
+  optimizeSchedule: async (data: any): Promise<any> => {
+    const response = await api.post('/social-media/optimize/schedule', data);
+    return response.data;
+  },
+  getAnalytics: async (timeRange = '7d'): Promise<any> => {
+    const response = await api.get('/social-media/analytics', { params: { time_range: timeRange } });
+    return response.data;
+  },
+};
+
 // ─── Meeting Fact Checker API ───────────────────────────────────────────────
 
 export interface FactCheckSessionItem {

@@ -9,6 +9,8 @@ import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from 'lucide-react';
+import { SEO } from "@/components/SEO";
+import { KEYWORDS } from "@/lib/seo";
 
 const Index = () => {
   // For scroll animations
@@ -38,6 +40,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Lumicoria AI — AI Agent Universe for Teams, Productivity & Wellbeing"
+        description="Specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing — inside a multi-tenant workspace with SSO, SCIM, BYOK and data residency. Start free, scale with your team."
+        canonical="/"
+        keywords={[...KEYWORDS.byPage.home, ...KEYWORDS.global]}
+      />
       <Hero />
       <Features />
       <AgentsUniverse />

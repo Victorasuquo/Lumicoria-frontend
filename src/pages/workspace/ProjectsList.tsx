@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { projectV2Api, teamApi, type ProjectV2, type Team } from "@/services/workspaceApi";
 import {
-  GlassCard, SectionHeader, Button, Input, Textarea, AgentChip, MemberStack, EmptyState, Skeleton, BrandPill,
+  GlassCard, SectionHeader, Button, Input, Textarea, AgentChip, MemberStack, BrandPill,
+  Toolbar, FilterChips, CardGrid, SkeletonCard, OrbEmptyState,
 } from "@/components/workspace/primitives";
-import { tokens, BRAND_GRADIENT, STAGGER, initials } from "@/components/workspace/tokens";
+import { tokens, BRAND_GRADIENT, STAGGER_FAST, HOVER_LIFT, initials } from "@/components/workspace/tokens";
 
 const STATUS_TONES: Record<string, { bg: string; color: string }> = {
   planning: { bg: `${tokens.SKY}1A`, color: tokens.SKY },
@@ -150,7 +151,18 @@ export const ProjectsList: React.FC = () => {
 
   if (!activeOrgId) return null;
 
-  const statuses = ["all", "planning", "active", "blocked", "completed", "archived"];
+  const statusOptions = useMemo(() => {
+    const counts: Record<string, number> = { all: projects.length };
+    for (const p of projects) counts[p.status] = (counts[p.status] || 0) + 1;
+    return [
+      { id: "all", label: "All", count: counts.all },
+      { id: "planning", label: "Planning", count: counts.planning },
+      { id: "active", label: "Active", count: counts.active },
+      { id: "blocked", label: "Blocked", count: counts.blocked },
+      { id: "completed", label: "Completed", count: counts.completed },
+      { id: "archived", label: "Archived", count: counts.archived },
+    ];
+  }, [projects]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -158,24 +170,13 @@ export const ProjectsList: React.FC = () => {
         eyebrow="Projects"
         title="Projects in this workspace"
         subtitle="Each project owns its tasks, documents, and agents. Strict mode and visibility are governed at the project level."
-        right={
-          <div style={{ display: "flex", gap: 10 }}>
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects" style={{ width: 240 }} />
-            <Button tone="primary" onClick={() => setShowCreate(true)}>New project</Button>
-          </div>
-        }
       />
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {statuses.map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} style={{
-            padding: "6px 14px", borderRadius: 9999, fontSize: 12, fontWeight: 600,
-            background: statusFilter === s ? BRAND_GRADIENT : "rgba(255,255,255,0.6)",
-            color: statusFilter === s ? "white" : tokens.SLATE_600,
-            border: `1px solid ${tokens.SLATE_200}`, cursor: "pointer",
-          }}>{s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}</button>
-        ))}
-      </div>
+      <Toolbar
+        left={<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects" style={{ width: 280 }} />}
+        center={<FilterChips options={statusOptions} value={statusFilter} onChange={v => setStatusFilter(typeof v === "string" ? v : "all")} />}
+        right={<Button tone="primary" onClick={() => setShowCreate(true)}>New project</Button>}
+      />
 
       {showCreate && (
         <CreateProjectPanel
@@ -188,19 +189,21 @@ export const ProjectsList: React.FC = () => {
       )}
 
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <GlassCard key={i} padding={20}><Skeleton height={20} /><Skeleton height={14} style={{ marginTop: 10 }} /><Skeleton height={14} style={{ marginTop: 6 }} /></GlassCard>
-          ))}
-        </div>
+        <CardGrid minCol={280}>
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} height={220} />)}
+        </CardGrid>
       ) : filtered.length === 0 ? (
-        <EmptyState title="No projects match" body="Try a different filter or create a new project." action={<Button onClick={() => setShowCreate(true)}>Create project</Button>} />
+        <OrbEmptyState
+          title="No projects match"
+          body="Try a different filter or create a new project."
+          action={<Button onClick={() => setShowCreate(true)}>Create project</Button>}
+        />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+        <CardGrid minCol={280}>
           {filtered.map((p, i) => {
             const tone = STATUS_TONES[p.status] || STATUS_TONES.planning;
             return (
-              <motion.div key={p.id} {...STAGGER(i)}>
+              <motion.div key={p.id} {...STAGGER_FAST(i)} {...HOVER_LIFT}>
                 <GlassCard
                   padding={0}
                   onClick={() => navigate(`/workspace/projects/${p.id}`)}
@@ -259,7 +262,7 @@ export const ProjectsList: React.FC = () => {
               </motion.div>
             );
           })}
-        </div>
+        </CardGrid>
       )}
     </div>
   );

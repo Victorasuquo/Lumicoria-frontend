@@ -1,7 +1,29 @@
+# Lumicoria AI — robots.txt
+# https://lumicoria.ai
+
+# Allow all reputable crawlers to index every public page.
 User-agent: Googlebot
 Allow: /
 
+User-agent: Googlebot-Image
+Allow: /
+
 User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+User-agent: Applebot
 Allow: /
 
 User-agent: Twitterbot
@@ -10,5 +32,56 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+# Allow modern AI / answer-engine crawlers — these power citation snippets.
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# Default — index public surface, keep signed-in / API routes out of SERPs.
 User-agent: *
 Allow: /
+Disallow: /workspace/
+Disallow: /admin/
+Disallow: /onboarding
+Disallow: /dashboard
+Disallow: /chat
+Disallow: /documents
+Disallow: /profile
+Disallow: /settings
+Disallow: /billing
+Disallow: /security
+Disallow: /projects
+Disallow: /notifications
+Disallow: /audit
+Disallow: /tasks
+Disallow: /calendar
+Disallow: /invites
+Disallow: /organization
+Disallow: /tenant
+Disallow: /api/
+
+# Sitemap discovery
+Sitemap: https://lumicoria.ai/sitemap.xml
