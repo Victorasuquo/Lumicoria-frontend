@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { tokens, BRAND_GRADIENT, initials } from "./tokens";
 import { GlassCard, PlanBadge, SeatCounter, Skeleton } from "./primitives";
+import LiveNowIndicator from "@/components/huddle/LiveNowIndicator";
 import { teamApi, projectV2Api, type Team, type ProjectV2 } from "@/services/workspaceApi";
 import { resolveAvatarUrl } from "@/services/api";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -169,6 +170,8 @@ export const WorkspaceLayout: React.FC = () => {
                 <SeatCounter used={seatsUsed} purchased={seatsPurchased} style={{ width: "100%", justifyContent: "space-between" }} />
               </div>
             )}
+
+            <LiveNowIndicator />
 
             <SidebarSection title="Overview">
               <NavLink to="/workspace" end style={({ isActive }) => navLinkStyle(isActive)}>Home</NavLink>

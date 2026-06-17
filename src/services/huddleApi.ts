@@ -246,4 +246,16 @@ export const huddleApi = {
     const { data } = await api.get<RecordingPlayback>(`/huddles/${huddleId}/recording`);
     return data;
   },
+
+  exportToCalendar: async (
+    huddleId: string,
+    input: { attendees?: string[]; description?: string; calendar_id?: string },
+  ): Promise<{ ok: boolean; share_url: string; event?: any; error?: string }> => {
+    const { data } = await api.post(`/huddles/${huddleId}/calendar-export`, {
+      attendees: input.attendees || [],
+      description: input.description,
+      calendar_id: input.calendar_id || "primary",
+    });
+    return data;
+  },
 };

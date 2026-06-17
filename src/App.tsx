@@ -97,6 +97,7 @@ const MeetingAssistant = lazy(() => import("./pages/agents/MeetingAssistant"));
 const MeetingFactChecker = lazy(() => import("./pages/agents/MeetingFactChecker"));
 const MeetingRoom = lazy(() => import("./pages/agents/MeetingRoom"));
 const HuddleLobby = lazy(() => import("./pages/agents/HuddleLobby"));
+const HuddleSchedule = lazy(() => import("./pages/agents/HuddleSchedule"));
 const VisionAgent = lazy(() => import("./pages/agents/VisionAgent"));
 const ResearchAgent = lazy(() => import("./pages/agents/ResearchAgent"));
 const ResearchMentor = lazy(() => import("./pages/agents/ResearchMentor"));
@@ -265,6 +266,7 @@ const AppRoutes = () => {
         <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />
         <Route path="/agents/meeting" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingAssistant /></Suspense></ProtectedRoute>} />
         <Route path="/agents/meeting/room/:huddleId" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingRoom /></Suspense></ProtectedRoute>} />
+        <Route path="/huddles/schedule" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><HuddleSchedule /></Suspense></ProtectedRoute>} />
         <Route path="/huddles/join/:shareToken" element={<Suspense fallback={<AgentPageFallback />}><HuddleLobby /></Suspense>} />
         <Route path="/agents/meeting-fact-checker" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingFactChecker /></Suspense></ProtectedRoute>} />
         <Route path="/agents/vision" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><VisionAgent /></Suspense></ProtectedRoute>} />

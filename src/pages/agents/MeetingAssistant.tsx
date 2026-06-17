@@ -282,14 +282,23 @@ const MeetingAssistant: React.FC = () => {
               Spin up a live room with built-in AI notetaking, action-item extraction, and recording. Share a link, no installs needed.
             </p>
           </div>
-          <Button
-            onClick={startInstantHuddle}
-            disabled={startingHuddle}
-            className="bg-white text-purple-700 hover:bg-purple-50 font-semibold"
-          >
-            {startingHuddle ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Video size={14} className="mr-1.5" />}
-            {startingHuddle ? "Starting…" : "Start meeting"}
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => navigate("/huddles/schedule")}
+              variant="outline"
+              className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+            >
+              <Calendar size={14} className="mr-1.5" /> Schedule
+            </Button>
+            <Button
+              onClick={startInstantHuddle}
+              disabled={startingHuddle}
+              className="bg-white text-purple-700 hover:bg-purple-50 font-semibold"
+            >
+              {startingHuddle ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Video size={14} className="mr-1.5" />}
+              {startingHuddle ? "Starting…" : "Start meeting"}
+            </Button>
+          </div>
         </div>
       </div>
 

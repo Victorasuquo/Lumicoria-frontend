@@ -12,6 +12,7 @@ import {
 } from "@/components/workspace/primitives";
 import { tokens, BRAND_GRADIENT, FADE_UP, initials, planLabel } from "@/components/workspace/tokens";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import TeamHuddleButton from "@/components/team/TeamHuddleButton";
 import MemberRowActions from "@/components/workspace/MemberRowActions";
 import AvatarUpload from "@/components/workspace/AvatarUpload";
 import CoverUpload from "@/components/workspace/CoverUpload";
@@ -143,7 +144,8 @@ export const TeamDetail: React.FC = () => {
                 <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.4)" }}>{team.description}</p>
               )}
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <TeamHuddleButton teamId={team.id} teamName={team.name} />
               <Button tone="outline" size="sm" onClick={() => navigate(`/workspace/projects/new?team=${team.id}`)}>New project</Button>
               <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
             </div>

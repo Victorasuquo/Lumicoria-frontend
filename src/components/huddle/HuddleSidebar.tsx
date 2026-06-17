@@ -4,18 +4,20 @@
  * Tabs: Transcript · Agents · Participants · Invite · Settings
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bot, MessageSquare, Users, Mic, MicOff, Share2, Settings as SettingsIcon,
+  Bot, MessageSquare, Users, Sparkles, Share2, Settings as SettingsIcon,
   Circle, StopCircle, PhoneOff, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { huddleApi, type Huddle, type HuddleParticipant, type HuddleTranscriptChunk } from "@/services/huddleApi";
 import { useHuddleRecorder } from "@/hooks/useHuddleRecorder";
+import { useHuddleWebSocket } from "@/hooks/useHuddleWebSocket";
 import InvitePanel from "./InvitePanel";
+import AgentLivePanel from "./AgentLivePanel";
 
-type TabKey = "transcript" | "agents" | "participants" | "invite" | "settings";
+type TabKey = "transcript" | "agents" | "live" | "participants" | "invite" | "settings";
 
 interface HuddleSidebarProps {
   huddle: Huddle;
@@ -35,42 +37,34 @@ const AGENT_CATALOG: Array<{ key: string; label: string; desc: string }> = [
 ];
 
 export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, onEnded, liveTranscript }) => {
-  const [tab, setTab] = useState<TabKey>("transcript");
-  const [chunks, setChunks] = useState<HuddleTranscriptChunk[]>([]);
-  const [participants, setParticipants] = useState<HuddleParticipant[]>([]);
+  const [tab, setTab] = useState<TabKey>("live");
+  const [initialChunks, setInitialChunks] = useState<HuddleTranscriptChunk[]>([]);
   const [agentsAttached, setAgentsAttached] = useState<string[]>(huddle.agent_keys || []);
   const [ending, setEnding] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   const recorder = useHuddleRecorder({
     huddleId: huddle.id,
     includeMicrophone: true,
-    onFinished: (r) => {
-      if (r.playback_url) {
-        // Toast handled by caller
-      }
-    },
   });
 
-  // Poll for new chunks + participants every 5s.
+  const ws = useHuddleWebSocket({ huddleId: huddle.id });
+
+  // One-shot initial fetch — WS delivers everything new after.
   useEffect(() => {
-    const fetchOnce = async () => {
-      try {
-        const [t, p] = await Promise.all([
-          huddleApi.getTranscript(huddle.id),
-          fetch(`/api/v1/huddles/${huddle.id}/participants`, { credentials: "include" })
-            .then((r) => (r.ok ? r.json() : { items: [] }))
-            .catch(() => ({ items: [] })),
-        ]);
-        setChunks(t.chunks);
-        if (Array.isArray(p?.items)) setParticipants(p.items);
-      } catch { /* */ }
-    };
-    fetchOnce();
-    pollRef.current = setInterval(fetchOnce, 5000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    huddleApi.getTranscript(huddle.id).then((t) => setInitialChunks(t.chunks)).catch(() => {});
   }, [huddle.id]);
+
+  // Stitch initial chunks + WS chunks together, dedupe by id.
+  const chunks = useMemo<HuddleTranscriptChunk[]>(() => {
+    const map = new Map<string, HuddleTranscriptChunk>();
+    for (const c of initialChunks) map.set(c.id, c as HuddleTranscriptChunk);
+    for (const c of ws.chunks) {
+      // Cast: WS chunk shape lacks agent_responses (added when persisted) — fine for display.
+      map.set(c.id, c as unknown as HuddleTranscriptChunk);
+    }
+    return Array.from(map.values()).sort((a, b) => a.ts.localeCompare(b.ts));
+  }, [initialChunks, ws.chunks]);
 
   // Auto-scroll transcript to bottom on update
   useEffect(() => {
@@ -108,9 +102,15 @@ export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, on
     }
   };
 
+  // Participants come from WS push (joined/left events). Fall back to
+  // the initial roster baked into the huddle prop's host etc. is fine —
+  // the WS will catch us up to current.
+  const participants: HuddleParticipant[] = ws.participants as HuddleParticipant[];
+
   const tabs: Array<{ id: TabKey; label: string; icon: React.ElementType }> = [
+    { id: "live", label: "AI", icon: Sparkles },
     { id: "transcript", label: "Transcript", icon: MessageSquare },
-    { id: "agents", label: "Agents", icon: Bot },
+    { id: "agents", label: "Add", icon: Bot },
     { id: "participants", label: "People", icon: Users },
     { id: "invite", label: "Invite", icon: Share2 },
     { id: "settings", label: "Settings", icon: SettingsIcon },
@@ -147,6 +147,14 @@ export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, on
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-4">
+        {tab === "live" && (
+          <AgentLivePanel
+            agentsAttached={agentsAttached}
+            agentResponses={ws.agentResponses}
+            connected={ws.connected}
+          />
+        )}
+
         {tab === "transcript" && (
           <div className="flex flex-col gap-2">
             {chunks.length === 0 && !liveTranscript ? (

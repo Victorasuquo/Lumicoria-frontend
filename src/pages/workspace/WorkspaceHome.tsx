@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Pin, Clock, Star, Pin as PinIcon, Bell, Zap } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   teamApi,
   projectV2Api,
   analyticsV2Api,
   agentsV2Api,
+  workspaceApi,
   type Team,
   type ProjectV2,
   type AnalyticsOverview,
@@ -14,12 +16,24 @@ import {
 } from "@/services/workspaceApi";
 import {
   GlassCard, BrandPill, SectionHeader, MemberStack, AgentChip, RoleChip,
-  Button, EmptyState, Skeleton, PlanBadge,
+  Button, EmptyState, Skeleton, PlanBadge, CardGrid, OrbEmptyState,
 } from "@/components/workspace/primitives";
-import { tokens, BRAND_GRADIENT, FADE_UP, STAGGER, initials } from "@/components/workspace/tokens";
+import { tokens, BRAND_GRADIENT, FADE_UP, STAGGER, STAGGER_FAST, initials } from "@/components/workspace/tokens";
 import InviteDialog from "@/components/workspace/InviteDialog";
 import { TrendLineChart } from "@/components/charts";
 import { toast } from "sonner";
+
+interface PinRow { id: string; resource_type: string; resource_id: string; label?: string }
+interface RecentRow { resource_type: string; resource_id: string; label?: string; touched_at?: string }
+interface QuickAction { id: string; label: string; href?: string; icon?: string }
+
+const RESOURCE_HREF: Record<string, (id: string) => string> = {
+  team: id => `/workspace/teams/${id}`,
+  project: id => `/workspace/projects/${id}`,
+  task: id => `/tasks?focus=${id}`,
+  document: id => `/documents?focus=${id}`,
+  agent: id => `/agents/${id}`,
+};
 
 const KpiTile: React.FC<{ label: string; value: string | number; sub?: string; tone?: "default" | "accent"; onClick?: () => void }> = ({ label, value, sub, tone = "default", onClick }) => (
   <GlassCard
@@ -50,6 +64,11 @@ export const WorkspaceHome: React.FC = () => {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [leaderboard, setLeaderboard] = useState<Array<Record<string, unknown>>>([]);
+  const [pinned, setPinned] = useState<PinRow[]>([]);
+  const [recent, setRecent] = useState<RecentRow[]>([]);
+  const [starred, setStarred] = useState<PinRow[]>([]);
+  const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
+  const [unread, setUnread] = useState<{ total?: number; by_category?: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -63,12 +82,28 @@ export const WorkspaceHome: React.FC = () => {
       analyticsV2Api.orgOverview(activeOrgId).catch(() => null),
       analyticsV2Api.orgAuditRecent(activeOrgId, 12).catch(() => []),
       agentsV2Api.leaderboard(activeOrgId, "month", 10).catch(() => []),
-    ]).then(([t, p, ov, ac, lb]) => {
+      workspaceApi.pinned(activeOrgId).catch(() => []),
+      workspaceApi.recent(activeOrgId).catch(() => []),
+      workspaceApi.starred(activeOrgId).catch(() => []),
+      workspaceApi.quickActions(activeOrgId).catch(() => []),
+      workspaceApi.unread(activeOrgId).catch(() => null),
+    ]).then(([t, p, ov, ac, lb, pn, rc, st, qa, un]) => {
       if (cancelled) return;
       setTeams(t); setProjects(p); setOverview(ov); setActivity(ac); setLeaderboard(lb || []);
+      const arr = (v: any) => Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : [];
+      setPinned(arr(pn)); setRecent(arr(rc)); setStarred(arr(st));
+      setQuickActions(arr(qa)); setUnread(un as any);
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [activeOrgId]);
+
+  const goResource = (resource_type: string, resource_id: string) => {
+    const h = RESOURCE_HREF[resource_type]?.(resource_id);
+    if (h) navigate(h);
+    if (activeOrgId) {
+      workspaceApi.touchRecent(activeOrgId, { resource_type, resource_id }).catch(() => {});
+    }
+  };
 
   const completionPct = useMemo(() => {
     if (!overview?.tasks?.completion_rate) return 0;
@@ -190,6 +225,118 @@ export const WorkspaceHome: React.FC = () => {
           </GlassCard>
         )}
       </motion.div>
+
+      {/* Quick actions + Unread center (top strip) */}
+      {(quickActions.length > 0 || unread) && (
+        <CardGrid minCol={260} gap={14}>
+          {quickActions.length > 0 && (
+            <GlassCard padding={18}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Zap size={14} color={tokens.PURPLE} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tokens.SLATE_500 }}>Quick actions</span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {quickActions.slice(0, 6).map((q, i) => (
+                  <button
+                    key={q.id || i}
+                    onClick={() => q.href && navigate(q.href)}
+                    style={{
+                      padding: "8px 14px", borderRadius: 999, cursor: "pointer",
+                      border: `1px solid ${tokens.PURPLE}28`, background: `${tokens.PURPLE}10`,
+                      color: tokens.PURPLE_DEEP, fontWeight: 600, fontSize: 12,
+                    }}
+                  >{q.label}</button>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+          {unread && (
+            <GlassCard padding={18}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <Bell size={14} color={tokens.AMBER} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tokens.SLATE_500 }}>Unread</span>
+              </div>
+              <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 30, fontWeight: 700 }}>{unread.total ?? 0}</div>
+              {unread.by_category && Object.keys(unread.by_category).length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                  {Object.entries(unread.by_category).slice(0, 5).map(([cat, n]) => (
+                    <span key={cat} style={{ padding: "3px 9px", borderRadius: 999, background: tokens.SLATE_100, fontSize: 11, color: tokens.SLATE_700, fontWeight: 600 }}>
+                      {cat} · {n}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+          )}
+        </CardGrid>
+      )}
+
+      {/* Pinned / Recent / Starred rails */}
+      {(pinned.length > 0 || recent.length > 0 || starred.length > 0) && (
+        <CardGrid minCol={300} gap={14}>
+          {pinned.length > 0 && (
+            <GlassCard padding={16}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <PinIcon size={14} color={tokens.PURPLE} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tokens.SLATE_500 }}>Pinned</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {pinned.slice(0, 6).map((p, i) => (
+                  <button key={p.id || i} onClick={() => goResource(p.resource_type, p.resource_id)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", margin: "0 -10px", borderRadius: 10, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", color: tokens.INK, fontSize: 13, fontWeight: 600 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = tokens.SLATE_50)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <span style={{ display: "inline-block", width: 4, height: 4, borderRadius: 999, background: tokens.PURPLE }} />
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label || `${p.resource_type}:${p.resource_id.slice(0, 8)}`}</span>
+                    <span style={{ fontSize: 10, color: tokens.SLATE_500, textTransform: "uppercase", letterSpacing: 0.4 }}>{p.resource_type}</span>
+                  </button>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+          {recent.length > 0 && (
+            <GlassCard padding={16}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Clock size={14} color={tokens.SKY} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tokens.SLATE_500 }}>Recently viewed</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {recent.slice(0, 6).map((r, i) => (
+                  <button key={i} onClick={() => goResource(r.resource_type, r.resource_id)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", margin: "0 -10px", borderRadius: 10, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", color: tokens.INK, fontSize: 13, fontWeight: 600 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = tokens.SLATE_50)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label || `${r.resource_type}:${r.resource_id.slice(0, 8)}`}</span>
+                    <span style={{ fontSize: 10, color: tokens.SLATE_500, textTransform: "uppercase", letterSpacing: 0.4 }}>{r.resource_type}</span>
+                  </button>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+          {starred.length > 0 && (
+            <GlassCard padding={16}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Star size={14} color={tokens.AMBER} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tokens.SLATE_500 }}>Starred</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {starred.slice(0, 6).map((p, i) => (
+                  <button key={p.id || i} onClick={() => goResource(p.resource_type, p.resource_id)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", margin: "0 -10px", borderRadius: 10, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", color: tokens.INK, fontSize: 13, fontWeight: 600 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = tokens.SLATE_50)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <Star size={10} color={tokens.AMBER} fill={tokens.AMBER} />
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label || `${p.resource_type}:${p.resource_id.slice(0, 8)}`}</span>
+                  </button>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+        </CardGrid>
+      )}
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
