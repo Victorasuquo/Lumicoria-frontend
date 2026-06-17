@@ -6,7 +6,7 @@
  * scrolls below).
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loader2, ArrowLeft } from "lucide-react";
 import JitsiEmbed from "@/components/huddle/JitsiEmbed";
@@ -18,7 +18,7 @@ import { useTranscription } from "@/hooks/useTranscription";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
 
-const JITSI_DOMAIN = (import.meta as any).env?.VITE_JITSI_DOMAIN || "meet.jit.si";
+const DEFAULT_JITSI_DOMAIN = (import.meta as any).env?.VITE_JITSI_DOMAIN || "meet.jit.si";
 
 const MeetingRoom: React.FC = () => {
   const { huddleId } = useParams<{ huddleId: string }>();
@@ -31,6 +31,8 @@ const MeetingRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState<string>("");
+  const [jitsiApi, setJitsiApi] = useState<any | null>(null);
+  const jitsiApiRef = useRef<any | null>(null);
 
   // In-browser transcription — chunks into backend on stop.
   const transcription = useTranscription({
@@ -113,7 +115,8 @@ const MeetingRoom: React.FC = () => {
       <div className={`relative ${layout.main}`}>
         <JitsiEmbed
           roomName={huddle.room_name}
-          domain={JITSI_DOMAIN}
+          domain={huddle.jitsi_domain || DEFAULT_JITSI_DOMAIN}
+          jwt={huddle.jitsi_jwt || undefined}
           subject={huddle.title}
           user={{
             displayName: (user as any)?.full_name || (user as any)?.email || "Guest",
@@ -122,6 +125,7 @@ const MeetingRoom: React.FC = () => {
           e2ee={huddle.e2ee_enabled}
           startWithAudioMuted={false}
           startWithVideoMuted={false}
+          onApiReady={(api) => { jitsiApiRef.current = api; setJitsiApi(api); }}
           onJoined={() => {
             try { void transcription.startRecording(); } catch { /* */ }
           }}
@@ -140,6 +144,7 @@ const MeetingRoom: React.FC = () => {
           isHost={isHost}
           onEnded={handleEnded}
           liveTranscript={liveTranscript}
+          jitsiApi={jitsiApi}
         />
       </div>
     </div>

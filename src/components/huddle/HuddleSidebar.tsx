@@ -7,7 +7,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, MessageSquare, Users, Sparkles, Share2, Settings as SettingsIcon,
-  Circle, StopCircle, PhoneOff, Loader2,
+  Circle, StopCircle, PhoneOff, Loader2, Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,9 @@ import { useHuddleRecorder } from "@/hooks/useHuddleRecorder";
 import { useHuddleWebSocket } from "@/hooks/useHuddleWebSocket";
 import InvitePanel from "./InvitePanel";
 import AgentLivePanel from "./AgentLivePanel";
+import RoomControlsPanel from "./RoomControlsPanel";
 
-type TabKey = "transcript" | "agents" | "live" | "participants" | "invite" | "settings";
+type TabKey = "transcript" | "agents" | "live" | "participants" | "invite" | "settings" | "room";
 
 interface HuddleSidebarProps {
   huddle: Huddle;
@@ -25,6 +26,8 @@ interface HuddleSidebarProps {
   onEnded: () => void;
   /** Optional: a live transcript line being typed by the user-side STT. */
   liveTranscript?: string;
+  /** Jitsi External API instance from the iframe. Powers the Room controls. */
+  jitsiApi?: any | null;
 }
 
 const AGENT_CATALOG: Array<{ key: string; label: string; desc: string }> = [
@@ -36,7 +39,7 @@ const AGENT_CATALOG: Array<{ key: string; label: string; desc: string }> = [
   { key: "wellbeing", label: "Wellbeing", desc: "Watches fatigue + suggests breaks" },
 ];
 
-export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, onEnded, liveTranscript }) => {
+export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, onEnded, liveTranscript, jitsiApi }) => {
   const [tab, setTab] = useState<TabKey>("live");
   const [initialChunks, setInitialChunks] = useState<HuddleTranscriptChunk[]>([]);
   const [agentsAttached, setAgentsAttached] = useState<string[]>(huddle.agent_keys || []);
@@ -109,11 +112,12 @@ export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, on
 
   const tabs: Array<{ id: TabKey; label: string; icon: React.ElementType }> = [
     { id: "live", label: "AI", icon: Sparkles },
-    { id: "transcript", label: "Transcript", icon: MessageSquare },
+    { id: "room", label: "Room", icon: Sliders },
+    { id: "transcript", label: "Script", icon: MessageSquare },
     { id: "agents", label: "Add", icon: Bot },
     { id: "participants", label: "People", icon: Users },
     { id: "invite", label: "Invite", icon: Share2 },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
+    { id: "settings", label: "Set", icon: SettingsIcon },
   ];
 
   return (
@@ -153,6 +157,10 @@ export const HuddleSidebar: React.FC<HuddleSidebarProps> = ({ huddle, isHost, on
             agentResponses={ws.agentResponses}
             connected={ws.connected}
           />
+        )}
+
+        {tab === "room" && (
+          <RoomControlsPanel api={jitsiApi || null} isHost={isHost} />
         )}
 
         {tab === "transcript" && (

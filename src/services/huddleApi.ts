@@ -41,6 +41,12 @@ export interface Huddle {
   processed_meeting_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+  /** Self-hosted Jitsi domain. "meet.jit.si" when not configured. */
+  jitsi_domain?: string;
+  /** Per-user signed JWT for self-hosted Jitsi rooms. Null on public Jitsi. */
+  jitsi_jwt?: string | null;
+  /** browser | jibri | compliance */
+  recording_mode?: string;
 }
 
 export interface HuddlePublic {
@@ -52,6 +58,8 @@ export interface HuddlePublic {
   started_at: string | null;
   lobby_enabled: boolean;
   e2ee_enabled: boolean;
+  jitsi_domain?: string;
+  jitsi_jwt?: string | null;
 }
 
 export interface HuddleParticipant {
