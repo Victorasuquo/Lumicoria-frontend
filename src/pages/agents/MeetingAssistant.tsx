@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import AgentPageLayout from "@/components/AgentPageLayout";
 import { meetingApi, MeetingResponse, MeetingLibraryItem } from "@/services/api";
+import { huddleApi, type Huddle } from "@/services/huddleApi";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const platforms = [
   { name: "Google Meet", img: "/images/integrations/google-meet.png", color: "text-green-600", bg: "bg-green-50" },
@@ -20,6 +22,28 @@ const platforms = [
 ];
 
 const MeetingAssistant: React.FC = () => {
+  const navigate = useNavigate();
+  const [huddles, setHuddles] = useState<Huddle[]>([]);
+  const [startingHuddle, setStartingHuddle] = useState(false);
+
+  useEffect(() => {
+    huddleApi.list({ limit: 12 }).then((r) => setHuddles(r.items || [])).catch(() => {});
+  }, []);
+
+  const startInstantHuddle = async () => {
+    setStartingHuddle(true);
+    try {
+      const h = await huddleApi.create({
+        title: "Instant meeting",
+        meeting_type: "instant",
+        agent_keys: ["meeting"],
+      });
+      navigate(`/agents/meeting/room/${h.id}`);
+    } catch (e: any) {
+      setStartingHuddle(false);
+    }
+  };
+
   const { toast } = useToast();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,6 +271,53 @@ const MeetingAssistant: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Lumicoria Huddle hero — instant meeting */}
+      <div className="mb-6 rounded-2xl overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 p-5 text-white">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-wider opacity-80 mb-1">Lumicoria Huddle</p>
+            <h3 className="text-lg font-bold">Start an instant video meeting</h3>
+            <p className="text-xs opacity-90 mt-1 max-w-md">
+              Spin up a live room with built-in AI notetaking, action-item extraction, and recording. Share a link, no installs needed.
+            </p>
+          </div>
+          <Button
+            onClick={startInstantHuddle}
+            disabled={startingHuddle}
+            className="bg-white text-purple-700 hover:bg-purple-50 font-semibold"
+          >
+            {startingHuddle ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Video size={14} className="mr-1.5" />}
+            {startingHuddle ? "Starting…" : "Start meeting"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Live + recent huddles rail */}
+      {huddles.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Live & recent</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {huddles.slice(0, 6).map((h) => (
+              <button
+                key={h.id}
+                onClick={() => navigate(`/agents/meeting/room/${h.id}`)}
+                className="text-left p-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/30 transition"
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  {h.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                  <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">{h.status}</span>
+                </div>
+                <p className="text-xs font-semibold text-gray-800 truncate">{h.title}</p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {h.participant_count_peak ? `${h.participant_count_peak} peak · ` : ""}
+                  {h.started_at ? new Date(h.started_at).toLocaleString() : "Not started"}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Platform Integration Cards — clicking activates meeting mode */}
       <div className="grid grid-cols-3 gap-3 mb-6">
