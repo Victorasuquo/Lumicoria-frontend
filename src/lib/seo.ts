@@ -328,19 +328,71 @@ export const PUBLIC_ROUTES: Array<{
   changefreq: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly";
   priority: number;
 }> = [
+  // Hero
   { path: "/", changefreq: "weekly", priority: 1.0 },
   { path: "/agents", changefreq: "weekly", priority: 0.95 },
+  { path: "/live-studio", changefreq: "weekly", priority: 0.9 },
   { path: "/agent-builder", changefreq: "weekly", priority: 0.9 },
-  { path: "/live-studio", changefreq: "weekly", priority: 0.85 },
+  { path: "/agents/my-agents", changefreq: "weekly", priority: 0.7 },
+  { path: "/wellbeing", changefreq: "weekly", priority: 0.85 },
   { path: "/pricing", changefreq: "weekly", priority: 0.95 },
   { path: "/pricing/teams", changefreq: "weekly", priority: 0.9 },
   { path: "/enterprise", changefreq: "monthly", priority: 0.9 },
   { path: "/models", changefreq: "weekly", priority: 0.85 },
   { path: "/about", changefreq: "monthly", priority: 0.7 },
   { path: "/contact", changefreq: "yearly", priority: 0.65 },
+
+  // Documentation
+  { path: "/docs", changefreq: "weekly", priority: 0.9 },
+  { path: "/docs/getting-started", changefreq: "weekly", priority: 0.85 },
+  { path: "/docs/agents", changefreq: "weekly", priority: 0.85 },
+  { path: "/docs/api", changefreq: "weekly", priority: 0.85 },
+  { path: "/docs/integrations", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/security", changefreq: "monthly", priority: 0.8 },
+
+  // Per-agent doc pages
+  { path: "/docs/agents/document-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/meeting-assistant", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/meeting-fact-checker", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/vision-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/research-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/research-mentor", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/student-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/learning-coach", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/rag-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/data-analysis-agent", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/knowledge-graph", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/legal-document", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/ethics-bias", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/wellbeing-coach", changefreq: "weekly", priority: 0.8 },
+  { path: "/docs/agents/customer-service", changefreq: "weekly", priority: 0.8 },
+
+  // Agent product pages (protected — landing copy still indexes)
+  { path: "/agents/document", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/meeting", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/meeting-fact-checker", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/vision", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/research", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/research-mentor", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/student", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/learning-coach", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/rag", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/data-analysis", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/knowledge-graph", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/legal-document", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/ethics-bias", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/wellbeing", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/focus-flow", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/workspace-ergonomics", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/creative", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/social-media", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/translation", changefreq: "weekly", priority: 0.75 },
+  { path: "/agents/customer-service", changefreq: "weekly", priority: 0.75 },
+
+  // Content + conversion + legal
   { path: "/blog", changefreq: "daily", priority: 0.85 },
-  { path: "/login", changefreq: "yearly", priority: 0.3 },
   { path: "/signup", changefreq: "yearly", priority: 0.7 },
+  { path: "/login", changefreq: "yearly", priority: 0.3 },
   { path: "/privacy", changefreq: "yearly", priority: 0.4 },
   { path: "/terms", changefreq: "yearly", priority: 0.4 },
 ];
