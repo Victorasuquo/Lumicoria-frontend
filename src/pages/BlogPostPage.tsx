@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { blogApi, commentApi, resolveAvatarUrl, type BlogComment } from "@/services/api";
@@ -8,6 +8,20 @@ import {
   ArrowLeft, Share2, Copy, Check, Bot, Twitter, Linkedin,
   Eye, MessageCircle, Send, Trash2,
 } from "lucide-react";
+
+/**
+ * Update OG / Twitter image meta tags so LinkedIn / X / Slack previews
+ * use the post's uploaded cover image. Restores the original site-wide
+ * image on unmount.
+ */
+function setMetaContent(selector: string, content: string): () => void {
+  if (typeof document === "undefined") return () => {};
+  const el = document.head.querySelector<HTMLMetaElement>(selector);
+  if (!el) return () => {};
+  const previous = el.getAttribute("content");
+  el.setAttribute("content", content);
+  return () => { if (previous !== null) el.setAttribute("content", previous); };
+}
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -21,6 +35,41 @@ export default function BlogPostPage() {
     queryFn: () => blogApi.getBySlug(slug!),
     enabled: !!slug,
   });
+
+  // Update OG / Twitter image meta tags so social shares (LinkedIn, X,
+  // Slack, Discord, iMessage) use the post's uploaded cover image
+  // instead of the default Lumicoria OG card. Restores defaults on unmount.
+  useEffect(() => {
+    const cover = post?.cover_image_url;
+    if (!cover) return;
+    // Resolve relative paths against the canonical origin so crawlers
+    // don't reject the URL.
+    const absolute = cover.startsWith("http")
+      ? cover
+      : `https://lumicoria.ai${cover.startsWith("/") ? "" : "/"}${cover}`;
+    const undos: Array<() => void> = [
+      setMetaContent('meta[property="og:image"]', absolute),
+      setMetaContent('meta[property="og:image:alt"]', post?.title || "Lumicoria AI"),
+      setMetaContent('meta[name="twitter:image"]', absolute),
+      setMetaContent('meta[name="twitter:image:alt"]', post?.title || "Lumicoria AI"),
+      setMetaContent('meta[property="og:type"]', "article"),
+    ];
+    // Also bump title + description so the social preview shows real text.
+    const prevTitle = document.title;
+    if (post?.title) document.title = `${post.title} — Lumicoria AI`;
+    undos.push(() => { document.title = prevTitle; });
+    if (post?.excerpt || post?.subtitle) {
+      const desc = (post.excerpt || post.subtitle || "").slice(0, 200);
+      undos.push(setMetaContent('meta[name="description"]', desc));
+      undos.push(setMetaContent('meta[property="og:description"]', desc));
+      undos.push(setMetaContent('meta[name="twitter:description"]', desc));
+    }
+    if (post?.title) {
+      undos.push(setMetaContent('meta[property="og:title"]', post.title));
+      undos.push(setMetaContent('meta[name="twitter:title"]', post.title));
+    }
+    return () => { for (const u of undos) u(); };
+  }, [post?.cover_image_url, post?.title, post?.excerpt, post?.subtitle]);
 
   // Comments
   const { data: commentsData } = useQuery({
