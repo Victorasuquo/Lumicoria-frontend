@@ -8,13 +8,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Captions, CaptionsOff } from "lucide-react";
 import JitsiEmbed from "@/components/huddle/JitsiEmbed";
 import HuddleSidebar from "@/components/huddle/HuddleSidebar";
+import LiveCaptionsOverlay from "@/components/huddle/LiveCaptionsOverlay";
 import { Button } from "@/components/ui/button";
 import { huddleApi, type Huddle } from "@/services/huddleApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranscription } from "@/hooks/useTranscription";
+import { useHuddleWebSocket } from "@/hooks/useHuddleWebSocket";
+import { useVirtualAgentSpeaker } from "@/hooks/useVirtualAgentSpeaker";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
 
@@ -32,7 +35,28 @@ const MeetingRoom: React.FC = () => {
   const [hasJoined, setHasJoined] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState<string>("");
   const [jitsiApi, setJitsiApi] = useState<any | null>(null);
+  const [captionsOn, setCaptionsOn] = useState(true);
   const jitsiApiRef = useRef<any | null>(null);
+
+  // WS is also used by the sidebar — sharing one connection keeps the
+  // backend's room subscription count down.
+  const ws = useHuddleWebSocket({ huddleId: huddleId || "" });
+  const speaker = useVirtualAgentSpeaker({ huddleId: huddleId || "", jitsiApi });
+
+  // When an agent response arrives and that agent has voice enabled,
+  // speak it. Tracks last-seen agent_response id to avoid replaying.
+  const lastSpokenIndexRef = useRef(0);
+  useEffect(() => {
+    if (!speaker.enabled || speaker.speakingAgents.size === 0) return;
+    for (let i = lastSpokenIndexRef.current; i < ws.agentResponses.length; i++) {
+      const r = ws.agentResponses[i];
+      if (!r.ok) continue;
+      if (!speaker.speakingAgents.has(r.agent_key)) continue;
+      const text = typeof r.response === "string" ? r.response : "";
+      if (text) void speaker.speak(text);
+    }
+    lastSpokenIndexRef.current = ws.agentResponses.length;
+  }, [ws.agentResponses, speaker]);
 
   // In-browser transcription — chunks into backend on stop.
   const transcription = useTranscription({
@@ -137,6 +161,21 @@ const MeetingRoom: React.FC = () => {
             try { void transcription.stopRecording(); } catch { /* */ }
           }}
         />
+        {captionsOn && (
+          <LiveCaptionsOverlay
+            chunks={ws.chunks}
+            agentResponses={ws.agentResponses}
+            translationAttached={(huddle.agent_keys || []).includes("translation")}
+          />
+        )}
+        {/* Captions toggle */}
+        <button
+          onClick={() => setCaptionsOn((v) => !v)}
+          title={captionsOn ? "Hide captions" : "Show captions"}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/55 backdrop-blur hover:bg-black/75 text-white flex items-center justify-center"
+        >
+          {captionsOn ? <Captions size={14} /> : <CaptionsOff size={14} />}
+        </button>
       </div>
       <div className={layout.side}>
         <HuddleSidebar

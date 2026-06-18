@@ -188,7 +188,7 @@ export const TeamsList: React.FC = () => {
               </GlassCard>
             </motion.div>
           ))}
-        </div>
+        </CardGrid>
       )}
     </div>
   );

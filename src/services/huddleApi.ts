@@ -266,4 +266,41 @@ export const huddleApi = {
     });
     return data;
   },
+
+  // ── Phase 3: TTS / analytics / calendar back-sync / ICS ─────────
+
+  tts: async (
+    huddleId: string,
+    text: string,
+    voice: string = "warm",
+    quality: "standard" | "hd" = "standard",
+  ): Promise<Blob> => {
+    const { data } = await api.post(
+      `/huddles/${huddleId}/tts`,
+      { text, voice, quality },
+      { responseType: "blob" },
+    );
+    return data as Blob;
+  },
+
+  ttsVoices: async (): Promise<{ voices: Array<{ id: string; label: string; lang: string }> }> => {
+    const { data } = await api.get("/huddles/tts/voices");
+    return data;
+  },
+
+  getAnalytics: async (huddleId: string, recompute: boolean = false): Promise<{ huddle_id: string; analytics: any }> => {
+    const { data } = await api.get(`/huddles/${huddleId}/analytics`, { params: { recompute } });
+    return data;
+  },
+
+  downloadIcs: (huddleId: string): string => {
+    // Returns the URL — the browser handles download via <a download>.
+    const base = (api.defaults.baseURL || "").replace(/\/$/, "");
+    return `${base}/huddles/${huddleId}/ics`;
+  },
+
+  syncCalendar: async (daysAhead: number = 14): Promise<{ ok: boolean; created: Huddle[]; skipped?: number; error?: string }> => {
+    const { data } = await api.post(`/huddles/sync-calendar`, null, { params: { days_ahead: daysAhead } });
+    return data;
+  },
 };
