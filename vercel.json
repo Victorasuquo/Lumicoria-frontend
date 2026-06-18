@@ -2,6 +2,10 @@
     "framework": "vite",
     "rewrites": [
         {
+            "source": "/blog/:slug",
+            "destination": "/api/blog-meta?slug=:slug"
+        },
+        {
             "source": "/((?!.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|webmanifest|js|css|map|txt|xml|json|woff|woff2|ttf|eot)$).*)",
             "destination": "/index.html"
         }
