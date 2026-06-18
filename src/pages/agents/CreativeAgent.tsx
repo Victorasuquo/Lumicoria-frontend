@@ -94,7 +94,7 @@ const CreativeAgent: React.FC = () => {
     setOutputTitle("");
     try {
       const payload = {
-        prompt: prompt.trim(),
+        topic: prompt.trim(),
         tone: activeTone.toLowerCase(),
         length: activeLength.toLowerCase(),
         content_type: activeType,
@@ -107,8 +107,13 @@ const CreativeAgent: React.FC = () => {
         case "social_media":  res = await creativeApi.generateSocialMedia(payload); break;
         default:              res = await creativeApi.generate(payload);
       }
+      // Backend returns { content: {...} | str, raw_content: str, metadata: {...} }.
+      // raw_content is the full LLM output; content is often a parsed dict.
       const text =
-        res?.content ?? res?.output ?? res?.text ?? res?.result?.content ?? res?.data?.content ?? "";
+        res?.raw_content
+        ?? (typeof res?.content === "string" ? res.content : "")
+        ?? res?.content?.body ?? res?.content?.text
+        ?? res?.output ?? res?.text ?? "";
       const title =
         res?.title ?? `Generated ${contentTypes.find(t => t.id === activeType)?.label || "Content"}`;
       setOutput(typeof text === "string" ? text : JSON.stringify(text, null, 2));

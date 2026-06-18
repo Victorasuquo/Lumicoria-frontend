@@ -71,7 +71,7 @@ const SocialMediaAgent: React.FC = () => {
 
   useEffect(() => {
     if (activeMode === "trend_analysis") {
-      socialMediaApi.analyzeTrends({ platform: activePlatform })
+      socialMediaApi.analyzeTrends({ data: { platform: activePlatform } })
         .then((res: any) => {
           const list = res?.trends || res?.topics || res?.items || [];
           if (Array.isArray(list) && list.length) {
@@ -94,10 +94,12 @@ const SocialMediaAgent: React.FC = () => {
     setGenerating(true);
     try {
       const res = await socialMediaApi.generateContent({
-        platform: activePlatform,
-        topic: postContent.trim() || "general announcement",
-        max_chars: currentPlatform.maxChars,
-        tone: "engaging",
+        data: {
+          platform: activePlatform,
+          topic: postContent.trim() || "general announcement",
+          max_chars: currentPlatform.maxChars,
+          tone: "engaging",
+        },
       });
       const text = res?.content ?? res?.text ?? res?.output ?? res?.post ?? "";
       if (typeof text === "string" && text) {
@@ -123,7 +125,7 @@ const SocialMediaAgent: React.FC = () => {
     if (!postContent.trim()) { toast.error("Write or paste content to analyze first."); return; }
     setAnalyzing(true); setSentiment(null);
     try {
-      const res = await socialMediaApi.analyzeSentiment({ text: postContent.trim(), platform: activePlatform });
+      const res = await socialMediaApi.analyzeSentiment({ data: { text: postContent.trim(), platform: activePlatform } });
       setSentiment(res);
       toast.success("Sentiment ready");
     } catch (e: any) {

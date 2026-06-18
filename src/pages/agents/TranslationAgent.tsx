@@ -105,7 +105,7 @@ const TranslationAgent: React.FC = () => {
     setCulturalNotes([]);
     try {
       const payload = {
-        text: sourceText.trim(),
+        content: sourceText.trim(),
         source_language: sourceLang,
         target_language: targetLang,
         mode: activeMode,

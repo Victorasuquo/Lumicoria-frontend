@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import { tokens, BRAND_GRADIENT, planLabel, roleLabel, initials } from "./tokens";
+import { tokens, BRAND_GRADIENT, AURORA_GRADIENT, planLabel, roleLabel, initials } from "./tokens";
 
 // ── GlassCard ────────────────────────────────────────────────────────
 
