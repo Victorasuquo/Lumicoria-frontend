@@ -17,6 +17,8 @@ import {
 import AgentPageLayout from "@/components/AgentPageLayout";
 import { documentApi, Document, calendarApi, taskApi } from "@/services/api";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -853,15 +855,30 @@ const DocumentAgent: React.FC = () => {
                               </div>
                             )}
 
-                            {/* Raw analysis text */}
+                            {/* AI Analysis — rendered as proper Markdown (headings, tables, lists, code) */}
                             {hasAnalysis && (
                               <div className={hasStructured ? "border-t border-gray-100 pt-4" : ""}>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Sparkles size={12} className="text-purple-400" />
-                                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Analysis</p>
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles size={12} className="text-purple-400" />
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Analysis</p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(analysisText);
+                                      toast({ title: "Copied", description: "AI Analysis copied to clipboard." });
+                                    }}
+                                    className="text-[10px] uppercase tracking-wide font-semibold text-purple-600 hover:text-purple-700 transition"
+                                  >
+                                    Copy
+                                  </button>
                                 </div>
-                                <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100">
-                                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{analysisText}</p>
+                                <div className="p-5 bg-gradient-to-br from-purple-50/40 via-white to-blue-50/30 rounded-2xl border border-purple-100/60 shadow-sm">
+                                  <div className="ai-markdown overflow-x-auto">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {analysisText}
+                                    </ReactMarkdown>
+                                  </div>
                                 </div>
                               </div>
                             )}
