@@ -78,7 +78,14 @@ interface UseHuddleWebSocket {
 
 function getTokenFromStorage(): string | null {
   try {
-    return localStorage.getItem("authToken") || localStorage.getItem("token") || null;
+    // AuthContext stores the JWT under "accessToken" (see src/contexts/AuthContext.tsx).
+    // Fall back to legacy keys so older sessions keep working.
+    return (
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      null
+    );
   } catch { return null; }
 }
 
