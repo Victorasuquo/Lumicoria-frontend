@@ -1,110 +1,99 @@
 import { useState, useEffect } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
-import { messaging } from '../firebase';
+import { getMessagingSafe } from '../firebase';
 import { toast } from 'sonner';
 import api from '../services/api';
 
+// iOS Safari (outside an installed PWA) does NOT support FCM. All entry
+// points here must guard against `getMessagingSafe()` returning null.
+
+const supportsNotifications = () =>
+    typeof window !== 'undefined' && 'Notification' in window;
+
 export const usePushNotifications = () => {
     const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-        Notification.permission
+        supportsNotifications() ? Notification.permission : 'denied'
     );
     const [fcmToken, setFcmToken] = useState<string | null>(null);
 
-    // Removed auto-request on mount to prevents 401 loop if user is not logged in.
-    // The calling component (MainNav) is responsible for calling requestForToken when authenticated.
-
     useEffect(() => {
-        // Listen for incoming messages when the app is in the foreground
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log('Foreground push notification received:', payload);
-            const title = payload.notification?.title || 'New Notification';
-            const body = payload.notification?.body;
+        let unsubscribe: (() => void) | undefined;
+        let cancelled = false;
 
-            // Show toast
-            toast(title, {
-                description: body,
+        (async () => {
+            const messaging = await getMessagingSafe();
+            if (!messaging || cancelled) return;
+            unsubscribe = onMessage(messaging, (payload) => {
+                const title = payload.notification?.title || 'New Notification';
+                const body = payload.notification?.body;
+                toast(title, { description: body });
+                if (supportsNotifications() && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body,
+                        icon: '/lumicoria-logo-gradient.png',
+                    });
+                }
             });
-
-            // Show native notification if supported and granted
-            if (Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: body,
-                    icon: '/lumicoria-logo-gradient.png'
-                });
-            }
-        });
+        })();
 
         return () => {
-            unsubscribe();
+            cancelled = true;
+            if (unsubscribe) unsubscribe();
         };
     }, []);
 
     const requestForToken = async () => {
+        if (!supportsNotifications()) return;
+        const messaging = await getMessagingSafe();
+        if (!messaging) return;
+
         try {
             const permission = await Notification.requestPermission();
             setNotificationPermission(permission);
+            if (permission !== 'granted') return;
 
-            if (permission === 'granted') {
-                console.log('Notification permission granted. Waiting for SW ready...');
-                // Wait for the service worker to be active to avoid race conditions
-                const registration = await navigator.serviceWorker.ready;
-                console.log('Service Worker is ready:', registration);
+            const registration = await navigator.serviceWorker.ready;
+            const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+            if (!vapidKey) return;
 
-                const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-                if (!vapidKey) {
-                    console.error('Missing VITE_FIREBASE_VAPID_KEY in environment');
-                    return;
-                }
-
-                const token = await getToken(messaging, {
-                    vapidKey: vapidKey,
-                    serviceWorkerRegistration: registration
-                });
-
-                if (token) {
-                    console.log('FCM Token generated:', token);
-                    setFcmToken(token);
-                    // Send token to backend
-                    await registerToken(token);
-                } else {
-                    console.log('No registration token available. Request permission to generate one.');
-                }
-            } else {
-                console.log('Notification permission denied.');
+            const token = await getToken(messaging, {
+                vapidKey,
+                serviceWorkerRegistration: registration,
+            });
+            if (token) {
+                setFcmToken(token);
+                await registerToken(token);
             }
         } catch (error) {
-            console.error('An error occurred while retrieving token:', error);
+            console.warn('push: retrieve token failed', error);
         }
     };
 
     const registerToken = async (token: string) => {
         try {
             await api.post('/device-tokens/register', {
-                token: token,
+                token,
                 platform: 'web',
-                device_name: navigator.userAgent
+                device_name: navigator.userAgent,
             });
-            console.log('Device token registered with backend');
         } catch (error) {
-            console.error('Failed to register device token:', error);
+            console.warn('push: register failed', error);
         }
     };
 
     const deleteToken = async () => {
+        const messaging = await getMessagingSafe();
+        if (!messaging) return;
         try {
             const currentToken = fcmToken || await getToken(messaging, {
-                vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+                vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
             });
-
             if (currentToken) {
-                await api.delete('/device-tokens/deregister', {
-                    data: { token: currentToken }
-                });
-                console.log('Device token deregistered from backend');
+                await api.delete('/device-tokens/deregister', { data: { token: currentToken } });
                 setFcmToken(null);
             }
         } catch (error) {
-            console.error('Failed to deregister device token:', error);
+            console.warn('push: deregister failed', error);
         }
     };
 
@@ -112,6 +101,6 @@ export const usePushNotifications = () => {
         requestForToken,
         deleteToken,
         fcmToken,
-        notificationPermission
+        notificationPermission,
     };
 };
