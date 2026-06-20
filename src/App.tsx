@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { WellbeingProvider } from './contexts/WellbeingContext';
 import { MoodPromptModal } from './components/wellbeing/MoodPromptModal';
@@ -141,6 +141,24 @@ const AgentPageFallback = () => (
 );
 
 const queryClient = new QueryClient();
+
+const ScrollToTop = () => {
+  const { pathname, search, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const elementId = decodeURIComponent(hash.slice(1));
+      window.requestAnimationFrame(() => {
+        document.getElementById(elementId)?.scrollIntoView({ block: 'start' });
+      });
+      return;
+    }
+
+    window.scrollTo(0, 0);
+  }, [pathname, search, hash]);
+
+  return null;
+};
 
 /** Standard app shell: MainNav + content + Footer */
 const MainLayout = () => (
@@ -301,6 +319,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <WorkspaceProvider>
             <PermissionsProvider>
