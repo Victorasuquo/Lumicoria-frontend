@@ -1,19 +1,19 @@
 
 import React from 'react';
-import { Mail, Phone, MapPin, Twitter, Linkedin, Github, Youtube, Instagram } from 'lucide-react';
+import { Twitter, Linkedin, Github, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="relative overflow-hidden">
+    <footer className="relative overflow-hidden bg-slate-900">
       {/* Large Company Name Watermark Section */}
-      <div className="relative bg-slate-900">
-        <div className="container mx-auto px-4 pt-12 pb-16">
+      <div className="relative">
+        <div className="container mx-auto px-4 pt-10 pb-12 sm:pt-12 sm:pb-16">
 
 
           {/* Giant Company Name */}
           <div className="relative text-center">
-            <h2 className="text-[8rem] md:text-[12rem] lg:text-[16rem] xl:text-[20rem] font-light tracking-tight leading-none select-none">
+            <h2 className="max-w-full overflow-hidden whitespace-nowrap text-[clamp(4.5rem,24vw,20rem)] font-light tracking-[-0.04em] leading-none select-none">
               <span
                 className="bg-gradient-to-r from-slate-500/60 via-purple-400/50 to-slate-500/60 bg-clip-text text-transparent"
                 style={{
@@ -31,10 +31,10 @@ const Footer = () => {
 
       {/* Footer Links Section */}
       <div className="bg-slate-900 text-gray-300">
-        <div className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+        <div className="container mx-auto px-4 py-12 sm:py-16">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_repeat(3,1fr)] lg:gap-12">
             {/* Company Info */}
-            <div className="col-span-2 md:col-span-1">
+            <div className="sm:col-span-2 lg:col-span-1">
               <Link to="/" className="inline-block mb-6">
                 <span className="text-2xl font-light text-white">
                   <span className="italic">Lumi</span>
@@ -43,9 +43,11 @@ const Footer = () => {
                 </span>
               </Link>
               <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                AI-powered document intelligence and well-being for professionals, students, and teams.
+                AI-powered document intelligence and well-being
+                <br />
+                for professionals, students, and teams.
               </p>
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap gap-3">
                 <a href="#" className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
                   <Twitter size={20} className="text-gray-400 hover:text-white" />
                 </a>
@@ -101,11 +103,11 @@ const Footer = () => {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-500 mb-4 md:mb-0">
+          <div className="border-t border-white/10 mt-12 pt-8 flex flex-col gap-5 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <p className="text-sm text-gray-500">
               © {new Date().getFullYear()} Lumicoria.ai. All rights reserved.
             </p>
-            <div className="flex items-center space-x-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm md:justify-end">
               <Link to="/privacy" className="text-gray-500 hover:text-white transition-colors">Privacy</Link>
               <Link to="/terms" className="text-gray-500 hover:text-white transition-colors">Terms</Link>
               <Link to="/security" className="text-gray-500 hover:text-white transition-colors">Security</Link>
