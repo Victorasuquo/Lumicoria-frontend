@@ -5068,5 +5068,128 @@ export const analyticsApi = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────
+// Autonomous Brain
+// ─────────────────────────────────────────────────────────────────────
+//
+// Surfaces the morning + evening digest pipeline to the frontend.
+// Mirrors backend/api/v1/endpoints/brain.py — see services/brain in the
+// backend for the LangGraph state machine that powers these endpoints.
+
+export interface BrainPreferences {
+  enabled: boolean;
+  morning_hour_local: number;
+  evening_hour_local: number;
+  max_emails_per_run: number;
+  max_attachments_per_run: number;
+  mailbox_labels_include: string[];
+  mailbox_labels_exclude: string[];
+  auto_assign_agents: boolean;
+  send_email: boolean;
+  send_push: boolean;
+  send_in_app: boolean;
+  needs_reauth: boolean;
+}
+
+export interface BrainTriggerRequest {
+  mode: "morning" | "evening";
+  async?: boolean;
+}
+
+export interface BrainRunSummary {
+  run_id: string;
+  user_id: string;
+  mode: string;
+  status: "ok" | "degraded" | "failed" | "skipped";
+  duration_ms: number;
+  emails_processed: number;
+  attachments_processed: number;
+  tasks_created: number;
+  proposals_drafted: number;
+  digest_sent: boolean;
+  skip_reason?: string | null;
+  error?: string | null;
+}
+
+export interface BrainRun {
+  id: string;
+  user_id: string;
+  organization_id?: string | null;
+  mode: string;
+  status: string;
+  started_at: string;
+  ended_at?: string | null;
+  duration_ms?: number | null;
+  emails_processed: number;
+  attachments_processed: number;
+  tasks_created: number;
+  proposals_drafted: number;
+  digest_sent: boolean;
+  skip_reason?: string | null;
+  error?: string | null;
+}
+
+export interface BrainTrace {
+  node: string;
+  started_at: string;
+  ended_at?: string | null;
+  duration_ms?: number | null;
+  status: "ok" | "retry" | "fallback" | "fail" | string;
+  eval_score?: number | null;
+  payload_summary: Record<string, any>;
+}
+
+export interface BrainRunDetail extends BrainRun {
+  traces: BrainTrace[];
+}
+
+export const brainApi = {
+  getPreferences: async (): Promise<BrainPreferences> => {
+    const response = await api.get<BrainPreferences>("/brain/preferences");
+    return response.data;
+  },
+
+  updatePreferences: async (
+    payload: BrainPreferences,
+  ): Promise<BrainPreferences> => {
+    const response = await api.put<BrainPreferences>(
+      "/brain/preferences",
+      payload,
+    );
+    return response.data;
+  },
+
+  trigger: async (
+    payload: BrainTriggerRequest,
+  ): Promise<BrainRunSummary> => {
+    const response = await api.post<BrainRunSummary>(
+      "/brain/trigger",
+      payload,
+    );
+    return response.data;
+  },
+
+  listRuns: async (limit: number = 20): Promise<BrainRun[]> => {
+    const response = await api.get<BrainRun[]>(
+      `/brain/runs?limit=${limit}`,
+    );
+    return response.data;
+  },
+
+  getRun: async (runId: string): Promise<BrainRunDetail> => {
+    const response = await api.get<BrainRunDetail>(
+      `/brain/runs/${encodeURIComponent(runId)}`,
+    );
+    return response.data;
+  },
+
+  getRunTraces: async (runId: string): Promise<BrainTrace[]> => {
+    const response = await api.get<BrainTrace[]>(
+      `/brain/runs/${encodeURIComponent(runId)}/traces`,
+    );
+    return response.data;
+  },
+};
+
 // Export the api instance for custom requests
 export default api;

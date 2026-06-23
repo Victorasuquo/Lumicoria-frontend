@@ -48,6 +48,11 @@ import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
 import Enterprise from "./pages/Enterprise";
 
+// Autonomous brain — daily morning + evening digest pipeline.
+import BrainPreferences from "./pages/BrainPreferences";
+import BrainRuns from "./pages/BrainRuns";
+import BrainRunDetail from "./pages/BrainRunDetail";
+
 // Workspace surface (Phase G)
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { RealtimeProvider } from "./contexts/RealtimeContext";
@@ -279,6 +284,12 @@ const AppRoutes = () => {
         <Route path="/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
         <Route path="/integrations/:type" element={<ProtectedRoute><IntegrationDetail /></ProtectedRoute>} />
         <Route path="/integrations/oauth/callback" element={<OAuthCallback />} />
+
+        {/* Autonomous brain — daily morning + evening digest */}
+        <Route path="/brain" element={<ProtectedRoute><BrainPreferences /></ProtectedRoute>} />
+        <Route path="/brain/preferences" element={<ProtectedRoute><BrainPreferences /></ProtectedRoute>} />
+        <Route path="/brain/runs" element={<ProtectedRoute><BrainRuns /></ProtectedRoute>} />
+        <Route path="/brain/runs/:runId" element={<ProtectedRoute><BrainRunDetail /></ProtectedRoute>} />
 
         {/* Agent Pages */}
         <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />

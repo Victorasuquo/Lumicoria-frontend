@@ -251,6 +251,59 @@ export default function IntegrationsHub() {
           </div>
         </motion.div>
 
+        {/* ── Brain entry card (Phase 7) ──────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.09, duration: 0.4 }}
+          className="mb-8 bg-gradient-to-br from-purple-50 via-white to-indigo-50 border border-purple-200 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4"
+        >
+          <div className="flex items-start gap-3 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/30">
+              <Sparkles size={18} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-semibold text-gray-900">Autonomous brain</h3>
+                {calSettings.google_connected ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <Check size={10} /> Ready
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    Needs Google
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                {calSettings.google_connected
+                  ? "Reads your Gmail at dawn + dusk, prioritises, drafts proposals, emails you the brief."
+                  : "Connect Google below first — the brain reads your inbox + Drive to build the daily digest."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-purple-200 text-purple-700 hover:bg-purple-50"
+              onClick={() => navigate('/brain/runs')}
+              disabled={!calSettings.google_connected}
+            >
+              Run history
+            </Button>
+            <Button
+              size="sm"
+              className="text-xs bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={() => navigate('/brain/preferences')}
+            >
+              {calSettings.google_connected ? 'Configure brain' : 'Set up brain'}
+              <ArrowRight size={12} className="ml-1.5" />
+            </Button>
+          </div>
+        </motion.div>
+
         {/* ── Search & Filters ─────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
