@@ -3610,6 +3610,37 @@ export const customerServiceApi = {
     return response.data;
   },
 
+  // ─── Meeting branding (Jitsi) ────────────────────────────────────────
+  // Logo/favicon binary upload + meta upsert. Reuses the OrgBranding
+  // shape — meeting_* fields live alongside the customer-service branding.
+
+  uploadMeetingLogo: async (file: File): Promise<{ logo_url: string; uploaded_at: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post<{ logo_url: string; uploaded_at: number }>(
+      "/customer-service/branding/logo",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data;
+  },
+
+  uploadMeetingFavicon: async (file: File): Promise<{ favicon_url: string; uploaded_at: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post<{ favicon_url: string; uploaded_at: number }>(
+      "/customer-service/branding/favicon",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data;
+  },
+
+  clearMeetingLogo: async (): Promise<{ ok: boolean }> => {
+    const response = await api.delete<{ ok: boolean }>("/customer-service/branding/logo");
+    return response.data;
+  },
+
   // ─── FAQ → Knowledge Base ────────────────────────────────────────────
 
   saveFaqToKnowledgeBase: async (payload: {
@@ -3834,6 +3865,13 @@ export interface OrgBranding {
   sla_response_minutes: number;
   captcha_enabled: boolean;
   public_categories: string[];
+  // Meeting (Jitsi) branding overrides — null falls back to the
+  // corresponding general field above.
+  meeting_app_name?: string | null;
+  meeting_logo_url?: string | null;
+  meeting_favicon_url?: string | null;
+  meeting_watermark_link?: string | null;
+  meeting_welcome_message?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

@@ -255,6 +255,21 @@ export const huddleApi = {
     return data;
   },
 
+  /**
+   * Refresh the Jitsi JWT for an ongoing huddle so a long call doesn't
+   * drop when the token expires. Called from MeetingRoom on Jitsi's
+   * `EXPIRED_TOKEN` event.
+   */
+  refreshJwt: async (huddleId: string): Promise<{
+    jitsi_jwt: string;
+    jitsi_domain: string;
+    is_host: boolean;
+    issued_at: number;
+  }> => {
+    const { data } = await api.post(`/huddles/${huddleId}/refresh-jwt`);
+    return data;
+  },
+
   exportToCalendar: async (
     huddleId: string,
     input: { attendees?: string[]; description?: string; calendar_id?: string },

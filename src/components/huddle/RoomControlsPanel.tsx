@@ -15,10 +15,12 @@
  * back via onApiReady. We accept it as a ref-style prop.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Hand, ThumbsUp, Heart, Sparkles, PartyPopper, Brain, Laugh,
-  LayoutGrid, MessageCircle, ScreenShare, BarChart3, Users2, Mic, MicOff, Video, VideoOff,
+  LayoutGrid, MessageCircle, ScreenShare, BarChart3, Users2, Mic, MicOff,
+  Video, VideoOff, MicVocal, VideoOff as VideoOffIcon, Lock, Circle, Square,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -164,16 +166,102 @@ export const RoomControlsPanel: React.FC<RoomControlsPanelProps> = ({ api, isHos
       </div>
 
       {/* Moderator-only */}
-      {isHost && (
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold mb-2">Moderator</p>
-          <Button onClick={breakoutRoom} variant="outline" size="sm" className="w-full text-xs h-9">
-            <Users2 size={12} className="mr-1.5" /> Breakout rooms
-          </Button>
-        </div>
-      )}
+      {isHost && <HostControls api={api} />}
     </div>
   );
 };
+
+
+// ── Moderator panel ───────────────────────────────────────────────────
+
+
+interface HostControlsProps {
+  api: any;
+}
+
+const HostControls: React.FC<HostControlsProps> = ({ api }) => {
+  const [roomLocked, setRoomLocked] = useState(false);
+  const [recording, setRecording] = useState(false);
+
+  useEffect(() => {
+    if (!api) return;
+    const onRec = (ev: { on: boolean; mode?: string }) => setRecording(!!ev.on);
+    try { api.addEventListener("recordingStatusChanged", onRec); } catch { /* */ }
+    return () => {
+      try { api.removeEventListener("recordingStatusChanged", onRec); } catch { /* */ }
+    };
+  }, [api]);
+
+  const exec = (name: string, ...args: any[]) => {
+    try { api?.executeCommand(name, ...args); } catch { /* */ }
+  };
+
+  const muteEveryone = () => {
+    if (!confirm("Mute every other participant's microphone?")) return;
+    exec("muteEveryone", "audio");
+  };
+  const stopEveryoneVideo = () => {
+    if (!confirm("Stop every other participant's camera?")) return;
+    exec("muteEveryone", "video");
+  };
+  const toggleLock = () => {
+    exec("toggleLobby", !roomLocked);
+    setRoomLocked((v) => !v);
+  };
+  const toggleRecording = () => {
+    if (recording) {
+      if (!confirm("Stop the recording? The file will be processed and emailed when ready.")) return;
+      exec("stopRecording", "file");
+    } else {
+      if (!confirm("Start recording? All participants will be notified.")) return;
+      exec("startRecording", { mode: "file" });
+    }
+  };
+  const showSecurityDialog = () => {
+    // Opens Jitsi's built-in security panel (lobby, password).
+    exec("toggleSecurityDialog");
+  };
+
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold mb-2 flex items-center gap-1">
+        <Shield size={10} /> Host controls
+      </p>
+      {/* Recording — most prominent */}
+      <Button
+        onClick={toggleRecording}
+        className={`w-full h-10 text-sm mb-2 ${
+          recording
+            ? "bg-red-500 hover:bg-red-600 text-white"
+            : "bg-purple-600 hover:bg-purple-700 text-white"
+        }`}
+      >
+        {recording ? <Square size={14} className="mr-2" /> : <Circle size={14} className="mr-2 fill-current" />}
+        {recording ? "Stop recording" : "Record meeting"}
+      </Button>
+      {/* Mute everyone / stop video / lock */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button onClick={muteEveryone} variant="outline" size="sm" className="text-xs h-9 border-amber-300 text-amber-700 hover:bg-amber-50">
+          <MicOff size={12} className="mr-1.5" /> Mute all
+        </Button>
+        <Button onClick={stopEveryoneVideo} variant="outline" size="sm" className="text-xs h-9 border-amber-300 text-amber-700 hover:bg-amber-50">
+          <VideoOffIcon size={12} className="mr-1.5" /> Stop cams
+        </Button>
+        <Button
+          onClick={toggleLock}
+          variant="outline"
+          size="sm"
+          className={`text-xs h-9 ${roomLocked ? "bg-amber-50 border-amber-300 text-amber-700" : "border-gray-300"}`}
+        >
+          <Lock size={12} className="mr-1.5" /> {roomLocked ? "Unlock" : "Lock room"}
+        </Button>
+        <Button onClick={showSecurityDialog} variant="outline" size="sm" className="text-xs h-9 border-gray-300">
+          <Shield size={12} className="mr-1.5" /> Security
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 
 export default RoomControlsPanel;

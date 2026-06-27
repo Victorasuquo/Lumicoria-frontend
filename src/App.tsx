@@ -53,6 +53,11 @@ import BrainPreferences from "./pages/BrainPreferences";
 import BrainRuns from "./pages/BrainRuns";
 import BrainRunDetail from "./pages/BrainRunDetail";
 
+// Lumicoria Meet — per-org meeting branding admin.
+import MeetingBranding from "./pages/settings/MeetingBranding";
+// Recording playback page for completed huddles.
+import HuddleRecording from "./pages/huddle/HuddleRecording";
+
 // Workspace surface (Phase G)
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { RealtimeProvider } from "./contexts/RealtimeContext";
@@ -288,6 +293,12 @@ const AppRoutes = () => {
         {/* Autonomous brain — daily morning + evening digest */}
         <Route path="/brain" element={<ProtectedRoute><BrainPreferences /></ProtectedRoute>} />
         <Route path="/brain/preferences" element={<ProtectedRoute><BrainPreferences /></ProtectedRoute>} />
+
+        {/* Lumicoria Meet — per-org meeting branding (logo, colors, app name). */}
+        <Route path="/settings/meeting-branding" element={<ProtectedRoute><MeetingBranding /></ProtectedRoute>} />
+
+        {/* Recording playback for completed huddles. */}
+        <Route path="/huddles/:huddleId/recording" element={<ProtectedRoute><HuddleRecording /></ProtectedRoute>} />
         <Route path="/brain/runs" element={<ProtectedRoute><BrainRuns /></ProtectedRoute>} />
         <Route path="/brain/runs/:runId" element={<ProtectedRoute><BrainRunDetail /></ProtectedRoute>} />
 

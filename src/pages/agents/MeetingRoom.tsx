@@ -21,7 +21,10 @@ import { useVirtualAgentSpeaker } from "@/hooks/useVirtualAgentSpeaker";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
 
-const DEFAULT_JITSI_DOMAIN = (import.meta as any).env?.VITE_JITSI_DOMAIN || "meet.jit.si";
+// Backend is the single source of truth for the Jitsi domain via
+// huddle.jitsi_domain. The env var is a last-resort dev fallback only —
+// it should never be hit in production.
+const DEV_FALLBACK_JITSI_DOMAIN = (import.meta as any).env?.VITE_JITSI_DOMAIN || "meet.lumicoria.ai";
 
 const MeetingRoom: React.FC = () => {
   const { huddleId } = useParams<{ huddleId: string }>();
@@ -139,8 +142,10 @@ const MeetingRoom: React.FC = () => {
       <div className={`relative ${layout.main}`}>
         <JitsiEmbed
           roomName={huddle.room_name}
-          domain={huddle.jitsi_domain || DEFAULT_JITSI_DOMAIN}
+          domain={huddle.jitsi_domain || DEV_FALLBACK_JITSI_DOMAIN}
           jwt={huddle.jitsi_jwt || undefined}
+          branding={(huddle as any).jitsi_branding}
+          isHost={(huddle as any).jitsi_is_host ?? isHost}
           subject={huddle.title}
           user={{
             displayName: (user as any)?.full_name || (user as any)?.email || "Guest",

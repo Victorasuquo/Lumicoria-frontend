@@ -40,6 +40,23 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
+              <h3 className="text-lg font-medium">Lumicoria Meet</h3>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium">Meeting branding</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Upload your logo, set colors, and customise how meetings look to your team and guests.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate("/settings/meeting-branding")}>
+                    Customise
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
               <h3 className="text-lg font-medium">Danger Zone</h3>
               <div className="p-4 border border-destructive rounded-lg">
                 <div className="flex items-center justify-between">
