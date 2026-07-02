@@ -41,12 +41,27 @@ export interface Huddle {
   processed_meeting_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
-  /** Self-hosted Jitsi domain. "meet.jit.si" when not configured. */
+  /** Self-hosted Jitsi domain. Backend defaults to meet.lumicoria.ai. */
   jitsi_domain?: string;
-  /** Per-user signed JWT for self-hosted Jitsi rooms. Null on public Jitsi. */
+  /** Per-user signed JWT for the room. Null if the backend can't sign. */
   jitsi_jwt?: string | null;
+  /** Per-org branding block — logo, colors, app name, welcome message. */
+  jitsi_branding?: JitsiBranding | null;
+  /** True when this user is the huddle host (drives the toolbar set). */
+  jitsi_is_host?: boolean;
   /** browser | jibri | compliance */
   recording_mode?: string;
+}
+
+/** Meeting branding — origin: OrgBrandingSQL.meeting_*. */
+export interface JitsiBranding {
+  app_name?: string | null;
+  logo_url?: string | null;
+  favicon_url?: string | null;
+  primary_color?: string | null;
+  accent_color?: string | null;
+  watermark_link?: string | null;
+  welcome_message?: string | null;
 }
 
 export interface HuddlePublic {

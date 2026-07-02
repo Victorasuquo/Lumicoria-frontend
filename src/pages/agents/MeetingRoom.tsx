@@ -144,8 +144,8 @@ const MeetingRoom: React.FC = () => {
           roomName={huddle.room_name}
           domain={huddle.jitsi_domain || DEV_FALLBACK_JITSI_DOMAIN}
           jwt={huddle.jitsi_jwt || undefined}
-          branding={(huddle as any).jitsi_branding}
-          isHost={(huddle as any).jitsi_is_host ?? isHost}
+          branding={huddle.jitsi_branding ?? undefined}
+          isHost={huddle.jitsi_is_host ?? isHost}
           subject={huddle.title}
           user={{
             displayName: (user as any)?.full_name || (user as any)?.email || "Guest",

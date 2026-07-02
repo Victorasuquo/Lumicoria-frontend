@@ -108,9 +108,11 @@ function loadJitsiScript(domain: string): Promise<void> {
       existing.addEventListener("error", () => reject(new Error("Jitsi script failed to load")));
       return;
     }
+    // Match the protocol of the current page — http:// in dev, https:// in prod.
+    const protocol = window.location.protocol === "http:" ? "http" : "https";
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    script.src = `https://${domain}/external_api.js`;
+    script.src = `${protocol}://${domain}/external_api.js`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Jitsi script failed to load"));
@@ -244,6 +246,11 @@ export const JitsiEmbed: React.FC<JitsiEmbedProps> = ({
           ...(branding?.favicon_url ? { SHOW_JITSI_WATERMARK: false } : {}),
         },
       };
+
+      // Jitsi External API defaults to https. Match the current page protocol.
+      if (window.location.protocol === "http:") {
+        (options as any).noSSL = true;
+      }
 
       api = new window.JitsiMeetExternalAPI(domain, options);
       apiRef.current = api;
