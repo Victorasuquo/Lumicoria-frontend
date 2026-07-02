@@ -108,11 +108,13 @@ function loadJitsiScript(domain: string): Promise<void> {
       existing.addEventListener("error", () => reject(new Error("Jitsi script failed to load")));
       return;
     }
-    // Match the protocol of the current page — http:// in dev, https:// in prod.
-    const protocol = window.location.protocol === "http:" ? "http" : "https";
+    // Jitsi's web container ALWAYS serves TLS (self-generated cert on
+    // localhost, Let's Encrypt in prod). Hard-code https:// — matching
+    // the parent page's protocol would send us to http://localhost:8843
+    // where nothing is listening.
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    script.src = `${protocol}://${domain}/external_api.js`;
+    script.src = `https://${domain}/external_api.js`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Jitsi script failed to load"));
