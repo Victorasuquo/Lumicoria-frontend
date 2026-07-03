@@ -133,63 +133,103 @@ const MeetingRoom: React.FC = () => {
     );
   }
 
+  // Layout: outer wrap is a Lumicoria-branded gradient page (purple →
+  // fuchsia → indigo). The Jitsi iframe sits INSIDE a rounded card with
+  // some breathing room so it doesn't overflow the viewport, and the
+  // sidebar sits alongside on desktop / below on mobile.
   const layout = isMobile
-    ? { wrap: "flex flex-col h-screen", main: "h-[60vh]", side: "flex-1 min-h-0" }
-    : { wrap: "flex h-screen", main: "flex-1", side: "w-[380px] shrink-0" };
+    ? {
+        wrap: "flex flex-col min-h-screen",
+        main: "h-[58vh] p-3",
+        side: "flex-1 min-h-0 px-3 pb-3",
+      }
+    : {
+        wrap: "flex h-screen",
+        main: "flex-1 p-4",
+        side: "w-[380px] shrink-0 py-4 pr-4",
+      };
 
   return (
-    <div className={`bg-black text-white ${layout.wrap}`}>
+    <div
+      className={`text-white ${layout.wrap}`}
+      style={{
+        // Lumicoria signature — purple → fuchsia → indigo diagonal.
+        background:
+          "radial-gradient(1200px 800px at 15% 5%, rgba(147, 51, 234, 0.55), transparent 60%)," +
+          "radial-gradient(1000px 700px at 90% 100%, rgba(236, 72, 153, 0.45), transparent 60%)," +
+          "linear-gradient(135deg, #1E1B4B 0%, #4C1D95 45%, #831843 100%)",
+      }}
+    >
       <div className={`relative ${layout.main}`}>
-        <JitsiEmbed
-          roomName={huddle.room_name}
-          domain={huddle.jitsi_domain || DEV_FALLBACK_JITSI_DOMAIN}
-          jwt={huddle.jitsi_jwt || undefined}
-          branding={huddle.jitsi_branding ?? undefined}
-          isHost={huddle.jitsi_is_host ?? isHost}
-          subject={huddle.title}
-          user={{
-            displayName: (user as any)?.full_name || (user as any)?.email || "Guest",
-            email: (user as any)?.email,
+        {/* Framed iframe card */}
+        <div
+          className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl ring-1 ring-white/10"
+          style={{
+            background: "#0F172A",
+            boxShadow:
+              "0 40px 90px -30px rgba(76, 29, 149, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06)",
           }}
-          e2ee={huddle.e2ee_enabled}
-          startWithAudioMuted={false}
-          startWithVideoMuted={false}
-          onApiReady={(api) => { jitsiApiRef.current = api; setJitsiApi(api); }}
-          onJoined={() => {
-            try { void transcription.startRecording(); } catch { /* */ }
-          }}
-          onReadyToClose={() => {
-            try { void transcription.stopRecording(); } catch { /* */ }
-            handleEnded();
-          }}
-          onVideoConferenceLeft={() => {
-            try { void transcription.stopRecording(); } catch { /* */ }
-          }}
-        />
-        {captionsOn && (
-          <LiveCaptionsOverlay
-            chunks={ws.chunks}
-            agentResponses={ws.agentResponses}
-            translationAttached={(huddle.agent_keys || []).includes("translation")}
-          />
-        )}
-        {/* Captions toggle */}
-        <button
-          onClick={() => setCaptionsOn((v) => !v)}
-          title={captionsOn ? "Hide captions" : "Show captions"}
-          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/55 backdrop-blur hover:bg-black/75 text-white flex items-center justify-center"
         >
-          {captionsOn ? <Captions size={14} /> : <CaptionsOff size={14} />}
-        </button>
+          <JitsiEmbed
+            roomName={huddle.room_name}
+            domain={huddle.jitsi_domain || DEV_FALLBACK_JITSI_DOMAIN}
+            jwt={huddle.jitsi_jwt || undefined}
+            branding={huddle.jitsi_branding ?? undefined}
+            isHost={huddle.jitsi_is_host ?? isHost}
+            subject={huddle.title}
+            user={{
+              displayName: (user as any)?.full_name || (user as any)?.email || "Guest",
+              email: (user as any)?.email,
+            }}
+            e2ee={huddle.e2ee_enabled}
+            startWithAudioMuted={false}
+            startWithVideoMuted={false}
+            onApiReady={(api) => { jitsiApiRef.current = api; setJitsiApi(api); }}
+            onJoined={() => {
+              try { void transcription.startRecording(); } catch { /* */ }
+            }}
+            onReadyToClose={() => {
+              try { void transcription.stopRecording(); } catch { /* */ }
+              handleEnded();
+            }}
+            onVideoConferenceLeft={() => {
+              try { void transcription.stopRecording(); } catch { /* */ }
+            }}
+          />
+          {captionsOn && (
+            <LiveCaptionsOverlay
+              chunks={ws.chunks}
+              agentResponses={ws.agentResponses}
+              translationAttached={(huddle.agent_keys || []).includes("translation")}
+            />
+          )}
+          {/* Captions toggle — floats over the frame */}
+          <button
+            onClick={() => setCaptionsOn((v) => !v)}
+            title={captionsOn ? "Hide captions" : "Show captions"}
+            className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-black/50 backdrop-blur hover:bg-black/75 text-white flex items-center justify-center transition-colors"
+          >
+            {captionsOn ? <Captions size={16} /> : <CaptionsOff size={16} />}
+          </button>
+        </div>
       </div>
       <div className={layout.side}>
-        <HuddleSidebar
-          huddle={huddle}
-          isHost={isHost}
-          onEnded={handleEnded}
-          liveTranscript={liveTranscript}
-          jitsiApi={jitsiApi}
-        />
+        {/* Sidebar sits in its own frosted card so it visually matches */}
+        <div
+          className="h-full rounded-3xl overflow-hidden ring-1 ring-white/10 backdrop-blur-xl"
+          style={{
+            background: "rgba(15, 23, 42, 0.72)",
+            boxShadow: "0 25px 60px -25px rgba(0, 0, 0, 0.45)",
+          }}
+        >
+          <HuddleSidebar
+            huddle={huddle}
+            isHost={isHost}
+            onEnded={handleEnded}
+            liveTranscript={liveTranscript}
+            jitsiApi={jitsiApi}
+          />
+        </div>
       </div>
     </div>
   );

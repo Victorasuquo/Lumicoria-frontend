@@ -7,8 +7,17 @@ import AgentsUniverse from '../components/AgentsUniverse';
 import Integrations from '../components/Integrations';
 import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from 'lucide-react';
+import {
+  CompetitionAdvantageSection,
+  DailyValueSection,
+  EnterpriseSection,
+  FinalCTA,
+  ProviderTrustBar,
+  ReviewsSection,
+  StorySpineSection,
+  TrustedBySection,
+  WellbeingRhythmSection,
+} from '../components/LandingSections';
 import { SEO } from "@/components/SEO";
 import { KEYWORDS } from "@/lib/seo";
 
@@ -39,48 +48,31 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <main className="landing-shell min-h-screen w-full max-w-full overflow-x-hidden">
       <SEO
-        title="Lumicoria AI — AI Agent Universe for Teams, Productivity & Wellbeing"
-        description="Specialised AI agents for documents, meetings, research, vision, creative work, and wellbeing — inside a multi-tenant workspace with SSO, SCIM, BYOK and data residency. Start free, scale with your team."
+        title="Lumicoria AI, AI Agent Universe for Teams, Productivity and Wellbeing"
+        description="AI agents for documents, meetings, research, study planning, focus, wellbeing, and team productivity. Start free, organize your work, and scale with your team when you are ready."
         canonical="/"
         keywords={[...KEYWORDS.byPage.home, ...KEYWORDS.global]}
       />
       <Hero />
-      <Features />
+      <ProviderTrustBar />
+      <StorySpineSection />
+      <DailyValueSection />
       <AgentsUniverse />
-      <Integrations />
-      <AgentBuilder />
-      <Personas />
+      <Features />
+      <WellbeingRhythmSection />
       <HowItWorks />
-      
-      {/* Call to action section */}
-      <section className="py-20 bg-gradient-to-r from-lumicoria-purple to-lumicoria-deepPurple text-white">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-3xl mx-auto reveal">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Ready to transform your workflow?
-            </h2>
-            <p className="text-lg text-white/80 mb-8">
-              Join thousands of professionals, students, and teams who are already using Lumicoria.ai to automate their document workflows and improve well-being.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button className="bg-white text-lumicoria-purple hover:bg-gray-100 py-6 px-8 text-lg btn-hover-effect">
-                <span>Get Started Free</span>
-              </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white/10 py-6 px-8 text-lg">
-                <span className="flex items-center">
-                  Request a Demo
-                  <ArrowRight size={18} className="ml-2" />
-                </span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      
+      <AgentBuilder />
+      <Integrations />
+      <TrustedBySection />
+      <ReviewsSection />
+      <Personas />
+      <CompetitionAdvantageSection />
+      <EnterpriseSection />
       <Pricing />
-    </div>
+      <FinalCTA />
+    </main>
   );
 };
 

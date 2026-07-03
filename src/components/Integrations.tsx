@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FileText, CheckCircle, BarChart3, Users } from 'lucide-react';
+import { auroraSection, glassPanel, Reveal } from './LandingSections';
 
 const integrations = [
   { name: 'Google Docs', icon: '/images/integrations/google-docs.png' },
@@ -21,6 +22,27 @@ const integrations = [
   { name: 'Mistral', icon: '/images/integrations/mistral.png' },
 ];
 
+const integrationHighlights = [
+  {
+    logo: '/images/lumicoria-logo-primary.png',
+    title: 'Native connectors',
+    body: 'Google Workspace, Slack, Notion, Salesforce, Stripe, and more',
+    panel: 'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/[0.78] p-6 text-center shadow-[0_18px_52px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.10] backdrop-blur-xl',
+  },
+  {
+    logo: '/images/lumicoria-logo-primary.png',
+    title: 'Open endpoints',
+    body: 'REST and webhook connectors for workflows outside the grid',
+    panel: 'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/[0.42] p-6 text-center shadow-[0_18px_52px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-xl',
+  },
+  {
+    logo: '/images/lumicoria-logo-mono.png',
+    title: 'Permission trails',
+    body: 'Each connected tool keeps clear scopes, logs, and reviewable activity',
+    panel: 'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.28] p-6 text-center shadow-[0_18px_52px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.12] backdrop-blur-xl',
+  },
+];
+
 const getOrbitPosition = (index: number, total: number, radius: number) => {
   const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
   return {
@@ -31,21 +53,21 @@ const getOrbitPosition = (index: number, total: number, radius: number) => {
 
 /* ── Mini dashboard inside the laptop screen ── */
 const DashboardMockup = () => (
-  <div className="w-full h-full bg-[#f8f9fa] flex text-left">
+  <div className="w-full h-full bg-[#f7fbff] flex text-left">
     {/* Sidebar */}
     <div className="w-12 bg-white border-r border-gray-100 flex flex-col items-center py-2.5 gap-2.5 shrink-0">
       <img src="/images/lumicoria-logo-primary.png" alt="" className="w-6 h-6 rounded-md" />
-      <div className="w-5 h-5 rounded bg-lumicoria-purple/10 flex items-center justify-center mt-1">
-        <FileText size={10} className="text-lumicoria-purple" />
+      <div className="w-5 h-5 rounded bg-lumicoria-signal flex items-center justify-center mt-1">
+        <FileText size={10} className="text-lumicoria-core" />
       </div>
-      <div className="w-5 h-5 rounded bg-gray-50 flex items-center justify-center">
-        <CheckCircle size={10} className="text-gray-300" />
+      <div className="w-5 h-5 rounded bg-lumicoria-human/55 flex items-center justify-center">
+        <CheckCircle size={10} className="text-lumicoria-core/70" />
       </div>
-      <div className="w-5 h-5 rounded bg-gray-50 flex items-center justify-center">
-        <BarChart3 size={10} className="text-gray-300" />
+      <div className="w-5 h-5 rounded bg-lumicoria-gold/40 flex items-center justify-center">
+        <BarChart3 size={10} className="text-lumicoria-core/70" />
       </div>
-      <div className="w-5 h-5 rounded bg-gray-50 flex items-center justify-center">
-        <Users size={10} className="text-gray-300" />
+      <div className="w-5 h-5 rounded bg-lumicoria-core/10 flex items-center justify-center">
+        <Users size={10} className="text-lumicoria-core/70" />
       </div>
     </div>
     {/* Main */}
@@ -63,10 +85,17 @@ const DashboardMockup = () => (
       </div>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-        {['12 Tasks', '3 Agents', '98%'].map((label, i) => (
-          <div key={i} className="bg-white rounded-md border border-gray-100 px-2 py-1.5">
-            <div className="text-[8px] text-gray-400 leading-none">{['Active', 'Running', 'Uptime'][i]}</div>
-            <div className="text-[10px] font-semibold text-gray-800 mt-0.5 leading-none">{label}</div>
+        {['Docs', 'Agents', 'Ready'].map((label, i) => (
+          <div
+            key={i}
+            className={`rounded-md border px-2 py-1.5 ${[
+              'border-lumicoria-core/10 bg-lumicoria-signal/75',
+              'border-white/80 bg-lumicoria-human/45',
+              'border-white/80 bg-lumicoria-gold/35',
+            ][i]}`}
+          >
+            <div className="text-[8px] text-lumicoria-core/60 leading-none">{['Source', 'Flow', 'Status'][i]}</div>
+            <div className="text-[10px] font-semibold text-lumicoria-obsidian mt-0.5 leading-none">{label}</div>
           </div>
         ))}
       </div>
@@ -74,7 +103,7 @@ const DashboardMockup = () => (
       <div className="space-y-1">
         {['Sync Google Drive files...', 'Process Slack messages...', 'Update Salesforce leads...'].map((text, i) => (
           <div key={i} className="flex items-center gap-1.5 bg-white rounded border border-gray-100 px-2 py-1">
-            <div className={`w-1 h-1 rounded-full shrink-0 ${i === 0 ? 'bg-green-400' : i === 1 ? 'bg-amber-400' : 'bg-lumicoria-purple'}`} />
+            <div className={`w-1 h-1 rounded-full shrink-0 ${i === 0 ? 'bg-lumicoria-core' : i === 1 ? 'bg-lumicoria-gold' : 'bg-lumicoria-core/40'}`} />
             <span className="text-[8px] text-gray-500 truncate">{text}</span>
           </div>
         ))}
@@ -90,29 +119,26 @@ const Integrations = () => {
   const outerRing = integrations.slice(8);
 
   return (
-    <section id="integrations" className="py-20 bg-white overflow-hidden">
+    <section id="integrations" className={`${auroraSection} py-28 md:py-40`}>
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 reveal">
-          <span className="inline-block py-1 px-3 rounded-full bg-lumicoria-purple/10 text-lumicoria-purple text-sm font-medium mb-4">
-            Integrations
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Works With Your Entire Stack
+        <Reveal className="mx-auto mb-16 max-w-3xl text-center">
+          <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mx-auto mb-7 h-12 w-12 rounded-2xl object-contain" />
+          <h2 className="mb-6 font-hero text-[clamp(2.7rem,5vw,5.7rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
+            Works with the stack you already chose.
           </h2>
-          <p className="text-lg text-gray-600">
-            Lumicoria connects with the productivity tools, communication platforms,
-            AI models, and services your team already relies on.
+          <p className="text-lg leading-8 text-slate-700">
+            Connect docs, calendars, messages, payments, and model providers. Agents move the work between them without asking people to migrate first.
           </p>
-        </div>
+        </Reveal>
 
         {/* Split layout */}
         <div className="max-w-6xl mx-auto mb-16">
           <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-4">
 
-            {/* Left — MacBook Pro mockup */}
-            <div className="flex-1 flex justify-center reveal">
-              <div className="relative w-full max-w-[520px]">
+            {/* Left MacBook Pro mockup */}
+            <Reveal className="flex flex-1 justify-center">
+              <div className={`${glassPanel} relative w-full max-w-[560px] p-4`}>
                 {/* SVG frame */}
                 <img src="/images/macbook-frame.svg" alt="" className="w-full h-auto relative z-0" />
                 {/* Dashboard content positioned inside the screen area */}
@@ -128,36 +154,22 @@ const Integrations = () => {
                   <DashboardMockup />
                 </div>
               </div>
-            </div>
+            </Reveal>
 
-            {/* Right — Integration orbit */}
+            {/* Right integration orbit */}
             <div className="flex-1 flex justify-center">
               <div className="relative" style={{ width: '480px', height: '480px' }}>
-                {/* Glass blobs */}
-                <div
-                  className="absolute w-[240px] h-[140px] rounded-[50%] blur-[70px] opacity-[0.15]"
-                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #c4b5fd 100%)', top: '55%', left: '50%', transform: 'translate(-50%, -50%)' }}
-                />
-                <div
-                  className="absolute w-[120px] h-[90px] rounded-[50%] blur-[50px] opacity-[0.10]"
-                  style={{ background: 'linear-gradient(220deg, #e0e7ff 0%, #c7d2fe 100%)', top: '35%', left: '35%', transform: 'translate(-50%, -50%)' }}
-                />
-                <div
-                  className="absolute w-[80px] h-[60px] rounded-[50%] blur-[40px] opacity-[0.08]"
-                  style={{ background: '#ddd6fe', top: '62%', left: '65%', transform: 'translate(-50%, -50%)' }}
-                />
-
                 {/* Orbit rings */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[260px] h-[260px] rounded-full border border-gray-100" />
+                  <div className="w-[260px] h-[260px] rounded-full border border-lumicoria-cognitive/40" />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[420px] h-[420px] rounded-full border border-gray-50" />
+                  <div className="w-[420px] h-[420px] rounded-full border border-lumicoria-signal/70" />
                 </div>
 
-                {/* Center — wordmark */}
+                {/* Center wordmark */}
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <div className="w-28 h-28 rounded-full bg-white border-2 border-gray-100 shadow-sm flex items-center justify-center">
+                  <div className="liquid-glass liquid-shadow flex h-28 w-28 items-center justify-center rounded-full border border-white/80 bg-white/[0.72] backdrop-blur-2xl">
                     <img
                       src="/images/Lumicoria coloured (2).png"
                       alt="Lumicoria"
@@ -199,14 +211,14 @@ const Integrations = () => {
                           y1={pos.y > 0 ? '100%' : '0'}
                           x2={pos.x > 0 ? '0' : '100%'}
                           y2={pos.y > 0 ? '0' : '100%'}
-                          stroke="#e5e7eb"
+                          stroke="#BFBFFF"
                           strokeWidth="1"
                           strokeDasharray="5 3"
                         />
                       </svg>
 
-                      <div className={`relative w-14 h-14 rounded-2xl bg-white border shadow-sm flex items-center justify-center transition-all duration-200 cursor-pointer
-                        ${hoveredIdx === i ? 'border-gray-300 shadow-md scale-110' : 'border-gray-100'}`}
+                      <div className={`relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl border bg-white/[0.78] shadow-sm ring-1 ring-lumicoria-cognitive/30 backdrop-blur-xl transition-all duration-200
+                        ${hoveredIdx === i ? 'scale-110 border-lumicoria-core !bg-lumicoria-signal/90 shadow-[0_14px_34px_rgba(33,23,69,0.14)]' : 'border-white/70'}`}
                       >
                         <img src={integration.icon} alt={integration.name} className="w-9 h-9 rounded-lg object-contain" />
                       </div>
@@ -215,7 +227,7 @@ const Integrations = () => {
                         <motion.div
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="absolute left-1/2 -translate-x-1/2 -bottom-9 whitespace-nowrap bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg z-30"
+                          className="absolute left-1/2 -translate-x-1/2 -bottom-9 whitespace-nowrap bg-lumicoria-obsidian text-white text-xs font-medium px-3 py-1.5 rounded-lg z-30"
                         >
                           {integration.name}
                         </motion.div>
@@ -243,8 +255,8 @@ const Integrations = () => {
                       onMouseEnter={() => setHoveredIdx(globalIdx)}
                       onMouseLeave={() => setHoveredIdx(null)}
                     >
-                      <div className={`relative w-[52px] h-[52px] rounded-2xl bg-white border shadow-sm flex items-center justify-center transition-all duration-200 cursor-pointer
-                        ${hoveredIdx === globalIdx ? 'border-gray-300 shadow-md scale-110' : 'border-gray-100'}`}
+                      <div className={`relative flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-2xl border bg-white/[0.78] shadow-sm ring-1 ring-lumicoria-cognitive/30 backdrop-blur-xl transition-all duration-200
+                        ${hoveredIdx === globalIdx ? 'scale-110 border-lumicoria-core !bg-lumicoria-human/75 shadow-[0_14px_34px_rgba(33,23,69,0.14)]' : 'border-white/70'}`}
                       >
                         <img src={integration.icon} alt={integration.name} className="w-8 h-8 rounded-lg object-contain" />
                       </div>
@@ -253,7 +265,7 @@ const Integrations = () => {
                         <motion.div
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="absolute left-1/2 -translate-x-1/2 -bottom-9 whitespace-nowrap bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg z-30"
+                          className="absolute left-1/2 -translate-x-1/2 -bottom-9 whitespace-nowrap bg-lumicoria-obsidian text-white text-xs font-medium px-3 py-1.5 rounded-lg z-30"
                         >
                           {integration.name}
                         </motion.div>
@@ -267,34 +279,25 @@ const Integrations = () => {
         </div>
 
         {/* Stats / features row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-10 reveal">
-          <div className="text-center p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
-            <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="w-10 h-10 rounded-lg object-contain mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">15+ Integrations</h3>
-            <p className="text-sm text-gray-500">Connect with your favorite tools and services</p>
-          </div>
-          <div className="text-center p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
-            <img src="/images/lumicoria-logo-gradient.png" alt="Lumicoria" className="w-10 h-10 rounded-lg object-contain mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">Real-time Sync</h3>
-            <p className="text-sm text-gray-500">Changes sync instantly across all connected apps</p>
-          </div>
-          <div className="text-center p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
-            <img src="/images/lumicoria-logo-mono.png" alt="Lumicoria" className="w-10 h-10 rounded-lg object-contain mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">Secure by Default</h3>
-            <p className="text-sm text-gray-500">End-to-end encryption for all integration data</p>
-          </div>
-        </div>
+        <Reveal className="mx-auto mb-10 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-3">
+          {integrationHighlights.map((item) => (
+            <div key={item.title} className={item.panel}>
+              <img src={item.logo} alt="Lumicoria" className="w-10 h-10 rounded-lg object-contain mx-auto mb-3" />
+              <h3 className="mb-1 font-hero text-lg font-semibold text-lumicoria-obsidian">{item.title}</h3>
+              <p className="text-sm leading-6 text-lumicoria-obsidian/70">{item.body}</p>
+            </div>
+          ))}
+        </Reveal>
 
         {/* CTA */}
-        <div className="text-center reveal">
-          <p className="text-lg text-gray-600 mb-6">
-            Connect your workspace, communication, and AI tools in minutes.
-            No complex setup required.
+        <Reveal className="text-center">
+          <p className="mb-6 text-lg leading-8 text-slate-700">
+            Microsoft Teams, Outlook, HubSpot, Asana, Jira, Linear, and the next fifty connectors are on the roadmap.
           </p>
-          <Button className="bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white btn-hover-effect">
-            <span>View All Integrations</span>
+          <Button className="liquid-action bg-lumicoria-core text-white hover:bg-lumicoria-obsidian">
+            <span>Explore integrations</span>
           </Button>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -3,6 +3,7 @@ import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { motion } from 'framer-motion';
 import { ArrowRight, Settings, Zap } from 'lucide-react';
+import { auroraSection, glassPanel, glassTile, Reveal } from './LandingSections';
 
 type SubNode = { id: string; name: string; icon: string };
 type CanvasNode = {
@@ -22,8 +23,8 @@ const flowNodes: CanvasNode[] = [
     id: 'intake',
     name: 'Multi-Channel Intake',
     subtitle: 'Trigger',
-    icon: '/images/lumicoria-logo-gradient.png',
-    color: '#6366f1',
+    icon: '/images/lumicoria-logo-primary.png',
+    color: '#372673',
     x: 20, y: 155,
     children: [
       { id: 'sub-gmail', name: 'Gmail', icon: '/images/integrations/gmail.svg' },
@@ -36,7 +37,7 @@ const flowNodes: CanvasNode[] = [
     name: 'AI Router',
     subtitle: 'Intelligent Routing',
     icon: '/images/lumicoria-logo-primary.png',
-    color: '#7c3aed',
+    color: '#211745',
     x: 210, y: 155,
     children: [
       { id: 'sub-gemini', name: 'Gemini', icon: '/images/integrations/gemini.png' },
@@ -49,7 +50,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Document Agent',
     subtitle: 'Extract & Summarize',
     icon: '/images/integrations/google-docs.png',
-    color: '#2563eb',
+    color: '#BFBFFF',
     x: 420, y: 30,
   },
   {
@@ -57,7 +58,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Meeting Agent',
     subtitle: 'Schedule & Brief',
     icon: '/images/integrations/google-meet.png',
-    color: '#059669',
+    color: '#E2F0FF',
     x: 420, y: 175,
   },
   {
@@ -65,7 +66,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Creative Agent',
     subtitle: 'Draft & Design',
     icon: '/images/integrations/notion.png',
-    color: '#d97706',
+    color: '#BFBFFF',
     x: 420, y: 330,
   },
   // ── Outputs (staggered Y positions for curved wires) ──
@@ -74,7 +75,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Notion',
     subtitle: 'Knowledge Base',
     icon: '/images/integrations/notion.png',
-    color: '#374151',
+    color: '#372673',
     x: 660, y: 25,
   },
   {
@@ -82,7 +83,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Google Sheets',
     subtitle: 'Data Export',
     icon: '/images/integrations/google-sheets.png',
-    color: '#16a34a',
+    color: '#E2F0FF',
     x: 660, y: 125,
   },
   {
@@ -90,7 +91,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Google Calendar',
     subtitle: 'Auto Schedule',
     icon: '/images/integrations/google-calendar.svg',
-    color: '#2563eb',
+    color: '#BFBFFF',
     x: 660, y: 225,
   },
   {
@@ -98,7 +99,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Slack',
     subtitle: 'Notify Team',
     icon: '/images/integrations/slack.png',
-    color: '#611f69',
+    color: '#E2F0FF',
     x: 660, y: 325,
   },
   // ── Final convergence ──
@@ -107,7 +108,7 @@ const flowNodes: CanvasNode[] = [
     name: 'Email Summary',
     subtitle: 'Daily Digest',
     icon: '/images/integrations/gmail.svg',
-    color: '#ea4335',
+    color: '#372673',
     x: 870, y: 170,
   },
 ];
@@ -138,6 +139,14 @@ const wires: Wire[] = [
 const NODE_W = 140;
 const ICON_SIZE = 52;
 const PORT_R = 5;
+
+const dotDurations = [2.2, 2.6, 1.9, 2.4, 2.0, 2.3, 1.8, 2.1, 1.7, 2.5, 2.8, 2.3, 1.6, 2.7, 1.9, 2.1, 2.4];
+
+const builderFeaturePanels = [
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/[0.78] p-5 text-left shadow-[0_18px_52px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.10] backdrop-blur-xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/[0.42] p-5 text-left shadow-[0_18px_52px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.26] p-5 text-left shadow-[0_18px_52px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.12] backdrop-blur-xl',
+];
 
 const AgentBuilder = () => {
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(
@@ -195,41 +204,37 @@ const AgentBuilder = () => {
     return `M ${s.x} ${s.y} C ${s.x + dx} ${s.y}, ${e.x - dx} ${e.y}, ${e.x} ${e.y}`;
   };
 
-  const dotDurations = [2.2, 2.6, 1.9, 2.4, 2.0, 2.3, 1.8, 2.1, 1.7, 2.5, 2.8, 2.3, 1.6, 2.7, 1.9, 2.1, 2.4];
-
   return (
-    <section id="agent-builder" className="py-20 bg-white overflow-hidden">
+    <section id="agent-builder" className={`${auroraSection} py-28 md:py-40`}>
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16 reveal">
-          <span className="inline-block py-1 px-3 rounded-full bg-lumicoria-purple/10 text-lumicoria-purple text-sm font-medium mb-4">
-            No-Code Agent Builder
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Build Your Custom AI Agents
+        <Reveal className="mx-auto mb-16 max-w-3xl text-center">
+          <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mx-auto mb-7 h-12 w-12 rounded-2xl object-contain" />
+          <h2 className="mb-6 font-hero text-[clamp(2.7rem,5vw,5.7rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
+            Build the way you already think.
           </h2>
-          <p className="text-lg text-gray-600">
-            Create powerful AI agents by connecting modular components—inputs, processors, and outputs—without writing a single line of code.
+          <p className="text-lg leading-8 text-slate-700">
+            Connect a document, meeting, inbox, or workspace. Lumicoria turns the routine into an agent you can test, adjust, and share without code.
           </p>
-        </div>
+        </Reveal>
 
         <div className="max-w-5xl mx-auto">
-          <div className="rounded-2xl border border-gray-200 shadow-lg mb-10 reveal overflow-hidden">
+          <Reveal className={`${glassPanel} mb-10 overflow-hidden p-3`}>
             {/* Window chrome */}
-            <div className="flex items-center justify-between px-5 py-2.5 bg-white border-b border-gray-100">
+            <div className="flex items-center justify-between rounded-t-2xl border-b border-lumicoria-core/10 bg-lumicoria-signal/80 px-5 py-2.5 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
                   <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
                   <div className="w-3 h-3 rounded-full bg-[#28c840]" />
                 </div>
-                <span className="text-xs font-medium text-gray-400 ml-2">Lumicoria Agent Builder</span>
+                <span className="ml-2 font-signal text-[11px] text-slate-500">Lumicoria Agent Builder</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5 text-[11px] text-green-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="flex items-center gap-1.5 text-[11px] text-lumicoria-obsidian font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-lumicoria-core animate-pulse" />
                   Live
                 </span>
-                <span className="text-[10px] text-gray-300">Drag to rearrange</span>
+                <span className="font-signal text-[10px] text-lumicoria-core/70">Drag to rearrange</span>
               </div>
             </div>
 
@@ -238,9 +243,8 @@ const AgentBuilder = () => {
               className="agent-canvas relative select-none"
               style={{
                 height: '480px',
-                background: '#fafbfc',
-                backgroundImage: 'radial-gradient(#e8e8ec 0.5px, transparent 0.5px)',
-                backgroundSize: '24px 24px',
+                background: 'rgba(255,255,255,0.66)',
+                boxShadow: 'inset 0 0 0 1px rgba(55,38,115,0.08), inset 24px 0 0 rgba(226,240,255,0.48), inset -24px 0 0 rgba(252,237,178,0.20)',
                 cursor: dragging ? 'grabbing' : 'default',
               }}
               onMouseMove={handleMouseMove}
@@ -264,21 +268,21 @@ const AgentBuilder = () => {
 
                   return (
                     <g key={`w-${i}`}>
-                      {/* Wire — light gray like n8n */}
-                      <path d={path} fill="none" stroke="#d4d4d8" strokeWidth="1.5" />
+                      {/* Wire, light gray like n8n */}
+                      <path d={path} fill="none" stroke="#B6C6DE" strokeWidth="1.5" />
 
                       {/* Source port */}
-                      <circle cx={sPt.x} cy={sPt.y} r={PORT_R} fill="white" stroke="#d4d4d8" strokeWidth="1.5" />
-                      <circle cx={sPt.x} cy={sPt.y} r="1.5" fill="#a1a1aa" />
+                      <circle cx={sPt.x} cy={sPt.y} r={PORT_R} fill="white" stroke="#BFBFFF" strokeWidth="1.5" />
+                      <circle cx={sPt.x} cy={sPt.y} r="1.5" fill="#372673" />
                       {/* Target port */}
-                      <circle cx={ePt.x} cy={ePt.y} r={PORT_R} fill="white" stroke="#d4d4d8" strokeWidth="1.5" />
-                      <circle cx={ePt.x} cy={ePt.y} r="1.5" fill="#a1a1aa" />
+                      <circle cx={ePt.x} cy={ePt.y} r={PORT_R} fill="white" stroke="#BFBFFF" strokeWidth="1.5" />
+                      <circle cx={ePt.x} cy={ePt.y} r="1.5" fill="#372673" />
 
                       {/* Animated data flow dot */}
-                      <circle r="2.5" fill="#8b5cf6" filter="url(#glow)" opacity="0.7">
+                      <circle r="2.5" fill="#FEE274" filter="url(#glow)" opacity="0.78">
                         <animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} />
                       </circle>
-                      <circle r="1.5" fill="#c4b5fd" opacity="0.4">
+                      <circle r="1.5" fill="#FEE274" opacity="0.48">
                         <animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} begin={`${dur * 0.5}s`} />
                       </circle>
 
@@ -289,8 +293,8 @@ const AgentBuilder = () => {
                         const tw = w.label.length * 6 + 16;
                         return (
                           <g>
-                            <rect x={mx - tw / 2} y={my - 8} width={tw} height="16" rx="8" fill="white" stroke="#e4e4e7" strokeWidth="0.8" />
-                            <text x={mx} y={my + 3} textAnchor="middle" className="text-[9px] fill-gray-400 font-medium">{w.label}</text>
+                            <rect x={mx - tw / 2} y={my - 8} width={tw} height="16" rx="8" fill="#E2F0FF" stroke="#BFBFFF" strokeWidth="0.8" />
+                            <text x={mx} y={my + 3} textAnchor="middle" className="text-[9px] fill-lumicoria-core font-medium">{w.label}</text>
                           </g>
                         );
                       })()}
@@ -309,7 +313,7 @@ const AgentBuilder = () => {
                     const childY = startY + 46;
                     return (
                       <g key={child.id}>
-                        <line x1={cx} y1={startY} x2={childX} y2={childY} stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                        <line x1={cx} y1={startY} x2={childX} y2={childY} stroke="#BFBFFF" strokeWidth="1" strokeDasharray="3 3" />
                       </g>
                     );
                   });
@@ -337,8 +341,8 @@ const AgentBuilder = () => {
                   >
                     <div className="flex flex-col items-center">
                       <div
-                        className="w-[52px] h-[52px] rounded-full bg-white shadow-sm flex items-center justify-center transition-all duration-200 group-hover:shadow-md group-hover:scale-105"
-                        style={{ border: `1.5px solid ${node.color}60`, boxShadow: `0 1px 6px ${node.color}10` }}
+                        className="w-[52px] h-[52px] rounded-full bg-white shadow-sm flex items-center justify-center transition-all duration-200 group-hover:-translate-y-1 group-hover:scale-105"
+                        style={{ border: `1.5px solid ${node.color}`, boxShadow: `0 8px 22px rgba(33,23,69,0.10), inset 0 1px 0 rgba(255,255,255,0.82)` }}
                       >
                         <img src={node.icon} alt={node.name} className="w-7 h-7 rounded-lg object-contain" />
                       </div>
@@ -352,7 +356,7 @@ const AgentBuilder = () => {
                       <div className="flex justify-center gap-5 mt-9">
                         {node.children.map(child => (
                           <div key={child.id} className="flex flex-col items-center">
-                            <div className="w-9 h-9 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+                            <div className="w-9 h-9 rounded-full bg-lumicoria-signal/80 border border-white/80 shadow-sm flex items-center justify-center">
                               <img src={child.icon} alt={child.name} className="w-[18px] h-[18px] rounded object-contain" />
                             </div>
                             <span className="text-[8px] text-gray-400 mt-1 font-medium">{child.name}</span>
@@ -364,13 +368,13 @@ const AgentBuilder = () => {
                 );
               })}
             </div>
-          </div>
+          </Reveal>
 
           {/* Preview bar */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mb-10 reveal">
-            <h3 className="text-xl font-bold mb-4 flex items-center">
-              <Zap size={20} className="mr-2 text-lumicoria-purple" />
-              Production Workflow Preview
+          <Reveal className={`${glassPanel} !bg-lumicoria-signal/[0.46] mb-10 p-6`}>
+            <h3 className="mb-4 flex items-center font-hero text-2xl font-semibold tracking-[-0.025em] text-lumicoria-obsidian">
+              <Zap size={20} className="mr-2 text-lumicoria-core" />
+              Workday flow preview
             </h3>
             <div className="flex flex-col sm:flex-row items-center justify-between">
               <div className="flex items-center mb-4 sm:mb-0 flex-wrap gap-y-2">
@@ -399,7 +403,7 @@ const AgentBuilder = () => {
                   ))}
                 </div>
                 <ArrowRight size={16} className="mx-1.5 text-gray-300" />
-                <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" style={{ border: '1.5px solid #ea433560' }}>
+                <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" style={{ border: '1.5px solid #FEE274' }}>
                   <img src="/images/integrations/gmail.svg" alt="Email Summary" className="w-[18px] h-[18px] rounded object-contain" />
                 </div>
               </div>
@@ -407,27 +411,35 @@ const AgentBuilder = () => {
               <div className="flex items-center gap-3">
                 <Button variant="outline" className="flex items-center">
                   <Settings size={16} className="mr-2" />
-                  Configure
+                  Adjust flow
                 </Button>
-                <Button className="bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white btn-hover-effect">
+                <Button className="liquid-action bg-lumicoria-core text-white hover:bg-lumicoria-obsidian">
                   <span className="flex items-center">
                     <Zap size={16} className="mr-2" />
-                    Deploy Agent
+                    Publish agent
                   </span>
                 </Button>
               </div>
             </div>
-          </div>
+          </Reveal>
 
-          <div className="text-center reveal">
-            <p className="text-lg text-gray-600 mb-6">
-              Orchestrate 21 specialized AI agents across documents, meetings, wellbeing, creative work, and more.
-              Deploy production workflows in minutes.
-            </p>
-            <Button className="bg-lumicoria-purple hover:bg-lumicoria-deepPurple text-white btn-hover-effect">
-              <span>Start Building Now</span>
+          <Reveal className="text-center">
+            <div className="mx-auto mb-8 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
+              {[
+                ['Start with a real task.', 'Pick the routine you want to stop repeating, then connect the source and destination.'],
+                ['Keep every change safe.', 'Every edit is saved as a version, so teams can review, compare, and roll back.'],
+                ['Test before it helps people.', 'Run the agent against examples first, then publish when the result feels right.'],
+              ].map(([title, body], index) => (
+                <div key={title} className={builderFeaturePanels[index]}>
+                  <p className="font-hero text-lg font-semibold tracking-[-0.02em] text-lumicoria-obsidian">{title}</p>
+                  <p className="mt-2 text-sm leading-6 text-lumicoria-obsidian/70">{body}</p>
+                </div>
+              ))}
+            </div>
+            <Button className="liquid-action bg-lumicoria-core text-white hover:bg-lumicoria-obsidian">
+              <span>Open Studio free</span>
             </Button>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

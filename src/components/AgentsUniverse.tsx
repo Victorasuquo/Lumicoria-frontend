@@ -1,452 +1,305 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { GalleryHorizontal, GalleryThumbnails, Brain, FileText, Heart, Camera, Users, Activity, CheckCircle, ListTodo, Calendar, X, Plus, AlertCircle } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/hooks/use-toast";
+import React, { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { auroraSection, glassPanel, glassTile, purpleGlass, Reveal } from './LandingSections';
 
 const agents = [
   {
-    id: 1,
-    name: "Document Agent",
-    description: "Automatically extract key information from documents and create tasks, events, and reminders.",
-    icon: <FileText size={32} />,
-    color: "bg-lumicoria-purple",
-    gradient: "from-violet-500 to-purple-600"
+    name: 'Document Agent',
+    category: 'Knowledge',
+    tagline: 'Turn every document into structured action.',
+    description: 'Extract dates, amounts, parties, clauses, risks, and tasks from contracts, invoices, scans, and internal files.',
   },
   {
-    id: 2,
-    name: "Well-being Coach",
-    description: "Get personalized break reminders, posture tips, and focus exercises based on your work patterns.",
-    icon: <Heart size={32} />,
-    color: "bg-lumicoria-purple",
-    gradient: "from-rose-500 to-pink-600"
+    name: 'RAG Agent',
+    category: 'Knowledge',
+    tagline: 'Your knowledge, searchable by meaning.',
+    description: "Answer team questions with citations back to the source across documentation, wikis, contracts, and uploaded content.",
   },
   {
-    id: 3,
-    name: "Vision Agent",
-    description: "Use your camera to instantly scan documents, whiteboards or analyze your environment in real-time.",
-    icon: <Camera size={32} />,
-    color: "bg-lumicoria-blue",
-    gradient: "from-blue-500 to-cyan-600"
+    name: 'Knowledge Graph Agent',
+    category: 'Knowledge',
+    tagline: 'Extract the structure inside unstructured content.',
+    description: 'Pull entities, relationships, and dependencies out of documents and conversations so teams can query the graph.',
   },
   {
-    id: 4,
-    name: "Meeting Agent",
-    description: "Summarize calls, capture action items, and schedule follow-ups automatically.",
-    icon: <Users size={32} />,
-    color: "bg-lumicoria-orange",
-    gradient: "from-amber-500 to-orange-600"
+    name: 'Research Agent',
+    category: 'Research',
+    tagline: 'A week of research in an afternoon.',
+    description: 'Turn a topic and trusted sources into a structured report with citations, key findings, and a defensible recommendation.',
   },
   {
-    id: 5,
-    name: "Student Agent",
-    description: "Organize study materials, track assignments and deadlines with focus support.",
-    icon: <Brain size={32} />,
-    color: "bg-lumicoria-teal",
-    gradient: "from-emerald-500 to-green-600"
-  }
+    name: 'Research Mentor',
+    category: 'Research',
+    tagline: "Methodology coaching for your team's analysts.",
+    description: 'Walk analysts through sources, methods, and analysis so the final report is sharper and still owned by the analyst.',
+  },
+  {
+    name: 'Customer Service Agent',
+    category: 'Operations',
+    tagline: 'Resolve routine tickets with context.',
+    description: 'Triage, classify, retrieve from the knowledge base, draft the reply, and escalate work that needs human judgment.',
+  },
+  {
+    name: 'Translation Agent',
+    category: 'Operations',
+    tagline: 'Thirty plus languages, with your terminology.',
+    description: 'Translate text, documents, and structured content with brand voice and regulatory language in mind.',
+  },
+  {
+    name: 'Social Media Agent',
+    category: 'Creative',
+    tagline: 'A consistent cadence your team can maintain.',
+    description: 'Draft posts in brand voice, schedule across platforms, and report engagement with recommended adjustments.',
+  },
+  {
+    name: 'Meeting Agent',
+    category: 'Operations',
+    tagline: 'Every meeting captured as structured outcome.',
+    description: 'Audio becomes transcript, decisions, action items, and tasks attached to the right people and records.',
+  },
+  {
+    name: 'Meeting Fact Checker',
+    category: 'Governance',
+    tagline: 'Real time fact checking against your knowledge base.',
+    description: "During the call, claims are checked against your team's content so misstatements surface early.",
+  },
+  {
+    name: 'Data Analysis Agent',
+    category: 'Research',
+    tagline: "The analyst's first pass, in minutes.",
+    description: 'Upload the dataset and get summaries, visualisations, and recommendations calibrated to the business question.',
+  },
+  {
+    name: 'Creative Agent',
+    category: 'Creative',
+    tagline: 'First drafts, calibrated to your brand.',
+    description: 'Long form writing, scripts, marketing copy, and presentation outlines in your voice. The team edits.',
+  },
+  {
+    name: 'Vision Agent',
+    category: 'Knowledge',
+    tagline: 'Image and video as first class input.',
+    description: 'Document scanning, whiteboard capture, product identification, and visual workflows available to operators.',
+  },
+  {
+    name: 'Legal Document Agent',
+    category: 'Governance',
+    tagline: 'Every contract reviewed against your playbook.',
+    description: 'Extract clauses, compare against standards, and flag deviations for the legal or operations team.',
+  },
+  {
+    name: 'Ethics and Bias Agent',
+    category: 'Governance',
+    tagline: 'Catch the risk before it leaves the team.',
+    description: 'Review content, communications, and decisions for ethics, bias, and compliance issues against chosen guidelines.',
+  },
+  {
+    name: 'Student Agent',
+    category: 'Learning',
+    tagline: 'A study companion for the academic year.',
+    description: "Organise notes, references, deadlines, and study plans against the student's actual curriculum and pace.",
+  },
+  {
+    name: 'Learning Coach',
+    category: 'Learning',
+    tagline: 'Adult learning that adapts to your goal.',
+    description: "Recommend resources, schedule practice, and surface the right material based on the learner's pace and prior knowledge.",
+  },
+  {
+    name: 'Wellbeing Coach',
+    category: 'Wellbeing',
+    tagline: 'A wellness layer integrated with your work.',
+    description: 'Observe workspace activity, surface mood prompts, recommend breaks, and produce a weekly digest grounded in real activity.',
+  },
+  {
+    name: 'Focus Flow Agent',
+    category: 'Wellbeing',
+    tagline: 'Surface your next best action.',
+    description: 'Look across projects, tasks, calendar, and active conversations to surface the next action calibrated to priorities.',
+  },
+  {
+    name: 'Workspace Ergonomics Agent',
+    category: 'Wellbeing',
+    tagline: 'Patterns made visible. Improvements suggested.',
+    description: "Observe team work patterns and recommend operational improvements leadership can act on.",
+  },
+  {
+    name: 'General Agent',
+    category: 'Custom',
+    tagline: 'The starting point for the agent you compose.',
+    description: 'Configurable, integration aware, and prompt driven. The base for the workflow your team needs next.',
+  },
+];
+
+const logoVariants = [
+  '/images/lumicoria-logo-primary.png',
+  '/images/lumicoria-logo-primary.png',
+  '/images/lumicoria-logo-mono.png',
+  '/images/Lumicoria coloured (2).png',
+];
+
+const categoryOrder = ['Wellbeing', 'Learning', 'Knowledge', 'Research', 'Operations', 'Creative', 'Governance', 'Custom'];
+
+const categoryActiveClasses = [
+  'bg-lumicoria-human/80 text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10 ring-1 ring-lumicoria-gold/15',
+  'bg-lumicoria-gold/55 text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
+  'bg-lumicoria-signal text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
+  'bg-lumicoria-core text-white shadow-lg shadow-lumicoria-core/20',
+  'bg-lumicoria-obsidian text-white shadow-lg shadow-lumicoria-core/20',
+  'bg-lumicoria-signal text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
+  'bg-lumicoria-obsidian text-white shadow-lg shadow-lumicoria-core/20',
+  'bg-lumicoria-gold/55 text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
+];
+
+const categoryPanelClasses = [
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/45 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.28] text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/75 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+  purpleGlass,
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/10 bg-lumicoria-obsidian text-white shadow-[0_24px_70px_rgba(8,7,18,0.24)] ring-1 ring-lumicoria-cognitive/15 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/75 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/10 bg-lumicoria-obsidian text-white shadow-[0_24px_70px_rgba(8,7,18,0.24)] ring-1 ring-lumicoria-cognitive/15 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.28] text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
 ];
 
 const AgentsUniverse = () => {
-  const [selectedAgent, setSelectedAgent] = useState(agents[0]);
-  const [processingState, setProcessingState] = useState("idle"); // idle, processing, complete
-  const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState("extracted");
-  const [showWellbeingExercise, setShowWellbeingExercise] = useState(false);
-  
-  // For document agent demo
-  const documentInfo = {
-    extracted: [
-      { label: "Payment Due", value: "June 15, 2025" },
-      { label: "Project Deadline", value: "July 30, 2025" },
-      { label: "Total Amount", value: "$12,450.00" }
-    ],
-    tasks: [
-      { id: 1, title: "Process invoice payment", deadline: "June 10, 2025", priority: "High" },
-      { id: 2, title: "Schedule project review", deadline: "July 15, 2025", priority: "Medium" }
-    ],
-    events: [
-      { id: 1, title: "Payment Reminder", date: "June 14, 2025", time: "09:00 AM" },
-      { id: 2, title: "Project Deadline", date: "July 30, 2025", time: "05:00 PM" }
-    ]
-  };
-  
-  // For well-being coach demo
-  const wellbeingData = {
-    focusTime: "52 minutes",
-    recommendation: "3-minute breathing exercise",
-    posture: "Leaning forward",
-    breakStatus: "Due now"
-  };
+  const [activeCategory, setActiveCategory] = useState('Wellbeing');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const ref = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const orbitRotate = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [-18, 18]);
+  const filteredAgents = useMemo(() => agents.filter((agent) => agent.category === activeCategory), [activeCategory]);
+  const activeAgent = filteredAgents[activeIndex % filteredAgents.length] ?? agents[0];
+  const activeCategoryIndex = Math.max(0, categoryOrder.indexOf(activeCategory));
+  const activeCategoryIsDark = activeCategoryIndex === 3 || activeCategoryIndex === 4 || activeCategoryIndex === 6;
 
-  useEffect(() => {
-    let interval;
-    
-    if (processingState === "processing") {
-      interval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 5;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setProcessingState("complete");
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 100);
-    }
-    
-    return () => interval && clearInterval(interval);
-  }, [processingState]);
-
-  const handleStartProcessing = () => {
-    setProcessingState("processing");
-    setProgress(0);
-    
-    // Reset to default state when switching agents
-    setActiveTab("extracted");
-    setShowWellbeingExercise(false);
-  };
-
-  const handleDeployAgent = () => {
-    toast({
-      title: `${selectedAgent.name} Deployed`,
-      description: "Your agent is now active and ready to assist you.",
-    });
-  };
-
-  const startBreakExercise = () => {
-    setShowWellbeingExercise(true);
-  };
-  
-  const dismissBreakExercise = () => {
-    setShowWellbeingExercise(false);
-    toast({
-      title: "Break reminder snoozed",
-      description: "We'll remind you again in 20 minutes.",
-    });
-  };
-
-  // Reset processing state when agent changes
-  useEffect(() => {
-    setProcessingState("idle");
-    setProgress(0);
-  }, [selectedAgent]);
-  
   return (
-    <section id="agents-universe" className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16 reveal">
-          <span className="inline-block py-1 px-3 rounded-full bg-lumicoria-purple/10 text-lumicoria-purple text-sm font-medium mb-4">
-            Agents Universe
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Your AI Assistant Ecosystem
-          </h2>
-          <p className="text-lg text-gray-600 mb-8">
-            Browse our library of specialized AI agents, each designed to assist with specific tasks and workflows. Select and deploy agents instantly, with no coding required.
-          </p>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row gap-8 items-start justify-between reveal">
-          {/* Agent Navigator */}
-          <div className="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-bold mb-6 flex items-center">
-              <GalleryThumbnails className="mr-2 text-lumicoria-purple" />
-              Browse Agents
-            </h3>
-            <div className="space-y-3">
-              {agents.map((agent) => (
-                <div 
-                  key={agent.id}
-                  onClick={() => setSelectedAgent(agent)}
-                  className={`p-4 rounded-lg cursor-pointer transition-all flex items-center ${
-                    selectedAgent.id === agent.id 
-                      ? 'bg-lumicoria-purple/10 border border-lumicoria-purple/30' 
-                      : 'bg-gray-50 hover:bg-gray-100'
+    <section ref={ref} id="agents-universe" className={`${auroraSection} py-28 md:py-40`}>
+      <div className="container relative mx-auto px-4">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.86fr_1.42fr] lg:items-start">
+          <Reveal className="lg:sticky lg:top-28">
+            <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
+            <h2 className="font-hero text-[clamp(2.7rem,5vw,5.85rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-gray-950">
+              Agents for the whole workday.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-gray-600">
+              Document intelligence, research, meetings, learning, creative work, customer support, focus, and wellbeing all orbit the same workspace.
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-2">
+              {categoryOrder.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(category);
+                    setActiveIndex(0);
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    activeCategory === category
+                      ? categoryActiveClasses[categoryOrder.indexOf(category)]
+                      : 'bg-white/70 text-lumicoria-core ring-1 ring-lumicoria-core/[0.15] backdrop-blur-xl hover:bg-white'
                   }`}
                 >
-                  <div className={`p-2 rounded-lg ${agent.color} text-white mr-4`}>
-                    {agent.icon}
-                  </div>
-                  <div>
-                    <h4 className="font-medium">{agent.name}</h4>
-                  </div>
-                </div>
+                  {category}
+                </button>
               ))}
             </div>
-          </div>
-          
-          {/* Agent Details */}
-          <div className="w-full lg:w-2/3">
-            <motion.div 
-              key={selectedAgent.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-8 rounded-xl shadow-lg border border-gray-100"
-            >
-              <div className="flex items-start mb-6">
-                <div className={`p-4 rounded-xl bg-gradient-to-br ${selectedAgent.gradient} text-white mr-6`}>
-                  {selectedAgent.icon}
+          </Reveal>
+
+          <div className="space-y-6">
+            <Reveal>
+              <div className={`${glassPanel} p-5`}>
+                <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div className="relative min-h-[31rem] overflow-hidden rounded-2xl border border-white/70 bg-white/50 p-5 ring-1 ring-lumicoria-core/10 backdrop-blur-xl">
+                    <motion.div style={{ rotate: orbitRotate }} className="absolute inset-8 rounded-full border border-lumicoria-core/10" />
+                    <motion.div style={{ rotate: orbitRotate }} className="absolute inset-20 rounded-full border border-lumicoria-core/10" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.div
+                        whileHover={{ scale: 1.04 }}
+                        className="z-10 flex h-36 w-36 items-center justify-center rounded-full border border-white/70 bg-white/70 shadow-[0_20px_60px_rgba(33,23,69,0.12)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl"
+                      >
+                        <img src="/images/Lumicoria coloured (2).png" alt="Lumicoria" className="h-20 w-20 object-contain" />
+                      </motion.div>
+                    </div>
+                    {filteredAgents.map((agent, index) => {
+                      const angle = (index / filteredAgents.length) * Math.PI * 2 - Math.PI / 2;
+                      const radius = index % 2 === 0 ? 160 : 112;
+                      const x = Math.cos(angle) * radius;
+                      const y = Math.sin(angle) * radius;
+                      return (
+                        <motion.button
+                          key={agent.name}
+                          type="button"
+                          onClick={() => setActiveIndex(index)}
+                          className={`absolute left-1/2 top-1/2 z-20 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/70 bg-white/75 p-2 shadow-sm ring-1 backdrop-blur-xl transition ${
+                            activeAgent.name === agent.name ? 'ring-lumicoria-core shadow-[0_14px_30px_rgba(33,23,69,0.18)]' : 'ring-lumicoria-core/10 hover:ring-lumicoria-core/25'
+                          }`}
+                          animate={{ x, y, scale: activeAgent.name === agent.name ? 1.1 : 1 }}
+                          transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                        >
+                          <img src={logoVariants[index % logoVariants.length]} alt="" className="h-full w-full rounded-xl object-contain" />
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+
+                  <motion.article
+                    key={activeAgent.name}
+                    initial={reduceMotion ? false : { opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`${categoryPanelClasses[activeCategoryIndex]} p-7`}
+                  >
+                    <div className="relative">
+                      <img src={logoVariants[activeIndex % logoVariants.length]} alt="" className="mb-8 h-12 w-12 rounded-2xl bg-white object-contain" />
+                      <p className={activeCategoryIsDark ? 'text-sm font-semibold text-white/70' : 'text-sm font-semibold text-lumicoria-core'}>{activeAgent.category}</p>
+                      <h3 className="mt-4 font-hero text-[clamp(2.2rem,4vw,4.7rem)] font-semibold leading-[1] tracking-[-0.04em]">
+                        {activeAgent.name}
+                      </h3>
+                      <p className={activeCategoryIsDark ? 'mt-5 text-2xl font-semibold leading-9 tracking-[-0.02em] text-white' : 'mt-5 text-2xl font-semibold leading-9 tracking-[-0.02em] text-lumicoria-obsidian'}>{activeAgent.tagline}</p>
+                      <p className={activeCategoryIsDark ? 'mt-6 text-base leading-8 text-white/75' : 'mt-6 text-base leading-8 text-lumicoria-obsidian/70'}>{activeAgent.description}</p>
+                      <Link to="/agents" className={activeCategoryIsDark ? 'liquid-action mt-8 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-sm font-semibold text-lumicoria-obsidian transition hover:bg-white/90' : 'liquid-action mt-8 inline-flex min-h-11 items-center rounded-full bg-lumicoria-obsidian px-5 text-sm font-semibold text-white transition hover:bg-lumicoria-core'}>
+                        Try this agent
+                      </Link>
+                    </div>
+                  </motion.article>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">{selectedAgent.name}</h3>
-                  <p className="text-gray-600">{selectedAgent.description}</p>
-                </div>
               </div>
-              
-              {/* Agent Demo Area */}
-              <div className="bg-gray-50 rounded-xl p-6 mb-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-lumicoria-purple/10 to-lumicoria-blue/5 rounded-full filter blur-2xl"></div>
-                
-                {/* Document Agent Demo */}
-                {selectedAgent.id === 1 && (
-                  <div className="relative z-10 space-y-4">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-lumicoria-purple/20 flex items-center justify-center">
-                        <FileText size={24} className="text-lumicoria-purple" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">Document Processing</h4>
-                        <p className="text-sm text-gray-500">
-                          {processingState === "idle" && "Ready to scan documents"}
-                          {processingState === "processing" && "Scanning invoice_q2.pdf..."}
-                          {processingState === "complete" && "Document analysis complete"}
-                        </p>
-                        
-                        {processingState === "processing" && (
-                          <div className="mt-2">
-                            <Progress value={progress} className="h-2" />
-                            <p className="text-xs text-gray-500 mt-1">Extracting data {progress}%</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {processingState === "idle" && (
-                      <div className="flex items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors" onClick={handleStartProcessing}>
-                        <div className="text-center">
-                          <FileText size={36} className="text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500">Click to process document</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {processingState === "complete" && (
-                      <div className="bg-white rounded-lg border border-gray-200">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                          <TabsList className="w-full grid grid-cols-3">
-                            <TabsTrigger value="extracted">Extracted Data</TabsTrigger>
-                            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="extracted" className="p-4">
-                            <div className="space-y-3">
-                              {documentInfo.extracted.map((item, index) => (
-                                <div className="flex justify-between" key={index}>
-                                  <span className="text-sm font-medium">{item.label}:</span>
-                                  <span className="text-sm text-lumicoria-purple">{item.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </TabsContent>
-                          
-                          <TabsContent value="tasks" className="p-4">
-                            <div className="space-y-3">
-                              {documentInfo.tasks.map((task) => (
-                                <div key={task.id} className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-100">
-                                  <div className="mr-2">
-                                    <CheckCircle size={16} className="text-lumicoria-purple opacity-70" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">{task.title}</p>
-                                    <div className="flex text-xs text-gray-500 mt-1">
-                                      <span className="mr-2">Due: {task.deadline}</span>
-                                      <span>Priority: {task.priority}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className="flex items-center p-2 bg-gray-50 rounded-md border border-dashed border-gray-300 text-gray-400 cursor-pointer hover:bg-gray-100">
-                                <Plus size={16} className="mr-2" />
-                                <span className="text-sm">Add task</span>
-                              </div>
-                            </div>
-                          </TabsContent>
-                          
-                          <TabsContent value="calendar" className="p-4">
-                            <div className="space-y-3">
-                              {documentInfo.events.map((event) => (
-                                <div key={event.id} className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-100">
-                                  <div className="mr-2">
-                                    <Calendar size={16} className="text-lumicoria-purple opacity-70" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">{event.title}</p>
-                                    <p className="text-xs text-gray-500">{event.date} at {event.time}</p>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className="flex items-center p-2 bg-gray-50 rounded-md border border-dashed border-gray-300 text-gray-400 cursor-pointer hover:bg-gray-100">
-                                <Plus size={16} className="mr-2" />
-                                <span className="text-sm">Add event</span>
-                              </div>
-                            </div>
-                          </TabsContent>
-                        </Tabs>
-                      </div>
-                    )}
-                    
-                    {processingState === "complete" && (
-                      <div className="flex justify-end space-x-3">
-                        <Button size="sm" variant="outline" className="text-xs">
-                          Export Data
-                        </Button>
-                        <Button size="sm" className="bg-lumicoria-blue hover:bg-blue-600 text-xs">
-                          Save All
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Well-being Coach Demo */}
-                {selectedAgent.id === 2 && (
-                  <div className="relative z-10 space-y-4">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-rose-500/20 flex items-center justify-center">
-                        <Heart size={24} className="text-rose-500" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">Well-being Coach</h4>
-                        <p className="text-sm text-gray-500">
-                          {processingState === "idle" && "Ready to monitor your well-being"}
-                          {processingState === "processing" && "Analyzing your work patterns..."}
-                          {processingState === "complete" && "Analysis complete"}
-                        </p>
-                        
-                        {processingState === "processing" && (
-                          <div className="mt-2">
-                            <Progress value={progress} className="h-2" />
-                            <p className="text-xs text-gray-500 mt-1">Analyzing patterns {progress}%</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {processingState === "idle" && (
-                      <div className="flex items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors" onClick={handleStartProcessing}>
-                        <div className="text-center">
-                          <Activity size={36} className="text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500">Click to start monitoring</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {processingState === "complete" && !showWellbeingExercise && (
-                      <div className="bg-white p-4 rounded-lg border border-gray-200">
-                        <p className="text-sm mb-3 font-medium">
-                          You've been working for {wellbeingData.focusTime} straight. Time for a short break!
-                        </p>
-                        <div className="space-y-3 mb-4">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Focus Duration:</span>
-                            <span className="text-sm font-medium text-rose-500">{wellbeingData.focusTime}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Posture:</span>
-                            <span className="text-sm font-medium text-amber-500">{wellbeingData.posture}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Recommendation:</span>
-                            <span className="text-sm font-medium text-emerald-500">{wellbeingData.recommendation}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center mt-4 p-2 bg-rose-50 rounded-lg border border-rose-100">
-                          <AlertCircle size={18} className="text-rose-500 mr-2" />
-                          <p className="text-sm text-rose-700">Break overdue. Recommended action needed.</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {processingState === "complete" && showWellbeingExercise && (
-                      <div className="bg-rose-50 p-4 rounded-lg border border-rose-100 text-center">
-                        <h4 className="font-medium text-rose-800 mb-2">Breathing Exercise</h4>
-                        <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-white flex items-center justify-center relative">
-                          <motion.div
-                            className="absolute inset-0 rounded-full border-2 border-rose-400"
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.7, 1, 0.7]
-                            }}
-                            transition={{
-                              duration: 4,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                          />
-                          <p className="text-rose-600 font-medium">Breathe</p>
-                        </div>
-                        <p className="text-sm text-rose-700 mb-4">Follow the circle's rhythm.<br />Breathe in as it expands, out as it contracts.</p>
-                        <p className="text-xs text-rose-600 mb-1">Time remaining: 2:47</p>
-                        <Progress value={30} className="h-1 bg-rose-200" />
-                      </div>
-                    )}
-                    
-                    {processingState === "complete" && (
-                      <div className="flex justify-end space-x-3 mt-4">
-                        {!showWellbeingExercise ? (
-                          <>
-                            <Button size="sm" variant="outline" className="text-xs" onClick={dismissBreakExercise}>
-                              Remind Later
-                            </Button>
-                            <Button size="sm" className="bg-rose-500 hover:bg-rose-600 text-xs" onClick={startBreakExercise}>
-                              Start Break
-                            </Button>
-                          </>
-                        ) : (
-                          <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowWellbeingExercise(false)}>
-                            End Exercise
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Other agent demos */}
-                {selectedAgent.id > 2 && (
-                  <div className="relative z-10 space-y-4 flex items-center justify-center h-40">
-                    <div className="text-center">
-                      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${selectedAgent.gradient} mx-auto mb-4 flex items-center justify-center text-white`}>
-                        {selectedAgent.icon}
-                      </div>
-                      <p className="text-gray-500">
-                        Deploy this agent to see it in action
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-between">
-                <Button variant="outline">
-                  Learn More
-                </Button>
-                <Button 
-                  className={`bg-gradient-to-r ${selectedAgent.gradient} text-white`}
-                  onClick={handleDeployAgent}
-                >
-                  Deploy Agent
-                </Button>
-              </div>
-            </motion.div>
+            </Reveal>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {filteredAgents.slice(0, 6).map((agent, index) => (
+                <Reveal key={agent.name} delay={index * 0.04}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    className={`h-full w-full rounded-3xl p-5 text-left transition ${
+                      activeAgent.name === agent.name
+                        ? categoryActiveClasses[activeCategoryIndex]
+                        : `${glassTile} text-gray-950 hover:-translate-y-1 hover:ring-lumicoria-core/25`
+                    }`}
+                  >
+                    <p className="font-hero text-xl font-semibold tracking-[-0.025em]">{agent.name}</p>
+                    <p className={activeAgent.name === agent.name && activeCategoryIsDark ? 'mt-3 text-sm leading-6 text-white/75' : activeAgent.name === agent.name ? 'mt-3 text-sm leading-6 text-lumicoria-obsidian/70' : 'mt-3 text-sm leading-6 text-gray-500'}>
+                      {agent.tagline}
+                    </p>
+                  </button>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal className={`${glassPanel} flex flex-col items-start justify-between gap-4 p-6 md:flex-row md:items-center`}>
+              <p className="max-w-2xl text-base leading-7 text-gray-600">
+                Start with one agent for a document, one focus session, or one research task. Add the rest only when the work naturally expands.
+              </p>
+              <Button asChild className="liquid-action bg-lumicoria-core px-6 py-6 text-white hover:bg-lumicoria-obsidian">
+                <Link to="/agents">Browse the full library</Link>
+              </Button>
+            </Reveal>
           </div>
         </div>
       </div>

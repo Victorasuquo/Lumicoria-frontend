@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +8,10 @@
 .font-hero {
   font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-feature-settings: 'ss01';
+}
+
+.font-signal {
+  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {
@@ -41,6 +45,12 @@
     --ring: 262 57% 49%;
 
     --radius: 0.75rem;
+    --lumi-obsidian: #211745;
+    --lumi-core: #372673;
+    --lumi-cognitive: #BFBFFF;
+    --lumi-signal: #E2F0FF;
+    --lumi-human: #FCEDB2;
+    --lumi-gold: #FEE274;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -106,16 +116,197 @@
 }
 
 .feature-card {
-  @apply relative overflow-hidden rounded-2xl bg-white p-8 shadow-lg transition-all hover:shadow-xl;
+  @apply relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg;
 }
 
 .feature-card::before {
   content: "";
-  @apply absolute inset-0 bg-gradient-to-br from-violet-50 to-blue-50 opacity-50;
+  @apply absolute inset-0 bg-white opacity-0;
 }
 
 .gradient-text {
   @apply bg-gradient-to-r from-lumicoria-purple to-lumicoria-blue bg-clip-text text-transparent;
+}
+
+.landing-shell {
+  background-color: #f3f6fb;
+  color: var(--lumi-obsidian);
+}
+
+.liquid-aurora {
+  background-color: #f4f8ff;
+}
+
+.liquid-aurora-dark {
+  background-color: var(--lumi-obsidian);
+}
+
+.liquid-aurora-human {
+  background-color: #fff8df;
+}
+
+.liquid-glass {
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(55, 38, 115, 0.10);
+  opacity: 0.95;
+}
+
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 18px 18px 44px rgba(255, 255, 255, 0.30),
+    inset -22px -22px 48px rgba(55, 38, 115, 0.05);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.liquid-interactive {
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-interactive:hover {
+  border-color: rgba(55, 38, 115, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 24px 62px rgba(33, 23, 69, 0.14),
+    0 8px 20px rgba(33, 23, 69, 0.08);
+}
+
+.liquid-action {
+  box-shadow: 0 18px 42px rgba(33, 23, 69, 0.18);
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-action:hover {
+  transform: translateY(-3px) scale(1.035);
+  box-shadow: 0 24px 56px rgba(33, 23, 69, 0.24);
+}
+
+.continuum-ribbon {
+  background-color: var(--lumi-core);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+}
+
+.liquid-shadow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 28px 90px rgba(33, 23, 69, 0.16),
+    0 12px 34px rgba(191, 191, 255, 0.20);
+}
+
+.liquid-tilt {
+  transform-style: preserve-3d;
+  transition:
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-tilt:hover {
+  transform: translateY(-10px) rotateX(1.5deg) rotateY(-1.5deg);
+}
+
+.scanline-grid {
+  background-image: none;
+  background-size: 44px 44px;
+  box-shadow:
+    inset 0 0 0 1px rgba(55, 38, 115, 0.08),
+    inset 22px 0 0 rgba(226, 240, 255, 0.24),
+    inset -22px 0 0 rgba(252, 237, 178, 0.18);
+}
+
+.flow-dot {
+  animation: flow-dot 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.slow-drift {
+  animation: slow-drift 10s ease-in-out infinite;
+}
+
+.breathing-halo {
+  animation: breathing-halo 5.5s ease-in-out infinite;
+}
+
+@keyframes flow-dot {
+  0% {
+    transform: translateX(-12%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(112%);
+    opacity: 0;
+  }
+}
+
+@keyframes slow-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(1.5deg);
+  }
+}
+
+@keyframes breathing-halo {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-interactive,
+  .liquid-action,
+  .liquid-glass::after,
+  .flow-dot,
+  .slow-drift,
+  .breathing-halo {
+    transition: none;
+    animation: none;
+  }
+
+  .liquid-action:hover {
+    transform: none;
+  }
+
+  .liquid-tilt:hover {
+    transform: none;
+  }
 }
 
 .reveal {

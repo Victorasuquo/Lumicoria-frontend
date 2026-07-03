@@ -1,121 +1,173 @@
-
-import React from 'react';
-import { FileText, Zap, Calendar, ArrowRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import React, { useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { auroraSection, glassPanel, glassTile, purpleGlass, Reveal } from './LandingSections';
 
 const steps = [
   {
-    icon: <FileText size={28} />,
-    color: "bg-lumicoria-purple text-white",
-    title: "Upload Documents",
-    description: "Scan or upload your documents, including contracts, notes, receipts, or emails."
+    title: 'Bring the context',
+    body: 'Start with a document, meeting, task list, research topic, wellbeing check in, or messy project brief.',
+    output: ['Source', 'Goal', 'Current load'],
   },
   {
-    icon: <Zap size={28} />,
-    color: "bg-lumicoria-blue text-white",
-    title: "AI Extraction",
-    description: "Our AI agents automatically extract key dates, tasks, and information from your documents."
+    title: 'Choose the kind of help',
+    body: 'Ask for a summary, plan, draft, study path, follow up, focus reset, or custom agent workflow.',
+    output: ['Outcome', 'Agent', 'Workspace context'],
   },
   {
-    icon: <Calendar size={28} />,
-    color: "bg-lumicoria-orange text-white",
-    title: "Auto-Organization",
-    description: "Tasks, calendar events, and reminders are created automatically based on the extracted data."
+    title: 'Work with visibility',
+    body: 'See sources, decisions, next steps, confidence signals, and approvals where review matters.',
+    output: ['Sources', 'Decisions', 'Review'],
+  },
+  {
+    title: 'Keep momentum',
+    body: 'Turn the result into tasks, replies, reports, study sessions, calendar blocks, or a wellbeing digest.',
+    output: ['Task', 'Draft', 'Digest'],
   },
 ];
 
+const stepActiveClasses = [
+  'text-lumicoria-core bg-white/60',
+  'text-lumicoria-obsidian bg-lumicoria-signal/70',
+  'text-lumicoria-obsidian bg-lumicoria-human/70',
+  'text-lumicoria-obsidian bg-lumicoria-gold/55',
+];
+
+const stepPanelClasses = [
+  purpleGlass,
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/75 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/45 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.28] text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+];
+
 const HowItWorks = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const ref = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const progressWidth = useTransform(scrollYProgress, [0.12, 0.82], reduceMotion ? ['100%', '100%'] : ['0%', '100%']);
+  const videoY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [40, -40]);
+
   return (
-    <section id="how-it-works" className="py-20 bg-white">
+    <section ref={ref} id="how-it-works" className={`${auroraSection} py-28 md:py-40`}>
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16 reveal">
-          <span className="inline-block py-1 px-3 rounded-full bg-lumicoria-purple/10 text-lumicoria-purple text-sm font-medium mb-4">
-            How It Works
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Simple, powerful, and intelligent
-          </h2>
-          <p className="text-lg text-gray-600">
-            Lumicoria.ai transforms your documents into actionable intelligence in just a few steps, without any manual data entry.
-          </p>
-        </div>
-
-        <div className="max-w-5xl mx-auto">
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="absolute top-24 left-0 right-0 h-0.5 bg-gray-200 hidden md:block"></div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-              {steps.map((step, index) => (
-                <div key={index} className="relative text-center reveal" style={{ transitionDelay: `${index * 0.2}s` }}>
-                  <div className="flex flex-col items-center">
-                    <div className={`w-16 h-16 rounded-full ${step.color} flex items-center justify-center mb-6 z-10 relative shadow-lg`}>
-                      {step.icon}
-                    </div>
-                    <h3 className="text-xl font-bold mb-3">{step.title}</h3>
-                    <p className="text-gray-600">{step.description}</p>
-                  </div>
-
-                  {/* Arrow between steps */}
-                  {index < steps.length - 1 && (
-                    <div className="hidden md:block absolute top-16 -right-6 transform translate-x-1/2">
-                      <ArrowRight size={24} className="text-gray-300" />
-                    </div>
-                  )}
-                </div>
-              ))}
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.92fr_1.35fr] lg:items-start">
+          <Reveal className="lg:sticky lg:top-28">
+            <img src="/images/lumicoria-logo-mono.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
+            <h2 className="font-hero text-[clamp(2.7rem,5vw,5.85rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-gray-950">
+              From overload to output, without losing yourself in the process.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-gray-600">
+              The loop is simple enough for one person and strong enough for a team: bring context, choose help, review the path, keep momentum.
+            </p>
+            <div className="mt-9 h-2 overflow-hidden rounded-full bg-lumicoria-core/10">
+              <motion.div style={{ width: progressWidth }} className="h-full rounded-full bg-lumicoria-core" />
             </div>
-          </div>
+          </Reveal>
 
-          {/* Demo section */}
-          <Dialog>
-            <div className="mt-20 bg-feature-gradient rounded-2xl p-8 shadow-lg reveal">
-              <div className="flex flex-col md:flex-row items-center">
-                <div className="md:w-1/2 mb-8 md:mb-0 md:pr-8">
-                  <h3 className="text-2xl font-bold mb-4">See it in action</h3>
-                  <p className="text-gray-600 mb-6">
-                    Watch how Lumicoria.ai processes a client contract, extracts key information, and automatically creates tasks and calendar events in seconds.
-                  </p>
-                  <DialogTrigger asChild>
-                    <div className="inline-flex items-center font-medium text-lumicoria-purple cursor-pointer group">
-                      <span>Watch the demo</span>
-                      <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </DialogTrigger>
+          <div className="space-y-6">
+            <Reveal>
+              <div className={glassPanel}>
+                <div className="grid gap-px bg-lumicoria-core/10 md:grid-cols-4">
+                  {steps.map((step, index) => (
+                    <button
+                      key={step.title}
+                      type="button"
+                      onMouseEnter={() => setActiveStep(index)}
+                      onFocus={() => setActiveStep(index)}
+                      onClick={() => setActiveStep(index)}
+                      className={`px-5 py-6 text-left backdrop-blur-xl transition ${
+                        activeStep === index ? stepActiveClasses[index % stepActiveClasses.length] : 'bg-white/60 text-gray-500 hover:text-lumicoria-obsidian'
+                      }`}
+                    >
+                      <span className={activeStep === index ? 'block h-2 w-10 rounded-full bg-lumicoria-core' : 'block h-2 w-10 rounded-full bg-lumicoria-core/[0.15]'} />
+                      <span className="mt-5 block font-hero text-xl font-semibold tracking-[-0.025em]">{step.title}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="md:w-1/2">
+
+                <div className="grid gap-8 p-6 md:grid-cols-[0.9fr_1.1fr] md:p-8">
+                  <motion.div
+                    key={steps[activeStep].title}
+                    initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`${stepPanelClasses[activeStep % stepPanelClasses.length]} p-7`}
+                  >
+                    <p className="font-hero text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-none tracking-[-0.04em]">{steps[activeStep].title}</p>
+                    <p className={`mt-6 text-base leading-8 ${activeStep === 0 ? 'text-white/80' : 'text-lumicoria-obsidian/75'}`}>{steps[activeStep].body}</p>
+                  </motion.div>
+
+                  <div className="relative min-h-[20rem] overflow-hidden rounded-2xl border border-white/70 bg-white/50 p-5 ring-1 ring-lumicoria-core/10 backdrop-blur-xl">
+                    <div className="absolute inset-x-8 top-1/2 h-px bg-lumicoria-core/20" />
+                    <div className="grid grid-cols-1 gap-3">
+                      {steps[activeStep].output.map((output, index) => (
+                        <motion.div
+                          key={output}
+                          initial={reduceMotion ? false : { opacity: 0, x: -18 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.08, duration: 0.35 }}
+                          className={`${glassTile} p-5`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="h-8 w-8 rounded-full bg-lumicoria-core text-center text-xs font-semibold leading-8 text-white">{index + 1}</span>
+                            <p className="font-hero text-xl font-semibold tracking-[-0.025em] text-gray-950">{output}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            <Dialog>
+              <Reveal>
+                <motion.div style={{ y: videoY }} className={`${glassPanel} grid md:grid-cols-[0.9fr_1.2fr]`}>
+                  <div className="p-8 md:p-10">
+                    <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
+                    <h3 className="font-hero text-3xl font-semibold tracking-[-0.03em] text-gray-950 md:text-5xl">See a workday become manageable.</h3>
+                    <p className="mt-5 text-lg leading-8 text-gray-600">
+                      Watch how a workspace moves from documents and meetings into decisions, next actions, and protected focus time.
+                    </p>
+                    <DialogTrigger asChild>
+                      <button className="liquid-action mt-8 inline-flex min-h-11 items-center rounded-full bg-lumicoria-core px-5 text-sm font-semibold text-white transition hover:bg-lumicoria-obsidian">
+                        Watch the walkthrough
+                      </button>
+                    </DialogTrigger>
+                  </div>
                   <DialogTrigger asChild>
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden relative shadow-xl cursor-pointer group">
-                      <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform group-hover:scale-110">
-                          <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
-                        </div>
-                      </div>
+                    <button className="group relative min-h-[18rem] overflow-hidden bg-lumicoria-obsidian text-left md:min-h-[24rem]">
                       <img
                         src="https://img.youtube.com/vi/zFcxA9T_BWs/maxresdefault.jpg"
-                        alt="Demo Video Thumbnail"
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        alt="Lumicoria product walkthrough thumbnail"
+                        className="h-full w-full object-cover opacity-55 grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-70"
                       />
-                    </div>
+                      <div className="absolute inset-0 bg-lumicoria-obsidian/70" />
+                      <div className="absolute bottom-6 left-6 right-6 rounded-3xl bg-white/10 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
+                        <p className="font-hero text-2xl font-semibold tracking-[-0.025em]">Daily workspace loop</p>
+                        <p className="mt-2 text-sm leading-6 text-white/70">Add context, choose help, review output, keep momentum.</p>
+                      </div>
+                    </button>
                   </DialogTrigger>
+                </motion.div>
+              </Reveal>
+              <DialogContent className="border-none bg-black/80 p-0 shadow-2xl sm:max-w-[900px]">
+                <div className="aspect-video w-full overflow-hidden rounded-lg">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src="https://www.youtube.com/embed/zFcxA9T_BWs?si=Ov_7CYjzlUFjHYZ0&autoplay=1"
+                    title="Lumicoria Demo"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
                 </div>
-              </div>
-            </div>
-            <DialogContent className="sm:max-w-[900px] p-0 border-none bg-black/80 shadow-2xl">
-              <div className="aspect-video w-full rounded-lg overflow-hidden">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src="https://www.youtube.com/embed/zFcxA9T_BWs?si=Ov_7CYjzlUFjHYZ0&autoplay=1"
-                  title="Lumicoria Demo"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
     </section>

@@ -69,7 +69,13 @@ export default {
 					lightPurple: '#9B87F5',
 					blue: '#0EA5E9',
 					teal: '#38BDF8',
-					orange: '#F97316'
+					orange: '#F97316',
+					obsidian: '#211745',
+					core: '#372673',
+					cognitive: '#BFBFFF',
+					signal: '#E2F0FF',
+					human: '#FCEDB2',
+					gold: '#FEE274'
 				}
 			},
 			borderRadius: {
