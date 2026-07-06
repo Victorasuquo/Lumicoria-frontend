@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { huddleApi } from "@/services/huddleApi";
 
 export interface AgentResponseEvent {
   type: "agent_response";
@@ -125,6 +126,28 @@ export function useHuddleWebSocket(opts: UseHuddleWebSocketOptions): UseHuddleWe
   const send = useCallback((msg: object) => {
     try { wsRef.current?.send(JSON.stringify(msg)); } catch { /* */ }
   }, []);
+
+  // Seed with persisted history so a page refresh doesn't wipe the
+  // Script panel — chunks are stored server-side per huddle; the WS
+  // only streams NEW ones. Merge (dedupe by id) so a chunk that raced
+  // in over the socket while history loaded isn't duplicated.
+  useEffect(() => {
+    if (!opts.huddleId) return; // guests via shareToken: endpoint needs auth
+    let cancelled = false;
+    huddleApi
+      .getTranscript(opts.huddleId)
+      .then(({ chunks: history }) => {
+        if (cancelled || !history?.length) return;
+        setChunks((prev) => {
+          const seen = new Set(prev.map((c) => c.id));
+          const merged = [...history.filter((c) => !seen.has(c.id)), ...prev];
+          merged.sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
+          return merged;
+        });
+      })
+      .catch(() => { /* guests / transient — live stream still works */ });
+    return () => { cancelled = true; };
+  }, [opts.huddleId]);
 
   useEffect(() => {
     cancelledRef.current = false;
