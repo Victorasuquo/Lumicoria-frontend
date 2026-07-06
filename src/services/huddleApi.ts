@@ -163,8 +163,22 @@ export const huddleApi = {
     return data;
   },
 
-  get: async (huddleId: string): Promise<Huddle> => {
-    const { data } = await api.get<Huddle>(`/huddles/${huddleId}`);
+  /**
+   * Fetch a huddle. Members authenticate via the normal bearer token;
+   * anonymous guests pass the share_token (+ their chosen display name,
+   * which the backend bakes into the guest JWT — Jitsi's JWT name
+   * overrides userInfo, so this is the only way a guest name sticks).
+   */
+  get: async (
+    huddleId: string,
+    opts?: { shareToken?: string; guestName?: string },
+  ): Promise<Huddle> => {
+    const { data } = await api.get<Huddle>(`/huddles/${huddleId}`, {
+      params: {
+        ...(opts?.shareToken ? { share_token: opts.shareToken } : {}),
+        ...(opts?.guestName ? { guest_name: opts.guestName } : {}),
+      },
+    });
     return data;
   },
 
@@ -190,8 +204,16 @@ export const huddleApi = {
     return data;
   },
 
-  join: async (huddleId: string, input?: JoinInput): Promise<HuddleParticipant> => {
-    const { data } = await api.post<HuddleParticipant>(`/huddles/${huddleId}/join`, input || {});
+  join: async (
+    huddleId: string,
+    input?: JoinInput,
+    shareToken?: string,
+  ): Promise<HuddleParticipant> => {
+    const { data } = await api.post<HuddleParticipant>(
+      `/huddles/${huddleId}/join`,
+      input || {},
+      { params: shareToken ? { share_token: shareToken } : {} },
+    );
     return data;
   },
 

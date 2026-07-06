@@ -47,6 +47,7 @@ import IntegrationsHub from "./pages/IntegrationsHub";
 import IntegrationDetail from "./pages/IntegrationDetail";
 import OAuthCallback from "./pages/OAuthCallback";
 import Enterprise from "./pages/Enterprise";
+import OpayPaymentDemo from "./pages/OpayPaymentDemo";
 
 // Autonomous brain — daily morning + evening digest pipeline.
 import BrainPreferences from "./pages/BrainPreferences";
@@ -192,6 +193,9 @@ const AppRoutes = () => {
       {/* Enterprise marketing — full-bleed, no MainNav/Footer */}
       <Route path="/enterprise" element={<Enterprise />} />
 
+      {/* OPay Innovation Challenge payment demo - full-bleed, no MainNav/Footer */}
+      <Route path="/opay-payment" element={<OpayPaymentDemo />} />
+
       {/* Public hosted support portal — full-bleed, branded, NO MainLayout. */}
       <Route path="/portal/:slug" element={<Suspense fallback={<AgentPageFallback />}><SupportPortal /></Suspense>} />
       <Route path="/portal/:slug/status/:ticket_id" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalStatus /></Suspense>} />
@@ -305,7 +309,11 @@ const AppRoutes = () => {
         {/* Agent Pages */}
         <Route path="/agents/document" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><DocumentAgent /></Suspense></ProtectedRoute>} />
         <Route path="/agents/meeting" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingAssistant /></Suspense></ProtectedRoute>} />
-        <Route path="/agents/meeting/room/:huddleId" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingRoom /></Suspense></ProtectedRoute>} />
+        {/* NOT wrapped in ProtectedRoute: guests arrive here from the public
+            share-link lobby with ?share_token=. Access control lives
+            server-side — GET /huddles/{id} 404s for anonymous callers
+            without a valid token, and MeetingRoom renders its error state. */}
+        <Route path="/agents/meeting/room/:huddleId" element={<Suspense fallback={<AgentPageFallback />}><MeetingRoom /></Suspense>} />
         <Route path="/huddles/schedule" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><HuddleSchedule /></Suspense></ProtectedRoute>} />
         <Route path="/huddles/join/:shareToken" element={<Suspense fallback={<AgentPageFallback />}><HuddleLobby /></Suspense>} />
         <Route path="/agents/meeting-fact-checker" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><MeetingFactChecker /></Suspense></ProtectedRoute>} />

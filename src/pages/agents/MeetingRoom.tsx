@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loader2, ArrowLeft, Captions, CaptionsOff } from "lucide-react";
 import JitsiEmbed from "@/components/huddle/JitsiEmbed";
 import HuddleSidebar from "@/components/huddle/HuddleSidebar";
@@ -28,9 +28,17 @@ const DEV_FALLBACK_JITSI_DOMAIN = (import.meta as any).env?.VITE_JITSI_DOMAIN ||
 
 const MeetingRoom: React.FC = () => {
   const { huddleId } = useParams<{ huddleId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+
+  // Guest share-link parameters forwarded by HuddleLobby. Absent for
+  // logged-in members entering through the app.
+  const shareToken = searchParams.get("share_token") || undefined;
+  const guestName = searchParams.get("name") || undefined;
+  const startAudioMuted = searchParams.get("audio_muted") === "1";
+  const startVideoMuted = searchParams.get("video_muted") === "1";
 
   const [huddle, setHuddle] = useState<Huddle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +95,7 @@ const MeetingRoom: React.FC = () => {
     if (!huddleId) return;
     setLoading(true);
     huddleApi
-      .get(huddleId)
+      .get(huddleId, { shareToken, guestName })
       .then((h) => {
         setHuddle(h);
         setError(null);
@@ -96,16 +104,23 @@ const MeetingRoom: React.FC = () => {
         setError(e?.response?.data?.detail || "Couldn't load the meeting.");
       })
       .finally(() => setLoading(false));
-  }, [huddleId]);
+  }, [huddleId, shareToken, guestName]);
 
-  // Register join + auto-start STT.
+  // Register join + auto-start STT. Guests already joined from the
+  // lobby, but the call is idempotent server-side so re-joining is safe.
   useEffect(() => {
     if (!huddle || hasJoined) return;
     void huddleApi
-      .join(huddle.id, { role: user ? "participant" : "guest" })
+      .join(
+        huddle.id,
+        user
+          ? { role: "participant" }
+          : { role: "guest", guest_name: guestName },
+        shareToken,
+      )
       .then(() => setHasJoined(true))
       .catch(() => setHasJoined(true));
-  }, [huddle, hasJoined, user]);
+  }, [huddle, hasJoined, user, shareToken, guestName]);
 
   useEffect(() => () => {
     // Read via refs — see comment on huddleRef above.
@@ -188,12 +203,13 @@ const MeetingRoom: React.FC = () => {
             isHost={huddle.jitsi_is_host ?? isHost}
             subject={huddle.title}
             user={{
-              displayName: (user as any)?.full_name || (user as any)?.email || "Guest",
+              displayName:
+                (user as any)?.full_name || (user as any)?.email || guestName || "Guest",
               email: (user as any)?.email,
             }}
             e2ee={huddle.e2ee_enabled}
-            startWithAudioMuted={false}
-            startWithVideoMuted={false}
+            startWithAudioMuted={startAudioMuted}
+            startWithVideoMuted={startVideoMuted}
             onApiReady={(api) => { jitsiApiRef.current = api; setJitsiApi(api); }}
             onJoined={() => {
               try { void transcription.startRecording(); } catch { /* */ }

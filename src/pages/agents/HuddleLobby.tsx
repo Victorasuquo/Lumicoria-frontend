@@ -29,15 +29,26 @@ const HuddleLobby: React.FC = () => {
   }, [shareToken]);
 
   const handleReady = async (input: { displayName: string; audioMuted: boolean; videoMuted: boolean }) => {
-    if (!huddle) return;
+    if (!huddle || !shareToken) return;
     try {
-      // Register as guest participant
-      await huddleApi.join(huddle.id, {
-        guest_name: input.displayName,
-        role: "guest",
-      });
+      // Register as guest participant — anonymous joins require the
+      // share_token server-side.
+      await huddleApi.join(
+        huddle.id,
+        { guest_name: input.displayName, role: "guest" },
+        shareToken,
+      );
     } catch { /* still allow join */ }
-    navigate(`/agents/meeting/room/${huddle.id}`);
+    // Forward everything MeetingRoom needs: the share token (so the
+    // authenticated-or-guest GET works), the chosen name (baked into the
+    // guest JWT), and the pre-call mute preferences.
+    const qs = new URLSearchParams({
+      share_token: shareToken,
+      name: input.displayName,
+      audio_muted: input.audioMuted ? "1" : "0",
+      video_muted: input.videoMuted ? "1" : "0",
+    });
+    navigate(`/agents/meeting/room/${huddle.id}?${qs.toString()}`);
   };
 
   if (loading) {
