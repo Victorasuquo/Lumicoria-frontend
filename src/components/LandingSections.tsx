@@ -159,21 +159,21 @@ export const ProviderTrustBar = () => {
 const storyMoments = [
   {
     title: 'The morning starts messy.',
-    body: 'A proposal, three meetings, research notes, a due date, and low energy all arrive at once. Lumicoria gathers the context before the day scatters.',
+    body: 'A proposal, three meetings, customer questions, research notes, and a due date all arrive at once. Lumicoria gathers the context before the day scatters.',
     signal: 'input',
-    tokens: ['brief', 'PDF', 'meeting', 'energy'],
+    tokens: ['brief', 'ticket', 'meeting', 'deadline'],
   },
   {
     title: 'The workspace starts reasoning.',
-    body: 'Agents read, compare, summarize, route, draft, and check sources. You see the next useful action instead of another blank chat box.',
+    body: 'Agents read, compare, summarize, route, draft, and check sources. The workspace shows what needs a person, what can move now, and what needs review.',
     signal: 'reason',
-    tokens: ['source map', 'risk', 'owner', 'next step'],
+    tokens: ['source map', 'risk', 'owner', 'review'],
   },
   {
     title: 'The output becomes momentum.',
-    body: 'Actions turn into tasks, calendar blocks, study sessions, summaries, replies, and a weekly digest that helps people keep their rhythm.',
+    body: 'Actions turn into tasks, customer replies, meeting recaps, reports, approvals, and shared records that keep the whole team aligned.',
     signal: 'impact',
-    tokens: ['task', 'draft', 'focus', 'digest'],
+    tokens: ['task', 'reply', 'recap', 'record'],
   },
 ];
 
@@ -196,7 +196,7 @@ export const StorySpineSection = () => {
               Your day becomes a system you can trust.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
-              Lumicoria is not another place to type prompts. It is the layer that turns the work around you into clear decisions, next actions, healthier focus, and shared memory.
+              Lumicoria is not another place to type prompts. It turns the work around you into clear decisions, agent actions, human review, and shared memory.
             </p>
             <div className="mt-9 h-2 overflow-hidden rounded-full bg-lumicoria-cognitive/30">
               <motion.div style={{ width: pathWidth }} className="continuum-ribbon h-full rounded-full" />
@@ -263,31 +263,31 @@ export const StorySpineSection = () => {
 
 const dailyValueCards = [
   {
-    title: 'Professionals',
-    promise: 'Finish the day with fewer loose ends.',
-    body: 'Contracts, receipts, notes, meetings, and email become useful actions with source context preserved.',
-    panel: ['scan invoice', 'draft reply', 'schedule follow up', 'protect focus'],
+    title: 'Individuals',
+    promise: 'A messy day gets one clear next move.',
+    body: 'Documents, meetings, tasks, and research stop competing for attention. Lumicoria turns the pile into a short path you can follow.',
+    panel: ['collect context', 'choose agent', 'draft output', 'decide next'],
     color: 'core',
   },
   {
-    title: 'Students',
-    promise: 'Turn study material into a real plan.',
-    body: 'Notes, papers, deadlines, and revision sessions become summaries, practice blocks, drafts, and reminders.',
-    panel: ['summarize paper', 'build study path', 'track deadline', 'review weekly'],
+    title: 'Teams',
+    promise: 'Shared work stops living in private chat.',
+    body: 'Decisions, owners, sources, and agent output stay inside the workspace so everyone can see what happened and what moves next.',
+    panel: ['capture decision', 'assign owner', 'share record', 'sync workspace'],
     color: 'signal',
   },
   {
-    title: 'Teams',
-    promise: 'Share progress without chasing updates.',
-    body: 'Decisions, owners, documents, and workload signals stay visible so the team can move without another status ritual.',
-    panel: ['capture decision', 'assign owner', 'sync workspace', 'review load'],
+    title: 'Operations',
+    promise: 'Meetings and customer care become flow.',
+    body: 'Calls, tickets, documents, and follow ups can be routed through agents with humans staying in the loop where judgment matters.',
+    panel: ['start huddle', 'triage ticket', 'draft response', 'escalate safely'],
     color: 'human',
   },
   {
-    title: 'Well-being',
-    promise: 'Treat energy like part of the work.',
-    body: 'Focus prompts, break nudges, posture cues, and weekly reflections sit beside the work creating the pressure.',
-    panel: ['start focus', 'pause before fatigue', 'reset posture', 'digest rhythm'],
+    title: 'Governance',
+    promise: 'Control grows with the workspace.',
+    body: 'Permissions, sources, model routes, approvals, logs, and audit exports stay connected as teams move from one agent to a managed environment.',
+    panel: ['scope access', 'route model', 'approve output', 'export audit'],
     color: 'gold',
   },
 ];
@@ -301,16 +301,16 @@ export const DailyValueSection = () => {
   const active = dailyValueCards[activeValue];
 
   return (
-    <section ref={ref} className="liquid-aurora-human relative overflow-hidden py-28 md:py-40">
+    <section ref={ref} className={`${auroraSection} py-28 md:py-40`}>
       <div className="container relative mx-auto px-4">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.82fr_1.48fr] lg:items-start">
           <Reveal className="lg:sticky lg:top-28">
             <img src="/images/Lumicoria coloured (2).png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
             <h2 className="font-hero text-[clamp(2.75rem,5vw,5.7rem)] font-semibold leading-[1.01] tracking-[-0.04em] text-lumicoria-obsidian">
-              It has to make sense before it feels powerful.
+              Chaos first. Then the agentic stack.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
-              Lumicoria turns scattered work into visible progress: fewer loose ends, clearer next steps, calmer study sessions, and healthier team rhythm.
+              The product should not sound like infrastructure before people feel the relief. Lumicoria starts with the chaos, then shows the stack that controls it.
             </p>
             <div className="mt-9 grid grid-cols-2 gap-3">
               {dailyValueCards.map((card, index) => (
@@ -415,7 +415,7 @@ export const WellbeingRhythmSection = () => {
   const active = wellbeingMoments[activeMoment];
 
   return (
-    <section ref={ref} className="liquid-aurora-human relative overflow-hidden py-28 md:py-40">
+    <section ref={ref} className={`${auroraSection} py-28 md:py-40`}>
       <div className="container relative mx-auto px-4">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <Reveal>
@@ -465,10 +465,10 @@ export const WellbeingRhythmSection = () => {
           <Reveal>
             <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
             <h2 className="font-hero text-[clamp(2.75rem,5vw,5.75rem)] font-semibold leading-[1.01] tracking-[-0.04em] text-lumicoria-obsidian">
-              Well-being belongs inside the workday.
+              Productivity and care belong in the same workspace.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
-              Lumicoria connects productivity and care, so people can move faster without pretending energy, focus, and recovery are separate from the work.
+              Lumicoria keeps focus, workload, recovery, documents, meetings, and agent output together, so the product feels useful before it feels technical.
             </p>
             <motion.div
               key={active.title}
