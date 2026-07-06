@@ -134,6 +134,44 @@ const MeetingRoom: React.FC = () => {
 
   const isHost = !!user && !!huddle && String((user as any).id) === huddle.host_user_id;
 
+  // ── JWT refresh — keeps calls alive past the 1-hour token TTL ─────
+  // Members hit POST /huddles/{id}/refresh-jwt; guests (no auth) re-GET
+  // the huddle with their share_token, which mints a fresh guest JWT.
+  // Updating huddle.jitsi_jwt remounts JitsiEmbed (jwt is in its effect
+  // deps) — a sub-second reconnect instead of a dropped call.
+  const refreshJwt = React.useCallback(async () => {
+    if (!huddleId) return;
+    try {
+      if (user) {
+        const fresh = await huddleApi.refreshJwt(huddleId);
+        setHuddle((h) => (h ? { ...h, jitsi_jwt: fresh.jitsi_jwt } : h));
+      } else {
+        const fresh = await huddleApi.get(huddleId, { shareToken, guestName });
+        setHuddle((h) => (h ? { ...h, jitsi_jwt: fresh.jitsi_jwt } : h));
+      }
+    } catch { /* transient failure — the reactive path below retries */ }
+  }, [huddleId, user, shareToken, guestName]);
+
+  // Proactive: refresh at 50 min, safely inside the 60-min TTL.
+  useEffect(() => {
+    if (!huddle?.jitsi_jwt) return;
+    const t = setInterval(() => { void refreshJwt(); }, 50 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [huddle?.jitsi_jwt, refreshJwt]);
+
+  // Reactive: Jitsi surfaces token expiry via errorOccurred.
+  const handleJitsiError = React.useCallback((ev: any) => {
+    const name = String(ev?.error?.name || ev?.name || "").toLowerCase();
+    if (
+      name.includes("token") ||
+      name.includes("passwordrequired") ||
+      name.includes("accessdenied") ||
+      name.includes("notallowed")
+    ) {
+      void refreshJwt();
+    }
+  }, [refreshJwt]);
+
   const handleEnded = () => {
     toast.success("Meeting ended. Generating summary…");
     navigate("/agents/meeting");
@@ -221,6 +259,8 @@ const MeetingRoom: React.FC = () => {
             onVideoConferenceLeft={() => {
               try { void transcription.stopRecording(); } catch { /* */ }
             }}
+            onPasswordRequired={() => { void refreshJwt(); }}
+            onErrorOccurred={handleJitsiError}
           />
           {captionsOn && (
             <LiveCaptionsOverlay
