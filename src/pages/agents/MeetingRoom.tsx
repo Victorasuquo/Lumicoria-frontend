@@ -40,6 +40,14 @@ const MeetingRoom: React.FC = () => {
   const [jitsiApi, setJitsiApi] = useState<any | null>(null);
   const [captionsOn, setCaptionsOn] = useState(true);
   const jitsiApiRef = useRef<any | null>(null);
+  // Refs mirror state for the unmount cleanup — an empty-deps effect
+  // closes over the INITIAL values (huddle=null, hasJoined=false), so
+  // reading state directly there means `leave` never fires and
+  // participants stay "open" in the DB forever.
+  const huddleRef = useRef<Huddle | null>(null);
+  const hasJoinedRef = useRef(false);
+  useEffect(() => { huddleRef.current = huddle; }, [huddle]);
+  useEffect(() => { hasJoinedRef.current = hasJoined; }, [hasJoined]);
 
   // WS is also used by the sidebar — sharing one connection keeps the
   // backend's room subscription count down.
@@ -100,8 +108,10 @@ const MeetingRoom: React.FC = () => {
   }, [huddle, hasJoined, user]);
 
   useEffect(() => () => {
-    if (huddle && hasJoined) {
-      void huddleApi.leave(huddle.id).catch(() => { /* */ });
+    // Read via refs — see comment on huddleRef above.
+    const h = huddleRef.current;
+    if (h && hasJoinedRef.current) {
+      void huddleApi.leave(h.id).catch(() => { /* */ });
     }
     try { void transcription.stopRecording(); } catch { /* */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
