@@ -1,43 +1,51 @@
 import React, { useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Link } from 'react-router-dom';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { auroraSection, glassPanel, glassTile, purpleGlass, Reveal } from './LandingSections';
 
 const steps = [
   {
-    title: 'Bring the context',
-    body: 'Start with a document, meeting, task list, research topic, wellbeing check in, or messy project brief.',
-    output: ['Source', 'Goal', 'Current load'],
+    title: 'Choose the vertical',
+    body: 'Start with the work that already costs time: meeting follow ups, support triage, contract review, research packs, data analysis, or content operations.',
+    output: ['Use case', 'Owner', 'Success measure'],
   },
   {
-    title: 'Choose the kind of help',
-    body: 'Ask for a summary, plan, draft, study path, follow up, focus reset, or custom agent workflow.',
-    output: ['Outcome', 'Agent', 'Workspace context'],
+    title: 'Connect the context',
+    body: 'Attach documents, apps, knowledge bases, calendars, model routes, and workspace permissions so the agent understands the environment.',
+    output: ['Sources', 'Tools', 'Permissions'],
   },
   {
-    title: 'Work with visibility',
-    body: 'See sources, decisions, next steps, confidence signals, and approvals where review matters.',
-    output: ['Sources', 'Decisions', 'Review'],
+    title: 'Test with real examples',
+    body: 'Run the agent against sample work, inspect sources, compare versions, tune the workflow, and decide where human review belongs.',
+    output: ['Evaluation', 'Version', 'Approval path'],
   },
   {
-    title: 'Keep momentum',
-    body: 'Turn the result into tasks, replies, reports, study sessions, calendar blocks, or a wellbeing digest.',
-    output: ['Task', 'Draft', 'Digest'],
+    title: 'Publish to the workspace',
+    body: 'Share the agent with a team, monitor runs, trace decisions, route sensitive cases, and improve the workflow as usage grows.',
+    output: ['Shared agent', 'Run log', 'Improvements'],
   },
 ];
 
+const deliverySignals = [
+  ['Meeting starts', 'Transcript captured', 'Actions assigned', 'Workspace updated'],
+  ['Ticket arrives', 'Intent classified', 'Answer drafted', 'Escalation reviewed'],
+  ['Contract uploaded', 'Clause compared', 'Risk surfaced', 'Legal handoff'],
+  ['Dataset added', 'Patterns found', 'Chart drafted', 'Recommendation logged'],
+];
+
 const stepActiveClasses = [
-  'text-lumicoria-core bg-white/60',
-  'text-lumicoria-obsidian bg-lumicoria-signal/70',
-  'text-lumicoria-obsidian bg-lumicoria-human/70',
-  'text-lumicoria-obsidian bg-lumicoria-gold/55',
+  'bg-lumicoria-core text-white shadow-lg shadow-lumicoria-core/20',
+  'bg-lumicoria-signal text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
+  'bg-white text-lumicoria-core ring-1 ring-lumicoria-cognitive/40 shadow-lg shadow-lumicoria-core/10',
+  'bg-lumicoria-cognitive/55 text-lumicoria-obsidian shadow-lg shadow-lumicoria-core/10',
 ];
 
 const stepPanelClasses = [
   purpleGlass,
-  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/75 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
-  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/45 text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-2xl',
-  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-gold/[0.28] text-lumicoria-obsidian shadow-[0_20px_60px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/10 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/[0.76] text-lumicoria-obsidian shadow-[0_22px_64px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.10] backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-white/[0.66] text-lumicoria-obsidian shadow-[0_22px_64px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-cognitive/35 backdrop-blur-2xl',
+  'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-cognitive/[0.32] text-lumicoria-obsidian shadow-[0_22px_64px_rgba(33,23,69,0.11)] ring-1 ring-lumicoria-core/[0.12] backdrop-blur-2xl',
 ];
 
 const HowItWorks = () => {
@@ -46,62 +54,65 @@ const HowItWorks = () => {
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const progressWidth = useTransform(scrollYProgress, [0.12, 0.82], reduceMotion ? ['100%', '100%'] : ['0%', '100%']);
-  const videoY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [40, -40]);
+  const panelY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [38, -38]);
+  const step = steps[activeStep];
+  const darkStep = activeStep === 0;
 
   return (
     <section ref={ref} id="how-it-works" className={`${auroraSection} py-28 md:py-40`}>
       <div className="container mx-auto px-4">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.92fr_1.35fr] lg:items-start">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.9fr_1.38fr] lg:items-start">
           <Reveal className="lg:sticky lg:top-28">
             <img src="/images/lumicoria-logo-mono.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
-            <h2 className="font-hero text-[clamp(2.7rem,5vw,5.85rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-gray-950">
-              From overload to output, without losing yourself in the process.
+            <h2 className="font-hero text-[clamp(2.75rem,5vw,5.85rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
+              From one workflow to a production agent.
             </h2>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-gray-600">
-              The loop is simple enough for one person and strong enough for a team: bring context, choose help, review the path, keep momentum.
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
+              Lumicoria gives teams a practical path from idea to shared agent: define the work, connect context, test safely, and publish with visibility.
             </p>
-            <div className="mt-9 h-2 overflow-hidden rounded-full bg-lumicoria-core/10">
+            <div className="mt-9 h-2 overflow-hidden rounded-full bg-lumicoria-cognitive/30">
               <motion.div style={{ width: progressWidth }} className="h-full rounded-full bg-lumicoria-core" />
             </div>
           </Reveal>
 
-          <div className="space-y-6">
+          <motion.div style={{ y: panelY }} className="space-y-6">
             <Reveal>
               <div className={glassPanel}>
                 <div className="grid gap-px bg-lumicoria-core/10 md:grid-cols-4">
-                  {steps.map((step, index) => (
+                  {steps.map((item, index) => (
                     <button
-                      key={step.title}
+                      key={item.title}
                       type="button"
                       onMouseEnter={() => setActiveStep(index)}
                       onFocus={() => setActiveStep(index)}
                       onClick={() => setActiveStep(index)}
                       className={`px-5 py-6 text-left backdrop-blur-xl transition ${
-                        activeStep === index ? stepActiveClasses[index % stepActiveClasses.length] : 'bg-white/60 text-gray-500 hover:text-lumicoria-obsidian'
+                        activeStep === index ? stepActiveClasses[index] : 'bg-white/[0.58] text-slate-500 hover:bg-white/80 hover:text-lumicoria-core'
                       }`}
                     >
-                      <span className={activeStep === index ? 'block h-2 w-10 rounded-full bg-lumicoria-core' : 'block h-2 w-10 rounded-full bg-lumicoria-core/[0.15]'} />
-                      <span className="mt-5 block font-hero text-xl font-semibold tracking-[-0.025em]">{step.title}</span>
+                      <span className={activeStep === index ? 'block h-2 w-10 rounded-full bg-current opacity-80' : 'block h-2 w-10 rounded-full bg-lumicoria-core/[0.15]'} />
+                      <span className="mt-5 block font-hero text-xl font-semibold tracking-[-0.025em]">{item.title}</span>
                     </button>
                   ))}
                 </div>
 
                 <div className="grid gap-8 p-6 md:grid-cols-[0.9fr_1.1fr] md:p-8">
                   <motion.div
-                    key={steps[activeStep].title}
+                    key={step.title}
                     initial={reduceMotion ? false : { opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                    className={`${stepPanelClasses[activeStep % stepPanelClasses.length]} p-7`}
+                    className={`${stepPanelClasses[activeStep]} p-7`}
                   >
-                    <p className="font-hero text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-none tracking-[-0.04em]">{steps[activeStep].title}</p>
-                    <p className={`mt-6 text-base leading-8 ${activeStep === 0 ? 'text-white/80' : 'text-lumicoria-obsidian/75'}`}>{steps[activeStep].body}</p>
+                    <p className={darkStep ? 'font-hero text-sm font-semibold text-white/70' : 'font-hero text-sm font-semibold text-lumicoria-core'}>Delivery loop</p>
+                    <h3 className="mt-4 font-hero text-[clamp(2.2rem,4vw,4.7rem)] font-semibold leading-none tracking-[-0.04em]">{step.title}</h3>
+                    <p className={darkStep ? 'mt-6 text-base leading-8 text-white/75' : 'mt-6 text-base leading-8 text-lumicoria-obsidian/70'}>{step.body}</p>
                   </motion.div>
 
-                  <div className="relative min-h-[20rem] overflow-hidden rounded-2xl border border-white/70 bg-white/50 p-5 ring-1 ring-lumicoria-core/10 backdrop-blur-xl">
-                    <div className="absolute inset-x-8 top-1/2 h-px bg-lumicoria-core/20" />
-                    <div className="grid grid-cols-1 gap-3">
-                      {steps[activeStep].output.map((output, index) => (
+                  <div className="relative min-h-[22rem] overflow-hidden rounded-2xl border border-white/75 bg-white/[0.52] p-5 ring-1 ring-lumicoria-cognitive/35 backdrop-blur-xl">
+                    <div className="scanline-grid absolute inset-0 opacity-[0.42]" />
+                    <div className="relative grid grid-cols-1 gap-3">
+                      {step.output.map((output, index) => (
                         <motion.div
                           key={output}
                           initial={reduceMotion ? false : { opacity: 0, x: -18 }}
@@ -110,8 +121,8 @@ const HowItWorks = () => {
                           className={`${glassTile} p-5`}
                         >
                           <div className="flex items-center gap-3">
-                            <span className="h-8 w-8 rounded-full bg-lumicoria-core text-center text-xs font-semibold leading-8 text-white">{index + 1}</span>
-                            <p className="font-hero text-xl font-semibold tracking-[-0.025em] text-gray-950">{output}</p>
+                            <span className="h-9 w-9 rounded-full bg-lumicoria-core text-center font-signal text-xs leading-9 text-white">{index + 1}</span>
+                            <p className="font-hero text-xl font-semibold tracking-[-0.025em] text-lumicoria-obsidian">{output}</p>
                           </div>
                         </motion.div>
                       ))}
@@ -121,53 +132,45 @@ const HowItWorks = () => {
               </div>
             </Reveal>
 
-            <Dialog>
-              <Reveal>
-                <motion.div style={{ y: videoY }} className={`${glassPanel} grid md:grid-cols-[0.9fr_1.2fr]`}>
-                  <div className="p-8 md:p-10">
-                    <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
-                    <h3 className="font-hero text-3xl font-semibold tracking-[-0.03em] text-gray-950 md:text-5xl">See a workday become manageable.</h3>
-                    <p className="mt-5 text-lg leading-8 text-gray-600">
-                      Watch how a workspace moves from documents and meetings into decisions, next actions, and protected focus time.
-                    </p>
-                    <DialogTrigger asChild>
-                      <button className="liquid-action mt-8 inline-flex min-h-11 items-center rounded-full bg-lumicoria-core px-5 text-sm font-semibold text-white transition hover:bg-lumicoria-obsidian">
-                        Watch the walkthrough
-                      </button>
-                    </DialogTrigger>
-                  </div>
-                  <DialogTrigger asChild>
-                    <button className="group relative min-h-[18rem] overflow-hidden bg-lumicoria-obsidian text-left md:min-h-[24rem]">
-                      <img
-                        src="https://img.youtube.com/vi/zFcxA9T_BWs/maxresdefault.jpg"
-                        alt="Lumicoria product walkthrough thumbnail"
-                        className="h-full w-full object-cover opacity-55 grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-70"
-                      />
-                      <div className="absolute inset-0 bg-lumicoria-obsidian/70" />
-                      <div className="absolute bottom-6 left-6 right-6 rounded-3xl bg-white/10 p-5 text-white backdrop-blur-xl ring-1 ring-white/10">
-                        <p className="font-hero text-2xl font-semibold tracking-[-0.025em]">Daily workspace loop</p>
-                        <p className="mt-2 text-sm leading-6 text-white/70">Add context, choose help, review output, keep momentum.</p>
-                      </div>
-                    </button>
-                  </DialogTrigger>
-                </motion.div>
-              </Reveal>
-              <DialogContent className="border-none bg-black/80 p-0 shadow-2xl sm:max-w-[900px]">
-                <div className="aspect-video w-full overflow-hidden rounded-lg">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src="https://www.youtube.com/embed/zFcxA9T_BWs?si=Ov_7CYjzlUFjHYZ0&autoplay=1"
-                    title="Lumicoria Demo"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {deliverySignals.map((signal, signalIndex) => (
+                <Reveal key={signal.join()} delay={signalIndex * 0.05}>
+                  <motion.article
+                    whileHover={reduceMotion ? undefined : { y: -8, scale: 1.012 }}
+                    transition={{ duration: 0.22 }}
+                    className={`${glassPanel} p-5`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-lumicoria-core" />
+                      <p className="font-hero text-sm font-semibold text-lumicoria-core">Production path</p>
+                    </div>
+                    <div className="mt-5 space-y-2">
+                      {signal.map((item, itemIndex) => (
+                        <div key={item} className="flex items-center gap-3">
+                          <span className={itemIndex === signal.length - 1 ? 'h-8 w-8 rounded-full bg-lumicoria-core text-center text-xs font-semibold leading-8 text-white' : 'h-8 w-8 rounded-full bg-lumicoria-core/10 text-center text-xs font-semibold leading-8 text-lumicoria-core'}>
+                            {itemIndex + 1}
+                          </span>
+                          <p className="text-sm font-medium text-slate-700">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.article>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal className={`${glassPanel} flex flex-col items-start justify-between gap-5 p-6 md:flex-row md:items-center`}>
+              <div>
+                <p className="font-hero text-2xl font-semibold tracking-[-0.03em] text-lumicoria-obsidian">No-code when you need speed. Typed components when you need control.</p>
+                <p className="mt-2 max-w-2xl text-base leading-7 text-slate-700">
+                  Agent Studio gives builders a visual canvas while keeping versions, tests, components, and governance ready for teams.
+                </p>
+              </div>
+              <Button asChild className="liquid-action bg-lumicoria-core px-6 py-6 text-white hover:bg-lumicoria-obsidian">
+                <Link to="/agent-builder">Open Agent Studio</Link>
+              </Button>
+            </Reveal>
+          </motion.div>
         </div>
       </div>
     </section>

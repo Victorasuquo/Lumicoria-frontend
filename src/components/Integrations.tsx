@@ -26,13 +26,13 @@ const integrationHighlights = [
   {
     logo: '/images/lumicoria-logo-primary.png',
     title: 'Native connectors',
-    body: 'Google Workspace, Slack, Notion, Salesforce, Stripe, and more',
+    body: 'Google Workspace, Slack, Notion, Salesforce, Stripe, and provider routes',
     panel: 'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-signal/[0.78] p-6 text-center shadow-[0_18px_52px_rgba(33,23,69,0.10)] ring-1 ring-lumicoria-core/[0.10] backdrop-blur-xl',
   },
   {
     logo: '/images/lumicoria-logo-primary.png',
-    title: 'Open endpoints',
-    body: 'REST and webhook connectors for workflows outside the grid',
+    title: 'Scoped environments',
+    body: 'Connectors can be scoped to orgs, teams, projects, and individual workspaces',
     panel: 'liquid-glass liquid-interactive relative overflow-hidden rounded-2xl border border-white/80 bg-lumicoria-human/[0.42] p-6 text-center shadow-[0_18px_52px_rgba(33,23,69,0.09)] ring-1 ring-lumicoria-gold/15 backdrop-blur-xl',
   },
   {
@@ -128,7 +128,7 @@ const Integrations = () => {
             Works with the stack you already chose.
           </h2>
           <p className="text-lg leading-8 text-slate-700">
-            Connect docs, calendars, messages, payments, and model providers. Agents move the work between them without asking people to migrate first.
+            Connect docs, calendars, messages, payments, support records, and model providers. Agents move work between tools without asking the team to migrate first.
           </p>
         </Reveal>
 
@@ -292,7 +292,7 @@ const Integrations = () => {
         {/* CTA */}
         <Reveal className="text-center">
           <p className="mb-6 text-lg leading-8 text-slate-700">
-            Microsoft Teams, Outlook, HubSpot, Asana, Jira, Linear, and the next fifty connectors are on the roadmap.
+            Microsoft Teams, Outlook, HubSpot, Asana, Jira, Linear, GitHub, Figma, Trello, Monday, and Zapier are part of the wider connector roadmap.
           </p>
           <Button className="liquid-action bg-lumicoria-core text-white hover:bg-lumicoria-obsidian">
             <span>Explore integrations</span>

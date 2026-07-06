@@ -210,10 +210,10 @@ const AgentBuilder = () => {
         <Reveal className="mx-auto mb-16 max-w-3xl text-center">
           <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mx-auto mb-7 h-12 w-12 rounded-2xl object-contain" />
           <h2 className="mb-6 font-hero text-[clamp(2.7rem,5vw,5.7rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
-            Build the way you already think.
+            Compose agents for the work your team actually runs.
           </h2>
           <p className="text-lg leading-8 text-slate-700">
-            Connect a document, meeting, inbox, or workspace. Lumicoria turns the routine into an agent you can test, adjust, and share without code.
+            Connect documents, meetings, support queues, knowledge bases, model routes, and approvals. Lumicoria turns the routine into an agent you can test, version, publish, and share without starting from code.
           </p>
         </Reveal>
 
@@ -426,9 +426,9 @@ const AgentBuilder = () => {
           <Reveal className="text-center">
             <div className="mx-auto mb-8 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
               {[
-                ['Start with a real task.', 'Pick the routine you want to stop repeating, then connect the source and destination.'],
-                ['Keep every change safe.', 'Every edit is saved as a version, so teams can review, compare, and roll back.'],
-                ['Test before it helps people.', 'Run the agent against examples first, then publish when the result feels right.'],
+                ['Start with a real workflow.', 'Pick the meeting, support, document, research, or data process that should stop being manual.'],
+                ['Keep every change reviewable.', 'Every edit is saved as a version, so teams can compare, approve, and roll back safely.'],
+                ['Publish with ownership.', 'Run the agent against examples, set who can use it, then monitor how it performs in the workspace.'],
               ].map(([title, body], index) => (
                 <div key={title} className={builderFeaturePanels[index]}>
                   <p className="font-hero text-lg font-semibold tracking-[-0.02em] text-lumicoria-obsidian">{title}</p>

@@ -8,15 +8,11 @@ import Integrations from '../components/Integrations';
 import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
 import {
-  CompetitionAdvantageSection,
-  DailyValueSection,
   EnterpriseSection,
   FinalCTA,
+  OperationsProofSection,
   ProviderTrustBar,
-  ReviewsSection,
-  StorySpineSection,
-  TrustedBySection,
-  WellbeingRhythmSection,
+  SecureSharedEnvironmentsSection,
 } from '../components/LandingSections';
 import { SEO } from "@/components/SEO";
 import { KEYWORDS } from "@/lib/seo";
@@ -50,25 +46,21 @@ const Index = () => {
   return (
     <main className="landing-shell min-h-screen w-full max-w-full overflow-x-hidden">
       <SEO
-        title="Lumicoria AI, AI Agent Universe for Teams, Productivity and Wellbeing"
-        description="AI agents for documents, meetings, research, study planning, focus, wellbeing, and team productivity. Start free, organize your work, and scale with your team when you are ready."
+        title="Lumicoria AI, AI Workforce Operating Environment"
+        description="Build, deploy, and govern production AI agents across meetings, customer support, documents, research, data, tasks, and enterprise workspaces. Start free with 21 agents and six model providers."
         canonical="/"
         keywords={[...KEYWORDS.byPage.home, ...KEYWORDS.global]}
       />
       <Hero />
       <ProviderTrustBar />
-      <StorySpineSection />
-      <DailyValueSection />
       <AgentsUniverse />
       <Features />
-      <WellbeingRhythmSection />
+      <OperationsProofSection />
       <HowItWorks />
       <AgentBuilder />
       <Integrations />
-      <TrustedBySection />
-      <ReviewsSection />
+      <SecureSharedEnvironmentsSection />
       <Personas />
-      <CompetitionAdvantageSection />
       <EnterpriseSection />
       <Pricing />
       <FinalCTA />

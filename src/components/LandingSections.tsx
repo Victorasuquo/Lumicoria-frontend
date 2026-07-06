@@ -112,8 +112,8 @@ const KineticRail = ({ items, reverse = false, duration = 28, className = '' }: 
 };
 
 const modelProviders = ['OpenAI', 'Anthropic', 'Gemini', 'Perplexity', 'Mistral', 'Local models'];
-const workSignals = ['Documents', 'Meetings', 'Research', 'Study', 'Focus', 'Well-being', 'Team decisions', 'Tasks'];
-const continuum = ['Raw input', 'Reasoning', 'Action', 'Human impact'];
+const workSignals = ['Meetings', 'Customer support', 'Documents', 'Research', 'Data analysis', 'Governance', 'Team decisions', 'Tasks'];
+const continuum = ['Context', 'Model route', 'Agent action', 'Workspace record'];
 
 export const ProviderTrustBar = () => {
   const ref = useRef<HTMLElement>(null);
@@ -129,10 +129,10 @@ export const ProviderTrustBar = () => {
             <div>
               <div className="flex items-center gap-3">
                 <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="h-10 w-10 rounded-2xl object-contain" />
-                <span className="font-signal text-xs text-lumicoria-core">production agents, human rhythm</span>
+                <span className="font-signal text-xs text-lumicoria-core">production agents, model routing, workspace control</span>
               </div>
               <p className="mt-4 max-w-sm font-hero text-2xl font-semibold leading-tight tracking-[-0.03em] text-lumicoria-obsidian">
-                One calm operating layer for work that keeps moving.
+                One operating layer for agents, teams, and governed work.
               </p>
             </div>
 
@@ -704,26 +704,299 @@ export const CompetitionAdvantageSection = () => {
   );
 };
 
+const operationsScenarios = [
+  {
+    title: 'Meetings become owned work',
+    body: 'Create live huddles, invite the right people, capture transcripts, assign action items, attach recordings, and let meeting agents keep follow up visible.',
+    inputs: ['Invite', 'Transcript', 'Recording', 'Workspace'],
+    outputs: ['Decision', 'Owner', 'Task', 'Recap'],
+  },
+  {
+    title: 'Support becomes a reviewed flow',
+    body: 'Customer questions can be classified, matched to knowledge, drafted for reply, escalated when sensitive, and audited after resolution.',
+    inputs: ['Ticket', 'Intent', 'Knowledge base', 'Policy'],
+    outputs: ['Draft', 'Escalation', 'Resolution', 'Quality note'],
+  },
+  {
+    title: 'Documents become system memory',
+    body: 'Contracts, policies, receipts, and reports are read once, then turned into source backed summaries, obligations, risks, and reusable answers.',
+    inputs: ['PDF', 'Contract', 'Policy', 'Scan'],
+    outputs: ['Summary', 'Clause', 'Risk', 'Source'],
+  },
+  {
+    title: 'Data becomes a decision brief',
+    body: 'Datasets and spreadsheets can be inspected by agents, visualized for review, and translated into recommendations with the assumptions still visible.',
+    inputs: ['Dataset', 'Question', 'Metric', 'Segment'],
+    outputs: ['Pattern', 'Chart', 'Recommendation', 'Next test'],
+  },
+];
+
+export const OperationsProofSection = () => {
+  const [activeScenario, setActiveScenario] = useState(0);
+  const ref = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const flowY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [48, -48]);
+  const scenario = operationsScenarios[activeScenario];
+
+  return (
+    <section ref={ref} id="operations-proof" className={`${auroraSection} py-28 md:py-40`}>
+      <div className="container relative mx-auto px-4">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.86fr_1.45fr] lg:items-start">
+          <Reveal className="lg:sticky lg:top-28">
+            <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
+            <h2 className="font-hero text-[clamp(2.65rem,5vw,5.75rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
+              The value shows up in operational moments.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
+              Lumicoria should feel useful before anyone reads a procurement page. Meetings, customer care, document work, research, and analysis all become visible workflows.
+            </p>
+            <div className="mt-9 space-y-2">
+              {operationsScenarios.map((item, index) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  onMouseEnter={() => setActiveScenario(index)}
+                  onFocus={() => setActiveScenario(index)}
+                  onClick={() => setActiveScenario(index)}
+                  className={`w-full rounded-2xl px-5 py-4 text-left transition ${
+                    activeScenario === index
+                      ? activeTabClasses[index % activeTabClasses.length]
+                      : 'bg-white/[0.62] text-slate-600 ring-1 ring-white/75 backdrop-blur-xl hover:bg-white hover:text-lumicoria-core'
+                  }`}
+                >
+                  <span className="block font-hero text-xl font-semibold tracking-[-0.025em]">{item.title}</span>
+                </button>
+              ))}
+            </div>
+          </Reveal>
+
+          <motion.div style={{ y: flowY }} className="space-y-6">
+            <Reveal>
+              <motion.article
+                key={scenario.title}
+                initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.42 }}
+                className={`${glassPanel} p-5 md:p-7`}
+              >
+                <div className="grid gap-7 md:grid-cols-[0.92fr_1.08fr] md:items-stretch">
+                  <div className={`${solidTonePanels[activeScenario % solidTonePanels.length]} p-7`}>
+                    <p className="font-signal text-xs opacity-70">live workflow</p>
+                    <h3 className="mt-5 font-hero text-[clamp(2.25rem,5vw,5rem)] font-semibold leading-[1] tracking-[-0.04em]">
+                      {scenario.title}
+                    </h3>
+                    <p className="mt-6 text-base leading-8 opacity-[0.78]">{scenario.body}</p>
+                  </div>
+
+                  <div className="relative min-h-[30rem] overflow-hidden rounded-3xl border border-white/75 bg-white/[0.42] p-5 ring-1 ring-lumicoria-cognitive/35 backdrop-blur-2xl">
+                    <div className="scanline-grid absolute inset-0 opacity-[0.45]" />
+                    <div className="relative grid gap-5 md:grid-cols-2">
+                      <div>
+                        <p className="mb-4 font-hero text-sm font-semibold text-lumicoria-core">Context in</p>
+                        <div className="space-y-3">
+                          {scenario.inputs.map((item, index) => (
+                            <motion.div
+                              key={item}
+                              initial={reduceMotion ? false : { opacity: 0, x: -18 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.07, duration: 0.35 }}
+                              className={`${glassTile} px-4 py-4`}
+                            >
+                              <p className="font-hero text-lg font-semibold tracking-[-0.025em] text-lumicoria-obsidian">{item}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-4 font-hero text-sm font-semibold text-lumicoria-core">Action out</p>
+                        <div className="space-y-3">
+                          {scenario.outputs.map((item, index) => (
+                            <motion.div
+                              key={item}
+                              initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.07 + 0.08, duration: 0.35 }}
+                              className={`${index === scenario.outputs.length - 1 ? purpleGlass : glassTile} px-4 py-4`}
+                            >
+                              <p className="font-hero text-lg font-semibold tracking-[-0.025em]">{item}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.article>
+            </Reveal>
+
+            <Reveal className={`${glassPanel} p-6`}>
+              <div className="grid gap-4 md:grid-cols-4">
+                {['Live meetings', 'Customer support', 'Document intelligence', 'Data analysis'].map((item, index) => (
+                  <motion.div
+                    key={item}
+                    whileHover={reduceMotion ? undefined : { y: -6 }}
+                    transition={{ duration: 0.22 }}
+                    className="rounded-2xl border border-white/75 bg-white/[0.52] px-4 py-5 text-center ring-1 ring-lumicoria-cognitive/30 backdrop-blur-xl"
+                  >
+                    <p className="font-signal text-xs text-lumicoria-core">{String(index + 1).padStart(2, '0')}</p>
+                    <p className="mt-3 font-hero text-xl font-semibold tracking-[-0.025em] text-lumicoria-obsidian">{item}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </Reveal>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const environmentCards = [
+  {
+    title: 'Teams for everyone',
+    body: 'Invite people into shared spaces, give them the agents they need, and keep work from living in private prompt history.',
+    details: ['Members', 'Shared agents', 'Team memory'],
+  },
+  {
+    title: 'Managed workspaces',
+    body: 'Separate projects, departments, clients, or environments so context, sources, and policies stay where they belong.',
+    details: ['Projects', 'Clients', 'Environments'],
+  },
+  {
+    title: 'Scoped integrations',
+    body: 'Connect apps by org, team, project, or workspace with clear permission boundaries and reviewable activity.',
+    details: ['Scopes', 'Connectors', 'Logs'],
+  },
+  {
+    title: 'Review paths',
+    body: 'Decide which outputs publish instantly, which need approval, and which must route to legal, support, or admin owners.',
+    details: ['Approvals', 'Escalations', 'Owners'],
+  },
+  {
+    title: 'Audit trails',
+    body: 'Keep run history, model route, source context, decisions, and exported records visible for operations and compliance.',
+    details: ['Runs', 'Sources', 'Exports'],
+  },
+  {
+    title: 'Admin controls',
+    body: 'Add identity, provisioning, domain controls, session rules, and data boundaries as the workspace matures.',
+    details: ['SSO', 'SCIM', 'Residency'],
+  },
+];
+
+export const SecureSharedEnvironmentsSection = () => {
+  const [activeEnvironment, setActiveEnvironment] = useState(0);
+  const ref = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const cardY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [42, -42]);
+  const active = environmentCards[activeEnvironment];
+
+  return (
+    <section ref={ref} id="shared-environments" className={`${auroraSection} py-28 md:py-40`}>
+      <div className="container relative mx-auto px-4">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.84fr_1.48fr] lg:items-start">
+          <Reveal className="lg:sticky lg:top-28">
+            <img src="/images/lumicoria-logo-mono.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
+            <h2 className="font-hero text-[clamp(2.65rem,5vw,5.75rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-lumicoria-obsidian">
+              Shared environments, not private agent chaos.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700">
+              Every team gets a place to manage agents, sources, permissions, integrations, and review paths together. Governance is not bolted on later.
+            </p>
+          </Reveal>
+
+          <motion.div style={{ y: cardY }} className="space-y-6">
+            <Reveal>
+              <div className={`${glassPanel} p-4`}>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {environmentCards.map((card, index) => (
+                    <button
+                      key={card.title}
+                      type="button"
+                      onMouseEnter={() => setActiveEnvironment(index)}
+                      onFocus={() => setActiveEnvironment(index)}
+                      onClick={() => setActiveEnvironment(index)}
+                      className={`min-h-32 rounded-2xl p-5 text-left transition ${
+                        activeEnvironment === index
+                          ? index === 4 ? 'bg-lumicoria-obsidian text-white shadow-[0_18px_48px_rgba(33,23,69,0.20)]' : activeTabClasses[index % activeTabClasses.length]
+                          : 'bg-white/[0.58] text-slate-600 ring-1 ring-white/75 backdrop-blur-xl hover:bg-white hover:text-lumicoria-core'
+                      }`}
+                    >
+                      <p className="font-hero text-xl font-semibold tracking-[-0.025em]">{card.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal>
+              <motion.article
+                key={active.title}
+                initial={reduceMotion ? false : { opacity: 0, y: 22, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.42 }}
+                className={`${glassPanel} p-5 md:p-7`}
+              >
+                <div className="grid gap-7 md:grid-cols-[0.9fr_1.1fr]">
+                  <div className={`${activeEnvironment === 4 ? darkPanel : solidTonePanels[activeEnvironment % solidTonePanels.length]} p-7`}>
+                    <p className="font-signal text-xs opacity-70">managed environment</p>
+                    <h3 className="mt-5 font-hero text-[clamp(2.25rem,5vw,5rem)] font-semibold leading-[1] tracking-[-0.04em]">
+                      {active.title}
+                    </h3>
+                    <p className="mt-6 text-base leading-8 opacity-[0.78]">{active.body}</p>
+                  </div>
+
+                  <div className="relative min-h-[23rem] overflow-hidden rounded-3xl border border-white/75 bg-white/[0.42] p-5 ring-1 ring-lumicoria-cognitive/35 backdrop-blur-2xl">
+                    <div className="scanline-grid absolute inset-0 opacity-[0.42]" />
+                    <div className="relative grid gap-4">
+                      {active.details.map((detail, index) => (
+                        <motion.div
+                          key={detail}
+                          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.08, duration: 0.35 }}
+                          className={`${glassTile} p-5`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="h-8 w-8 rounded-full bg-lumicoria-core text-center font-signal text-xs leading-8 text-white">{index + 1}</span>
+                            <p className="font-hero text-xl font-semibold tracking-[-0.025em] text-lumicoria-obsidian">{detail}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.article>
+            </Reveal>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const enterpriseCapabilities = [
   {
-    title: 'Identity and roles',
-    body: 'Company sign in, user provisioning, workspaces, approval paths, and role boundaries for shared agents.',
+    title: 'Identity and provisioning',
+    body: 'SAML SSO, SCIM, domain claims, session policy, and role boundaries for teams that need central control.',
   },
   {
-    title: 'Traceable output',
-    body: 'Summaries, drafts, recommendations, and agent actions keep source context visible for review.',
+    title: 'Workspace governance',
+    body: 'Managed teams, approval paths, scoped integrations, shared agents, and admin controls across workspaces.',
   },
   {
-    title: 'Model control',
-    body: 'OpenAI, Anthropic, Gemini, Perplexity, Mistral, and local routes can be governed by workspace policy.',
+    title: 'Audit and webhooks',
+    body: 'Agent runs, source context, exports, activity trails, and webhooks keep operational evidence accessible.',
   },
   {
-    title: 'Regional options',
+    title: 'Data residency',
     body: 'US and EU today, UK in preparation, with Singapore and African region planning on the roadmap.',
   },
   {
-    title: 'Well-being boundaries',
-    body: 'Focus prompts and weekly reflections support people without turning personal care into surveillance.',
+    title: 'Key control',
+    body: 'Customer managed key conversations, private environments, and stricter data boundaries for regulated work.',
   },
   {
     title: 'Compliance path',
@@ -744,13 +1017,13 @@ export const EnterpriseSection = () => {
           <Reveal>
             <img src="/images/lumicoria-logo-mono.png" alt="Lumicoria" className="mb-7 h-12 w-12 rounded-2xl object-contain" />
             <h2 className="font-hero text-[clamp(2.5rem,5vw,5.75rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-white">
-              Starts personal. Survives procurement.
+              Serious controls when teams scale.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-white/[0.72]">
-              Lumicoria can start with one person getting through documents and focus work, then grow into a governed workspace without changing tools.
+              Start with one workflow, then bring identity, provisioning, audit, residency, managed keys, and deployment conversations into the same operating environment.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              {['SOC 2 path', 'Regional storage', 'Managed keys'].map((item) => (
+              {['SAML SSO', 'SCIM', 'Audit exports', 'Data residency'].map((item) => (
                 <span key={item} className="rounded-full border border-white/10 bg-white/[0.08] px-4 py-2 font-signal text-xs text-lumicoria-signal backdrop-blur-xl">
                   {item}
                 </span>
@@ -776,7 +1049,7 @@ export const EnterpriseSection = () => {
                       whileInView={reduceMotion ? undefined : { width: `${58 + index * 6}%` }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.8, delay: index * 0.06 }}
-                      className="h-full rounded-full bg-lumicoria-gold"
+                      className="h-full rounded-full bg-lumicoria-cognitive"
                     />
                   </div>
                 </motion.article>
@@ -786,7 +1059,7 @@ export const EnterpriseSection = () => {
         </div>
 
         <Reveal className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button asChild className="liquid-action bg-lumicoria-gold/90 px-6 py-6 text-lumicoria-obsidian hover:bg-lumicoria-human">
+          <Button asChild className="liquid-action bg-lumicoria-signal px-6 py-6 text-lumicoria-obsidian hover:bg-white">
             <Link to="/enterprise">Talk to Enterprise</Link>
           </Button>
           <Button asChild variant="outline" className="liquid-action border-white/20 bg-white/10 px-6 py-6 text-white backdrop-blur-xl hover:bg-white/[0.15]">
@@ -812,17 +1085,17 @@ export const FinalCTA = () => {
             <div className="p-8 text-center md:p-12">
               <img src="/images/lumicoria-logo-primary.png" alt="Lumicoria" className="mx-auto mb-7 h-14 w-14 rounded-2xl object-contain" />
               <h2 className="font-hero text-[clamp(2.8rem,6vw,5.9rem)] font-semibold leading-[0.99] tracking-[-0.04em]">
-                Start with one better workday.
+                Start with one agent. Grow into an AI workforce.
               </h2>
               <p className="mx-auto mt-7 max-w-3xl text-lg leading-8 text-slate-700">
-                Bring one document, one meeting, one research goal, or one overloaded week. Lumicoria helps turn it into clear output, next actions, and healthier momentum.
+                Bring one meeting, customer queue, document workflow, research brief, dataset, or team process. Lumicoria helps turn it into governed agents, shared memory, and visible progress.
               </p>
             </div>
             <div className="grid gap-px bg-lumicoria-cognitive/30 md:grid-cols-3">
               {[
-                ['Start free', 'Use Lumicoria as one person before the team arrives.', '/signup'],
-                ['Book a demo', 'See the workspace, model routing, and agent studio in context.', '/demo'],
-                ['Build with us', 'Engage Lumicoria.com for a custom agent workflow.', '/agency'],
+                ['Start free', 'Use production agents on your own work before the team arrives.', '/signup'],
+                ['Book a demo', 'See the workspace, model routing, Agent Studio, and governance in context.', '/demo'],
+                ['Build with us', 'Engage Lumicoria.com for a custom agent workflow around your operation.', '/agency'],
               ].map(([title, body, href], index) => (
                 <Link key={title} to={href} className={`group bg-white/[0.48] p-7 backdrop-blur-xl transition hover:bg-white/75 ${index === 1 ? 'md:-translate-y-4 md:rounded-3xl md:bg-lumicoria-core md:text-white md:shadow-[0_28px_80px_rgba(33,23,69,0.24)]' : ''}`}>
                   <p className="font-hero text-2xl font-semibold tracking-[-0.03em]">{title}</p>
