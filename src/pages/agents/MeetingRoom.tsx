@@ -47,6 +47,8 @@ const MeetingRoom: React.FC = () => {
   const [liveTranscript, setLiveTranscript] = useState<string>("");
   const [jitsiApi, setJitsiApi] = useState<any | null>(null);
   const [captionsOn, setCaptionsOn] = useState(true);
+  // Desktop: agent sidebar hidden off the right edge until hovered.
+  const [sideRevealed, setSideRevealed] = useState(false);
   const jitsiApiRef = useRef<any | null>(null);
   // Refs mirror state for the unmount cleanup — an empty-deps effect
   // closes over the INITIAL values (huddle=null, hasJoined=false), so
@@ -198,8 +200,10 @@ const MeetingRoom: React.FC = () => {
 
   // Layout: outer wrap is a Lumicoria-branded gradient page (purple →
   // fuchsia → indigo). The Jitsi iframe sits INSIDE a rounded card with
-  // some breathing room so it doesn't overflow the viewport, and the
-  // sidebar sits alongside on desktop / below on mobile.
+  // some breathing room so it doesn't overflow the viewport. On desktop
+  // the agent sidebar auto-collapses off the right edge (video takes the
+  // full width); hovering the right edge of the screen slides it back
+  // in. Mobile keeps the stacked layout — no hover on touch.
   const layout = isMobile
     ? {
         wrap: "flex flex-col min-h-screen",
@@ -209,7 +213,9 @@ const MeetingRoom: React.FC = () => {
     : {
         wrap: "flex h-screen",
         main: "flex-1 p-4",
-        side: "w-[380px] shrink-0 py-4 pr-4",
+        side: `fixed right-0 top-0 h-screen w-[380px] py-4 pr-4 z-40 transition-transform duration-300 ease-out ${
+          sideRevealed ? "translate-x-0" : "translate-x-full pointer-events-none"
+        }`,
       };
 
   return (
@@ -279,7 +285,19 @@ const MeetingRoom: React.FC = () => {
           </button>
         </div>
       </div>
-      <div className={layout.side}>
+      {/* Right-edge hover zone — reveals the collapsed sidebar (desktop). */}
+      {!isMobile && !sideRevealed && (
+        <div
+          className="fixed right-0 top-0 h-screen w-3 z-40"
+          onMouseEnter={() => setSideRevealed(true)}
+          onClick={() => setSideRevealed(true)}
+          aria-hidden="true"
+        />
+      )}
+      <div
+        className={layout.side}
+        onMouseLeave={() => { if (!isMobile) setSideRevealed(false); }}
+      >
         {/* Sidebar sits in its own frosted card so it visually matches */}
         <div
           className="h-full rounded-3xl overflow-hidden ring-1 ring-white/10 backdrop-blur-xl"
