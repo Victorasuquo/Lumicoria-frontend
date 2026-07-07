@@ -172,17 +172,23 @@ const ScrollToTop = () => {
 };
 
 /** Standard app shell: MainNav + content + Footer */
-const MainLayout = () => (
-  <div className="min-h-screen bg-gray-50 flex flex-col">
-    <MainNav />
-    <main className="flex-1 pt-16">
-      <Outlet />
-    </main>
-    <Footer />
-    <Toaster />
-    <Sonner />
-  </div>
-);
+const MainLayout = () => {
+  // Meeting room: nav auto-collapses (see MainNav), so drop the top
+  // padding and let the call use the full viewport height.
+  const { pathname } = useLocation();
+  const isMeetingRoom = pathname.startsWith("/agents/meeting/room");
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <MainNav />
+      <main className={isMeetingRoom ? "flex-1" : "flex-1 pt-16"}>
+        <Outlet />
+      </main>
+      <Footer />
+      <Toaster />
+      <Sonner />
+    </div>
+  );
+};
 
 const AppRoutes = () => {
   return (

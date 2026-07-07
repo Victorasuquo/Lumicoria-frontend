@@ -44,6 +44,18 @@ export default function MainNav() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // In the meeting room the nav auto-collapses upward (no visible trace)
+  // so the call gets the full viewport. Hovering the top edge of the
+  // screen slides it back down; leaving it hides it again.
+  const isMeetingRoom = location.pathname.startsWith('/agents/meeting/room');
+  const [navRevealed, setNavRevealed] = useState(false);
+  const navHidden = isMeetingRoom && !navRevealed;
+
+  // Reset reveal state when navigating in/out of the meeting room.
+  useEffect(() => {
+    setNavRevealed(false);
+  }, [isMeetingRoom]);
+
   // Initialize push notifications
   const { requestForToken, deleteToken } = usePushNotifications();
 
@@ -101,7 +113,25 @@ export default function MainNav() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
+    <>
+      {/* Invisible hover zone along the top edge — only in the meeting
+          room, only while the nav is hidden. Tap works for touch. */}
+      {isMeetingRoom && (
+        <div
+          className="fixed top-0 left-0 right-0 h-3 z-[60]"
+          onMouseEnter={() => setNavRevealed(true)}
+          onClick={() => setNavRevealed(true)}
+          aria-hidden="true"
+        />
+      )}
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4",
+        "transition-transform duration-300 ease-out",
+        navHidden && "-translate-y-full pointer-events-none"
+      )}
+      onMouseLeave={() => { if (isMeetingRoom) setNavRevealed(false); }}
+    >
       {/* Floating Glass Pill Navigation */}
       <nav
         className={cn(
@@ -331,6 +361,7 @@ export default function MainNav() {
         </div>
       )}
     </header>
+    </>
   );
 };
 
