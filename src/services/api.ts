@@ -317,6 +317,8 @@ export interface Document {
   status: string;
   metadata?: Record<string, any>;
   extraction_status?: string;
+  /** Set when task extraction failed (document itself may still be processed). */
+  extraction_error?: string | null;
   extraction_result?: Record<string, any>;
 }
 

@@ -593,6 +593,27 @@ const DocumentAgent: React.FC = () => {
         }
       }
     }
+
+    // The 4-stage pipeline nests structured items under
+    // extraction_result.extraction.* with different key names — the flat
+    // pass above only covers the legacy shape, so without this mapping
+    // the Extracted Data tab was permanently empty for new extractions.
+    const ex = r.extraction;
+    if (ex && typeof ex === "object") {
+      const seen = new Set(items.map((it) => `${it.type}:${it.value}`));
+      const push = (type: string, value: unknown, context?: unknown) => {
+        const v = typeof value === "string" ? value : value ? JSON.stringify(value) : "";
+        if (!v || seen.has(`${type}:${v}`)) return;
+        seen.add(`${type}:${v}`);
+        items.push({ type, value: v, context: typeof context === "string" ? context : undefined });
+      };
+      for (const d of ex.key_dates || []) push("Date", d.raw_phrase || d.date, d.what);
+      for (const p of ex.key_people || []) push("Person", p.name, p.role);
+      for (const a of ex.action_items || []) push("Action", a.title, a.description);
+      for (const k of ex.key_decisions || []) {
+        push("Key_Point", typeof k === "string" ? k : k.text || k.decision);
+      }
+    }
     return items;
   };
 
@@ -791,8 +812,28 @@ const DocumentAgent: React.FC = () => {
                   <div className="mt-3 p-2.5 bg-red-50 rounded-lg border border-red-100">
                     <p className="text-xs text-red-600">
                       <AlertCircle size={12} className="inline mr-1" />
-                      Processing failed: {selectedDoc.extraction_result?.extraction_error || "Unknown error"}
+                      Processing failed: {selectedDoc.extraction_error || selectedDoc.extraction_result?.extraction_error || "Unknown error"}
                     </p>
+                  </div>
+                )}
+
+                {/* Extraction failed but the doc itself is fine (indexed for
+                    chat) — surface the real error instead of the silent
+                    "No tasks found" dead end. */}
+                {selectedDoc.status === "processed" && selectedDoc.extraction_status === "failed" && (
+                  <div className="mt-3 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-700">
+                      <AlertCircle size={12} className="inline mr-1" />
+                      Document indexed for chat, but task extraction failed:{" "}
+                      {selectedDoc.extraction_error || "Unknown error"}
+                    </p>
+                    <button
+                      onClick={handleCreateTasks}
+                      disabled={creatingTasks}
+                      className="mt-1.5 text-[11px] font-semibold text-amber-800 underline hover:text-amber-900 disabled:opacity-50"
+                    >
+                      {creatingTasks ? "Retrying…" : "Retry extraction"}
+                    </button>
                   </div>
                 )}
               </div>
@@ -891,10 +932,15 @@ const DocumentAgent: React.FC = () => {
                     <TabsContent value="tasks" className="p-4 m-0">
                       {(() => {
                         if (autoTasks.length === 0) {
+                          const extractionFailed = selectedDoc.extraction_status === "failed";
                           return (
                             <div className="text-center py-8 text-gray-400">
                               <ListChecks size={20} className="mx-auto mb-2 opacity-30" />
-                              <p className="text-xs">No tasks found in this document</p>
+                              <p className="text-xs">
+                                {extractionFailed
+                                  ? `Task extraction failed: ${selectedDoc.extraction_error || "unknown error"}`
+                                  : "No tasks found in this document"}
+                              </p>
                             </div>
                           );
                         }
