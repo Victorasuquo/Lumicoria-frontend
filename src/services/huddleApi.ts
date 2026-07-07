@@ -103,6 +103,8 @@ export interface HuddleTranscriptChunk {
 export interface CreateHuddleInput {
   title?: string;
   meeting_type?: HuddleMeetingType;
+  /** Active workspace org — backend validates membership. */
+  organization_id?: string | null;
   team_id?: string | null;
   project_id?: string | null;
   agent_keys?: string[];

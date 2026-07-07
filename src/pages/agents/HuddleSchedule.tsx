@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { huddleApi } from "@/services/huddleApi";
 import { toast } from "sonner";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { isPlanCapError, showPlanCapToast } from "@/components/workspace/PlanCapToast";
 
 const AGENT_CATALOG = [
   { key: "meeting", label: "Meeting Notes", desc: "Decisions + action items" },
@@ -44,6 +46,7 @@ function defaultEnd(): string {
 
 const HuddleSchedule: React.FC = () => {
   const navigate = useNavigate();
+  const { activeOrgId } = useWorkspace();
   const [title, setTitle] = useState("");
   const [start, setStart] = useState(defaultStart());
   const [end, setEnd] = useState(defaultEnd());
@@ -70,6 +73,7 @@ const HuddleSchedule: React.FC = () => {
       const huddle = await huddleApi.create({
         title: title.trim(),
         meeting_type: "scheduled",
+        organization_id: activeOrgId || undefined,
         scheduled_start: startDate.toISOString(),
         scheduled_end: endDate.toISOString(),
         agent_keys: agentKeys,
@@ -108,9 +112,13 @@ const HuddleSchedule: React.FC = () => {
 
       navigate(`/agents/meeting`);
     } catch (e: any) {
-      const detail = e?.response?.data?.detail;
-      const msg = typeof detail === "string" ? detail : detail?.message || "Couldn't schedule the meeting.";
-      toast.error(msg);
+      if (isPlanCapError(e)) {
+        showPlanCapToast(e, navigate);
+      } else {
+        const detail = e?.response?.data?.detail;
+        const msg = typeof detail === "string" ? detail : detail?.message || "Couldn't schedule the meeting.";
+        toast.error(msg);
+      }
       setBusy(false);
     }
   };

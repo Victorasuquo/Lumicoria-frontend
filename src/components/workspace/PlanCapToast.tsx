@@ -41,13 +41,21 @@ export interface PlanCapError {
 export function isPlanCapError(err: unknown): err is PlanCapError {
   const r = (err as PlanCapError)?.response;
   if (!r || r.status !== 402) return false;
-  const d = r.data?.detail as PlanCapDetail | undefined;
-  return Boolean(d && d.cap && d.message);
+  const d = r.data?.detail as any;
+  // Two backend shapes: plan_caps ({cap, plan, message}) and the huddle
+  // guard ({code: "upgrade_required", limit, current_plan, message}).
+  return Boolean(d && d.message && (d.cap || d.limit || d.code === "upgrade_required"));
 }
 
 export function showPlanCapToast(err: PlanCapError, navigate?: NavigateFunction): void {
-  const detail = err.response?.data?.detail;
-  if (!detail) return;
+  const raw = err.response?.data?.detail as any;
+  if (!raw) return;
+  // Normalize the huddle-guard shape onto the plan_caps one.
+  const detail: PlanCapDetail = {
+    ...raw,
+    cap: raw.cap ?? raw.limit ?? "plan",
+    plan: raw.plan ?? raw.current_plan ?? "free",
+  };
   const action = navigate
     ? {
         label: detail.upgrade_suggested

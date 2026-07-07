@@ -55,19 +55,19 @@ const CREDIT_TX_ICONS: Record<string, { icon: typeof TrendingUp; color: string; 
 };
 
 /* Feature comparison rows for the detailed table */
-const FEATURE_ROWS: { label: string; free: string | boolean; starter: string | boolean; pro: string | boolean; enterprise: string | boolean }[] = [
-    { label: 'AI Agents', free: '2', starter: '5', pro: '15', enterprise: 'Unlimited' },
-    { label: 'Agent Runs / Month', free: '50', starter: '500', pro: '5,000', enterprise: 'Unlimited' },
-    { label: 'Documents / Month', free: '10', starter: '100', pro: '1,000', enterprise: 'Unlimited' },
-    { label: 'Max File Upload', free: '5 MB', starter: '10 MB', pro: '50 MB', enterprise: '100 MB' },
-    { label: 'Knowledge Base Queries', free: '20', starter: '200', pro: '2,000', enterprise: 'Unlimited' },
-    { label: 'AI Models Access', free: 'Default only', starter: '4 models', pro: '6 models', enterprise: 'All models' },
-    { label: 'Advanced Features', free: false, starter: false, pro: true, enterprise: true },
-    { label: 'Custom Agent Templates', free: false, starter: false, pro: true, enterprise: true },
-    { label: 'API Access', free: false, starter: false, pro: true, enterprise: true },
-    { label: 'Priority Support', free: false, starter: false, pro: true, enterprise: true },
-    { label: 'Dedicated Account Manager', free: false, starter: false, pro: false, enterprise: true },
-    { label: 'SLA Guarantee', free: false, starter: false, pro: false, enterprise: true },
+const FEATURE_ROWS: { label: string; free: string | boolean; starter: string | boolean; professional: string | boolean; enterprise: string | boolean }[] = [
+    { label: 'AI Agents', free: '2', starter: '5', professional: '15', enterprise: 'Unlimited' },
+    { label: 'Agent Runs / Month', free: '50', starter: '500', professional: '5,000', enterprise: 'Unlimited' },
+    { label: 'Documents / Month', free: '10', starter: '100', professional: '1,000', enterprise: 'Unlimited' },
+    { label: 'Max File Upload', free: '5 MB', starter: '10 MB', professional: '50 MB', enterprise: '100 MB' },
+    { label: 'Knowledge Base Queries', free: '20', starter: '200', professional: '2,000', enterprise: 'Unlimited' },
+    { label: 'AI Models Access', free: 'Default only', starter: '4 models', professional: '6 models', enterprise: 'All models' },
+    { label: 'Advanced Features', free: false, starter: false, professional: true, enterprise: true },
+    { label: 'Custom Agent Templates', free: false, starter: false, professional: true, enterprise: true },
+    { label: 'API Access', free: false, starter: false, professional: true, enterprise: true },
+    { label: 'Priority Support', free: false, starter: false, professional: true, enterprise: true },
+    { label: 'Dedicated Account Manager', free: false, starter: false, professional: false, enterprise: true },
+    { label: 'SLA Guarantee', free: false, starter: false, professional: false, enterprise: true },
 ];
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1010,7 +1010,7 @@ const Billing: React.FC = () => {
                                                             <td className="py-3.5 px-6 text-sm text-gray-700 font-medium">{row.label}</td>
                                                             <td className="py-3.5 px-4 text-center"><FeatureCell value={row.free} /></td>
                                                             <td className="py-3.5 px-4 text-center"><FeatureCell value={row.starter} /></td>
-                                                            <td className="py-3.5 px-4 text-center bg-gray-50/50"><FeatureCell value={row.pro} /></td>
+                                                            <td className="py-3.5 px-4 text-center bg-gray-50/50"><FeatureCell value={row.professional} /></td>
                                                             <td className="py-3.5 px-4 text-center"><FeatureCell value={row.enterprise} /></td>
                                                         </tr>
                                                     ))}
