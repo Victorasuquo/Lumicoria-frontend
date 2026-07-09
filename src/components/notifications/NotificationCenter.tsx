@@ -19,155 +19,43 @@ import { notificationApi, Notification, NotificationPriority } from '@/services/
 import NotificationItem from './NotificationItem';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { notificationLink, isExternalUrl } from '@/lib/notificationLink';
 
 const NotificationCenter = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    // Live state comes from the shared NotificationsContext socket —
+    // this component previously opened its OWN duplicate WebSocket
+    // (two connections per user for the same stream).
+    const {
+        unreadCount,
+        recent,
+        markAsRead: ctxMarkAsRead,
+        markAllAsRead: ctxMarkAllAsRead,
+        remove: ctxRemove,
+    } = useNotifications();
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
-    const [wsConnected, setWsConnected] = useState(false);
 
     // Ref to track if component is mounted to prevent state updates on unmount
     const isMounted = useRef(true);
-    const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        return () => {
-            isMounted.current = false;
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
-        };
+        return () => { isMounted.current = false; };
     }, []);
 
-    // WebSocket Connection
+    // Merge live arrivals from the shared socket into the local list.
     useEffect(() => {
-        if (!user?.id) {
-            console.log('NotificationCenter: No user ID, skipping WS connection');
-            return;
-        }
-
-        const connectWebSocket = () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return;
-
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-            // Handle both http/https to ws/wss
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            // If API URL is absolute (http://...), replace protocol. If relative, construct from window.location
-            let wsUrl = '';
-            if (apiUrl.startsWith('http')) {
-                // Determine ws protocol based on http protocol of API URL
-                const isHttps = apiUrl.startsWith('https');
-                const wsScheme = isHttps ? 'wss' : 'ws';
-                wsUrl = apiUrl.replace(/^http(s)?/, wsScheme) + `/ws/notifications/${user.id}?token=${token}`;
-            } else {
-                wsUrl = `${wsProtocol}//${window.location.host}${apiUrl}/ws/notifications/${user.id}?token=${token}`;
-            }
-
-            console.log('Connecting to Notification WS:', wsUrl);
-            const ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                console.log('Notification WebSocket Connected');
-                setWsConnected(true);
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-
-                    if (message.type === 'notification') {
-                        const newNotification = message.data;
-                        // Optimistically add to list
-                        // We need to ensure the format matches usage. 
-                        // The backend sends partial data in "data", ensuring we map it correctly.
-                        // Actually backend sends: { "type": "notification", "data": { ...fields... } }
-                        // The fields inside data match the Notification interface mostly.
-
-                        setNotifications(prev => {
-                            // Avoid duplicates
-                            if (prev.find(n => n.id === newNotification.id)) return prev;
-
-                            const mappedNotif: Notification = {
-                                id: newNotification.id,
-                                user_id: user.id,
-                                notification_type: newNotification.notification_type, // Assuming generic string matches enum or is compatible
-                                title: newNotification.title,
-                                content: newNotification.content,
-                                priority: newNotification.priority,
-                                read: false,
-                                metadata: newNotification.metadata,
-                                created_at: newNotification.created_at
-                            };
-                            return [mappedNotif, ...prev];
-                        });
-                        setUnreadCount(prev => prev + 1);
-
-                    } else if (message.type === 'notification_read') {
-                        const { notification_id } = message.data;
-                        setNotifications(prev => prev.map(n =>
-                            n.id === notification_id ? { ...n, read: true } : n
-                        ));
-                        setUnreadCount(prev => Math.max(0, prev - 1));
-
-                    } else if (message.type === 'all_notifications_read') {
-                        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-                        setUnreadCount(0);
-
-                    } else if (message.type === 'notification_deleted') {
-                        const { notification_id } = message.data;
-                        setNotifications(prev => prev.filter(n => n.id !== notification_id));
-                        // Re-fetch count to ensure accuracy
-                        fetchUnreadCount();
-
-                    } else if (message.type === 'ping') {
-                        ws.send(JSON.stringify({ type: 'pong' }));
-                    }
-                } catch (e) {
-                    console.error('Error parsing WS message', e);
-                }
-            };
-
-            ws.onclose = (event) => {
-                console.log('Notification WebSocket Disconnected', event.code, event.reason);
-                setWsConnected(false);
-                // Simple reconnect logic: retry after 5s
-                // setTimeout(() => {
-                //   if (isMounted.current) connectWebSocket();
-                // }, 5000);
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket Error:', error);
-            };
-
-            wsRef.current = ws;
-        };
-
-        connectWebSocket();
-
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
-        };
-    }, [user?.id]);
-
-    const fetchUnreadCount = async () => {
-        try {
-            const data = await notificationApi.getUnreadCount();
-            if (isMounted.current) {
-                setUnreadCount(data.unread_count);
-            }
-        } catch (error) {
-            console.error('Failed to fetch unread count', error);
-        }
-    };
+        if (!recent.length) return;
+        setNotifications(prev => {
+            const known = new Set(prev.map(n => n.id));
+            const fresh = recent.filter(n => !known.has(n.id));
+            return fresh.length ? [...fresh, ...prev] : prev;
+        });
+    }, [recent]);
 
     const fetchNotifications = async () => {
         // Always fetch latest when opening
@@ -194,58 +82,28 @@ const NotificationCenter = () => {
         }
     };
 
-    // Initial fetch of count
-    useEffect(() => {
-        fetchUnreadCount();
-    }, []);
-
     // Fetch list when opened or tab changes
     useEffect(() => {
         if (open) {
             fetchNotifications();
-            fetchUnreadCount();
         }
     }, [open, activeTab]);
 
     const handleMarkAsRead = async (id: string) => {
-        // Optimistic update
         setNotifications(prev => prev.map(n =>
             n.id === id ? { ...n, read: true } : n
         ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
-        try {
-            await notificationApi.markAsRead(id);
-        } catch (error) {
-            console.error('Failed to mark as read', error);
-        }
+        await ctxMarkAsRead(id); // context handles API + unread count
     };
 
     const handleMarkAllAsRead = async () => {
-        // Optimistic update
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-        setUnreadCount(0);
-
-        try {
-            await notificationApi.markAllAsRead();
-        } catch (error) {
-            console.error('Failed to mark all as read', error);
-        }
+        await ctxMarkAllAsRead();
     };
 
     const handleDelete = async (id: string) => {
-        // Optimistic update
-        const notification = notifications.find(n => n.id === id);
         setNotifications(prev => prev.filter(n => n.id !== id));
-        if (notification && !notification.read) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        }
-
-        try {
-            await notificationApi.deleteNotification(id);
-        } catch (error) {
-            console.error('Failed to delete notification', error);
-        }
+        await ctxRemove(id);
     };
 
     return (

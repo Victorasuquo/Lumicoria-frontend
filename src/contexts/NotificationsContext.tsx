@@ -16,6 +16,11 @@ import React, {
 import { useAuth } from "@/contexts/AuthContext";
 import { notificationApi, type Notification } from "@/services/api";
 
+export interface ChatMessageFrame {
+  channel_id: string;
+  message: Record<string, any>;
+}
+
 interface ContextValue {
   ready: boolean;
   connected: boolean;
@@ -25,6 +30,9 @@ interface ContextValue {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   remove: (id: string) => Promise<void>;
+  /** Live chat: subscribe to a channel's messages over the shared
+   *  notifications socket. Returns an unsubscribe function. */
+  subscribeChannel: (channelId: string, cb: (frame: ChatMessageFrame) => void) => () => void;
 }
 
 const defaultValue: ContextValue = {
@@ -36,6 +44,7 @@ const defaultValue: ContextValue = {
   markAsRead: async () => {},
   markAllAsRead: async () => {},
   remove: async () => {},
+  subscribeChannel: () => () => {},
 };
 
 const NotificationsContext = createContext<ContextValue>(defaultValue);
@@ -62,6 +71,34 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnect = useRef<{ timer: number | null; attempts: number }>({ timer: null, attempts: 0 });
+  // channel_id → callbacks wanting live chat.message frames.
+  const channelSubs = useRef<Map<string, Set<(f: ChatMessageFrame) => void>>>(new Map());
+
+  const sendFrame = useCallback((frame: object) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify(frame)); } catch { /* noop */ }
+    }
+  }, []);
+
+  const subscribeChannel = useCallback((channelId: string, cb: (f: ChatMessageFrame) => void) => {
+    let set = channelSubs.current.get(channelId);
+    if (!set) {
+      set = new Set();
+      channelSubs.current.set(channelId, set);
+      sendFrame({ type: "subscribe", data: { channel_id: channelId } });
+    }
+    set.add(cb);
+    return () => {
+      const s = channelSubs.current.get(channelId);
+      if (!s) return;
+      s.delete(cb);
+      if (s.size === 0) {
+        channelSubs.current.delete(channelId);
+        sendFrame({ type: "unsubscribe", data: { channel_id: channelId } });
+      }
+    };
+  }, [sendFrame]);
 
   const refresh = useCallback(async () => {
     if (!user?.id) return;
@@ -92,6 +129,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         ws.onopen = () => {
           setConnected(true);
           reconnect.current.attempts = 0;
+          // Re-establish live channel subscriptions after (re)connect.
+          for (const channelId of channelSubs.current.keys()) {
+            try { ws.send(JSON.stringify({ type: "subscribe", data: { channel_id: channelId } })); } catch { /* noop */ }
+          }
         };
         ws.onmessage = (e) => {
           try {
@@ -119,6 +160,13 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             } else if (msg.type === "notification_deleted" && msg.data?.notification_id) {
               setRecent(prev => prev.filter(x => x.id !== msg.data.notification_id));
               void refresh();
+            } else if (msg.type === "chat.message" && msg.channel_id) {
+              const subs = channelSubs.current.get(String(msg.channel_id));
+              if (subs) {
+                for (const cb of subs) {
+                  try { cb({ channel_id: String(msg.channel_id), message: msg.message }); } catch { /* noop */ }
+                }
+              }
             } else if (msg.type === "ping") {
               try { ws.send(JSON.stringify({ type: "pong" })); } catch { /* noop */ }
             }
@@ -184,7 +232,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     markAsRead,
     markAllAsRead,
     remove,
-  }), [user?.id, connected, unreadCount, recent, refresh, markAsRead, markAllAsRead, remove]);
+    subscribeChannel,
+  }), [user?.id, connected, unreadCount, recent, refresh, markAsRead, markAllAsRead, remove, subscribeChannel]);
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 };

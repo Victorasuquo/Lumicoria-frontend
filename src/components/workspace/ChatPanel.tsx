@@ -19,6 +19,7 @@ import {
 import { tokens, BRAND_GRADIENT } from "@/components/workspace/tokens";
 import { useRoomSubscription, useTyping } from "@/contexts/RealtimeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
 
 interface ChatMessage {
   id: string;
@@ -104,6 +105,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ orgId, projectId, teamId }
     if (!activeId) { setMessages([]); return; }
     void loadMessages(activeId);
   }, [activeId, loadMessages]);
+
+  // Live delivery: other members' messages arrive over the shared
+  // notifications socket (the backend publishes every posted message to
+  // the channel topic). Before this, the panel only appended YOUR own
+  // messages and everyone else's appeared on refresh.
+  const { subscribeChannel } = useNotifications();
+  useEffect(() => {
+    if (!activeId) return;
+    const unsubscribe = subscribeChannel(activeId, ({ message }) => {
+      setMessages(prev => {
+        if (prev.find(m => m.id === message.id)) return prev; // own echo
+        return [...prev, message as ChatMessage];
+      });
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      });
+    });
+    return unsubscribe;
+  }, [activeId, subscribeChannel]);
 
   const createChannel = async () => {
     if (!newChannelName.trim()) return;
