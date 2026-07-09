@@ -18,6 +18,39 @@ import { resolveAvatarUrl } from "@/services/api";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { usePermissions, type Capability } from "@/contexts/PermissionsContext";
 
+/**
+ * The single source of truth pairing every workspace-admin ROUTE with the
+ * CAPABILITY required to use it. Consumed by (a) the sidebar below to
+ * decide which links to render, and (b) App.tsx's <RequireCap> route
+ * guards so a member deep-linking to /workspace/admin/* is redirected —
+ * previously only the sidebar hid links and the pages themselves were
+ * unguarded.
+ */
+export const ADMIN_ROUTE_CAPS: Array<{ to: string; label: string; cap: Capability }> = [
+  { to: "/workspace/admin/billing", label: "Billing & seats", cap: "manage_billing" },
+  { to: "/workspace/admin/credits", label: "Credits", cap: "manage_billing" },
+  { to: "/workspace/admin/contracts", label: "Contracts", cap: "manage_billing" },
+  { to: "/workspace/admin/audit", label: "Audit log", cap: "view_audit" },
+  { to: "/workspace/admin/sso", label: "SSO", cap: "manage_sso" },
+  { to: "/workspace/admin/scim", label: "SCIM provisioning", cap: "manage_scim" },
+  { to: "/workspace/admin/domains", label: "Domains", cap: "manage_custom_domains" },
+  { to: "/workspace/admin/api-tokens", label: "API tokens", cap: "manage_api_tokens" },
+  { to: "/workspace/admin/webhooks", label: "Webhooks", cap: "manage_webhooks" },
+  { to: "/workspace/admin/jit", label: "Just-in-time access", cap: "manage_enterprise_features" },
+  { to: "/workspace/admin/security", label: "Session policy", cap: "manage_enterprise_features" },
+  { to: "/workspace/admin/residency", label: "Data residency", cap: "manage_enterprise_features" },
+  { to: "/workspace/admin/compliance", label: "Compliance", cap: "manage_enterprise_features" },
+  { to: "/workspace/admin/automations", label: "Automations", cap: "manage_automations" },
+  { to: "/workspace/admin/notifications", label: "Notifications", cap: "manage_settings" },
+  { to: "/workspace/admin/emails", label: "Emails", cap: "manage_settings" },
+  { to: "/workspace/admin/branding", label: "Branding", cap: "manage_branding" },
+  { to: "/workspace/admin/announcements", label: "Announcements", cap: "manage_settings" },
+  { to: "/workspace/admin/tags", label: "Tags", cap: "manage_settings" },
+  { to: "/workspace/admin/custom-roles", label: "Custom roles", cap: "manage_enterprise_features" },
+  { to: "/workspace/admin/integrations", label: "Integrations", cap: "manage_integrations" },
+  { to: "/workspace/admin/onboarding-checklist", label: "Onboarding checklist", cap: "manage_settings" },
+];
+
 const SidebarSection: React.FC<{ title: string; right?: React.ReactNode; children: React.ReactNode }> = ({ title, right, children }) => (
   <div style={{ marginTop: 18 }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 4px 6px" }}>
@@ -67,37 +100,15 @@ export const WorkspaceLayout: React.FC = () => {
   const seatsPurchased = subscription?.seats_purchased ?? 0;
   const showSeats = (subscription?.plan && ["team", "business", "enterprise"].includes(subscription.plan)) && seatsPurchased > 0;
 
-  const adminLinks = useMemo<Array<{ to: string; label: string; cap: Capability }>>(() => ([
-    { to: "/workspace/admin/billing", label: "Billing & seats", cap: "manage_billing" },
-    { to: "/workspace/admin/credits", label: "Credits", cap: "manage_billing" },
-    { to: "/workspace/admin/contracts", label: "Contracts", cap: "manage_billing" },
-    { to: "/workspace/admin/audit", label: "Audit log", cap: "view_audit" },
-    { to: "/workspace/admin/sso", label: "SSO", cap: "manage_sso" },
-    { to: "/workspace/admin/scim", label: "SCIM provisioning", cap: "manage_scim" },
-    { to: "/workspace/admin/domains", label: "Domains", cap: "manage_custom_domains" },
-    { to: "/workspace/admin/api-tokens", label: "API tokens", cap: "manage_api_tokens" },
-    { to: "/workspace/admin/webhooks", label: "Webhooks", cap: "manage_webhooks" },
-    { to: "/workspace/admin/jit", label: "Just-in-time access", cap: "manage_enterprise_features" },
-    { to: "/workspace/admin/security", label: "Session policy", cap: "manage_enterprise_features" },
-    { to: "/workspace/admin/residency", label: "Data residency", cap: "manage_enterprise_features" },
-    { to: "/workspace/admin/compliance", label: "Compliance", cap: "manage_enterprise_features" },
-    { to: "/workspace/admin/automations", label: "Automations", cap: "manage_automations" },
-    { to: "/workspace/admin/notifications", label: "Notifications", cap: "manage_settings" },
-    { to: "/workspace/admin/emails", label: "Emails", cap: "manage_settings" },
-    { to: "/workspace/admin/branding", label: "Branding", cap: "manage_branding" },
-    { to: "/workspace/admin/announcements", label: "Announcements", cap: "manage_settings" },
-    { to: "/workspace/admin/tags", label: "Tags", cap: "manage_settings" },
-    { to: "/workspace/admin/custom-roles", label: "Custom roles", cap: "manage_enterprise_features" },
-    { to: "/workspace/admin/integrations", label: "Integrations", cap: "manage_integrations" },
-    { to: "/workspace/admin/onboarding-checklist", label: "Onboarding checklist", cap: "manage_settings" },
-  ]), []);
+  const adminLinks = ADMIN_ROUTE_CAPS;
 
   const { can, ready: permsReady, isAdmin } = usePermissions();
-  // Hide links the current user can't access.  While the probe is still
-  // in flight (first render) we show the full list to avoid a flash of
-  // empty admin section for admins on slow networks.
+  // Hide links the current user can't access. While the probe is in
+  // flight we hide the ADMIN section entirely — showing the full list
+  // flashed god-mode links at every plain member on every navigation
+  // (and deep links weren't guarded until RequireCap).
   const visibleAdminLinks = useMemo(() => {
-    if (!permsReady) return adminLinks;
+    if (!permsReady) return [];
     return adminLinks.filter(l => can(l.cap));
   }, [adminLinks, can, permsReady]);
 

@@ -5,6 +5,8 @@ import { WellbeingProvider } from './contexts/WellbeingContext';
 import { MoodPromptModal } from './components/wellbeing/MoodPromptModal';
 import { CoachBubble } from './components/wellbeing/CoachBubble';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import SuperadminRoute from './components/admin/SuperadminRoute';
+import RequireCap from './components/workspace/RequireCap';
 import { Toaster } from './components/ui/toaster';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -127,6 +129,18 @@ const SocialMediaAgent = lazy(() => import("./pages/agents/SocialMediaAgent"));
 const TranslationAgent = lazy(() => import("./pages/agents/TranslationAgent"));
 const CustomerServiceAgent = lazy(() => import("./pages/agents/CustomerServiceAgent"));
 
+// Platform superadmin portal — separate from /workspace/admin/*.
+const PlatformAdminLayout = lazy(() => import("./components/admin/AdminLayout"));
+const PlatformAdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const PlatformAdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const PlatformAdminOrgs = lazy(() => import("./pages/admin/AdminOrgs"));
+const PlatformAdminAgents = lazy(() => import("./pages/admin/AdminAgents"));
+const PlatformAdminFinance = lazy(() => import("./pages/admin/AdminFinance"));
+const PlatformAdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const PlatformAdminEmail = lazy(() => import("./pages/admin/AdminEmail"));
+const PlatformAdminSystem = lazy(() => import("./pages/admin/AdminSystem"));
+const PlatformAdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
+
 // Public hosted support portal — NO ProtectedRoute, NO MainLayout (full-bleed, branded).
 const SupportPortal = lazy(() => import("./pages/portal/SupportPortal"));
 const SupportPortalStatus = lazy(() => import("./pages/portal/SupportPortalStatus"));
@@ -236,6 +250,22 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
+        {/* Platform superadmin portal — true /admin, not workspace/org admin. */}
+        <Route
+          path="/admin"
+          element={<SuperadminRoute><Suspense fallback={<AgentPageFallback />}><PlatformAdminLayout /></Suspense></SuperadminRoute>}
+        >
+          <Route index element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminOverview /></Suspense>} />
+          <Route path="users" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminUsers /></Suspense>} />
+          <Route path="orgs" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminOrgs /></Suspense>} />
+          <Route path="agents" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminAgents /></Suspense>} />
+          <Route path="finance" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminFinance /></Suspense>} />
+          <Route path="messages" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminMessages /></Suspense>} />
+          <Route path="email" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminEmail /></Suspense>} />
+          <Route path="system" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminSystem /></Suspense>} />
+          <Route path="audit" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminAudit /></Suspense>} />
+        </Route>
+
         {/* Workspace surface — Phase G (Protected, lazy-loaded) */}
         <Route path="/workspace" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><WorkspaceLayoutLazy /></Suspense></ProtectedRoute>}>
           <Route index element={<Suspense fallback={<AgentPageFallback />}><WorkspaceHome /></Suspense>} />
@@ -247,28 +277,28 @@ const AppRoutes = () => {
           <Route path="projects" element={<Suspense fallback={<AgentPageFallback />}><ProjectsList /></Suspense>} />
           <Route path="projects/new" element={<Suspense fallback={<AgentPageFallback />}><ProjectsList /></Suspense>} />
           <Route path="projects/:projectId" element={<Suspense fallback={<AgentPageFallback />}><ProjectDetail /></Suspense>} />
-          <Route path="admin/billing" element={<Suspense fallback={<AgentPageFallback />}><AdminBilling /></Suspense>} />
-          <Route path="admin/audit" element={<Suspense fallback={<AgentPageFallback />}><AdminAudit /></Suspense>} />
-          <Route path="admin/api-tokens" element={<Suspense fallback={<AgentPageFallback />}><AdminTokens /></Suspense>} />
-          <Route path="admin/webhooks" element={<Suspense fallback={<AgentPageFallback />}><AdminWebhooks /></Suspense>} />
-          <Route path="admin/sso" element={<Suspense fallback={<AgentPageFallback />}><AdminSso /></Suspense>} />
-          <Route path="admin/scim" element={<Suspense fallback={<AgentPageFallback />}><AdminScim /></Suspense>} />
-          <Route path="admin/domains" element={<Suspense fallback={<AgentPageFallback />}><AdminDomains /></Suspense>} />
-          <Route path="admin/security" element={<Suspense fallback={<AgentPageFallback />}><AdminSecurity /></Suspense>} />
-          <Route path="admin/automations" element={<Suspense fallback={<AgentPageFallback />}><AdminAutomations /></Suspense>} />
-          <Route path="admin/notifications" element={<Suspense fallback={<AgentPageFallback />}><AdminNotifications /></Suspense>} />
-          <Route path="admin/branding" element={<Suspense fallback={<AgentPageFallback />}><AdminBranding /></Suspense>} />
-          <Route path="admin/integrations" element={<Suspense fallback={<AgentPageFallback />}><AdminIntegrations /></Suspense>} />
-          <Route path="admin/announcements" element={<Suspense fallback={<AgentPageFallback />}><AdminAnnouncements /></Suspense>} />
-          <Route path="admin/tags" element={<Suspense fallback={<AgentPageFallback />}><AdminTags /></Suspense>} />
-          <Route path="admin/custom-roles" element={<Suspense fallback={<AgentPageFallback />}><AdminCustomRoles /></Suspense>} />
-          <Route path="admin/emails" element={<Suspense fallback={<AgentPageFallback />}><AdminEmails /></Suspense>} />
-          <Route path="admin/residency" element={<Suspense fallback={<AgentPageFallback />}><AdminResidency /></Suspense>} />
-          <Route path="admin/compliance" element={<Suspense fallback={<AgentPageFallback />}><AdminCompliance /></Suspense>} />
-          <Route path="admin/jit" element={<Suspense fallback={<AgentPageFallback />}><AdminJit /></Suspense>} />
-          <Route path="admin/credits" element={<Suspense fallback={<AgentPageFallback />}><AdminCredits /></Suspense>} />
-          <Route path="admin/contracts" element={<Suspense fallback={<AgentPageFallback />}><AdminContracts /></Suspense>} />
-          <Route path="admin/onboarding-checklist" element={<Suspense fallback={<AgentPageFallback />}><AdminOnboardingChecklist /></Suspense>} />
+          <Route path="admin/billing" element={<RequireCap cap="manage_billing"><Suspense fallback={<AgentPageFallback />}><AdminBilling /></Suspense></RequireCap>} />
+          <Route path="admin/audit" element={<RequireCap cap="view_audit"><Suspense fallback={<AgentPageFallback />}><AdminAudit /></Suspense></RequireCap>} />
+          <Route path="admin/api-tokens" element={<RequireCap cap="manage_api_tokens"><Suspense fallback={<AgentPageFallback />}><AdminTokens /></Suspense></RequireCap>} />
+          <Route path="admin/webhooks" element={<RequireCap cap="manage_webhooks"><Suspense fallback={<AgentPageFallback />}><AdminWebhooks /></Suspense></RequireCap>} />
+          <Route path="admin/sso" element={<RequireCap cap="manage_sso"><Suspense fallback={<AgentPageFallback />}><AdminSso /></Suspense></RequireCap>} />
+          <Route path="admin/scim" element={<RequireCap cap="manage_scim"><Suspense fallback={<AgentPageFallback />}><AdminScim /></Suspense></RequireCap>} />
+          <Route path="admin/domains" element={<RequireCap cap="manage_custom_domains"><Suspense fallback={<AgentPageFallback />}><AdminDomains /></Suspense></RequireCap>} />
+          <Route path="admin/security" element={<RequireCap cap="manage_enterprise_features"><Suspense fallback={<AgentPageFallback />}><AdminSecurity /></Suspense></RequireCap>} />
+          <Route path="admin/automations" element={<RequireCap cap="manage_automations"><Suspense fallback={<AgentPageFallback />}><AdminAutomations /></Suspense></RequireCap>} />
+          <Route path="admin/notifications" element={<RequireCap cap="manage_settings"><Suspense fallback={<AgentPageFallback />}><AdminNotifications /></Suspense></RequireCap>} />
+          <Route path="admin/branding" element={<RequireCap cap="manage_branding"><Suspense fallback={<AgentPageFallback />}><AdminBranding /></Suspense></RequireCap>} />
+          <Route path="admin/integrations" element={<RequireCap cap="manage_integrations"><Suspense fallback={<AgentPageFallback />}><AdminIntegrations /></Suspense></RequireCap>} />
+          <Route path="admin/announcements" element={<RequireCap cap="manage_settings"><Suspense fallback={<AgentPageFallback />}><AdminAnnouncements /></Suspense></RequireCap>} />
+          <Route path="admin/tags" element={<RequireCap cap="manage_settings"><Suspense fallback={<AgentPageFallback />}><AdminTags /></Suspense></RequireCap>} />
+          <Route path="admin/custom-roles" element={<RequireCap cap="manage_enterprise_features"><Suspense fallback={<AgentPageFallback />}><AdminCustomRoles /></Suspense></RequireCap>} />
+          <Route path="admin/emails" element={<RequireCap cap="manage_settings"><Suspense fallback={<AgentPageFallback />}><AdminEmails /></Suspense></RequireCap>} />
+          <Route path="admin/residency" element={<RequireCap cap="manage_enterprise_features"><Suspense fallback={<AgentPageFallback />}><AdminResidency /></Suspense></RequireCap>} />
+          <Route path="admin/compliance" element={<RequireCap cap="manage_enterprise_features"><Suspense fallback={<AgentPageFallback />}><AdminCompliance /></Suspense></RequireCap>} />
+          <Route path="admin/jit" element={<RequireCap cap="manage_enterprise_features"><Suspense fallback={<AgentPageFallback />}><AdminJit /></Suspense></RequireCap>} />
+          <Route path="admin/credits" element={<RequireCap cap="manage_billing"><Suspense fallback={<AgentPageFallback />}><AdminCredits /></Suspense></RequireCap>} />
+          <Route path="admin/contracts" element={<RequireCap cap="manage_billing"><Suspense fallback={<AgentPageFallback />}><AdminContracts /></Suspense></RequireCap>} />
+          <Route path="admin/onboarding-checklist" element={<RequireCap cap="manage_settings"><Suspense fallback={<AgentPageFallback />}><AdminOnboardingChecklist /></Suspense></RequireCap>} />
           <Route path="search" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceSearch /></Suspense>} />
           <Route path="calendar" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceCalendar /></Suspense>} />
           <Route path="dashboards" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceDashboards /></Suspense>} />
