@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import api from "@/services/api";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   projectV2Api, agentsV2Api, teamApi,
@@ -67,12 +68,33 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [createStatus, setCreateStatus] = useState<string>("todo");
+  const [projectAgents, setProjectAgents] = useState<ProjectAgent[]>([]);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     projectV2Api.tasks(orgId, projectId).then(r => setTasks(r as any)).finally(() => setLoading(false));
   };
   useEffect(load, [orgId, projectId]);
+  useEffect(() => {
+    projectV2Api.agents(orgId, projectId)
+      .then(list => setProjectAgents((list || []).filter(a => a.enabled && a.agent_key)))
+      .catch(() => setProjectAgents([]));
+  }, [orgId, projectId]);
+
+  const assignAgent = async (taskId: string, agentKey: string) => {
+    if (!agentKey) return; // the /assign endpoint has no "unassign" mode
+    setAssigningId(taskId);
+    try {
+      await api.post(`/tasks/${taskId}/assign`, { agent_key: agentKey });
+      toast.success("Agent assigned — running now.");
+      load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail?.message || e?.response?.data?.detail || "Could not assign agent.");
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -96,7 +118,7 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
         } />
         <TaskCreateDialog
           open={createOpen} onClose={() => setCreateOpen(false)}
-          projectId={projectId} defaultStatus={createStatus}
+          orgId={orgId} projectId={projectId} defaultStatus={createStatus}
           onCreated={() => { toast.success("Task created."); load(); }}
         />
       </>
@@ -143,9 +165,37 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
                       <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>Due {new Date(t.due_date).toLocaleDateString()}</div>
                     )}
                     {t.assigned_to_agent && (
-                      <div style={{ marginTop: 6 }}>
+                      <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
                         <AgentChip agentKey={String(t.assigned_to_agent)} size={18} />
+                        {t.agent_proposal?.status && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 9999,
+                            background: t.agent_proposal.status === "error" ? "#FEE2E2"
+                              : t.agent_proposal.status === "approved" ? "#DCFCE7" : "#EDE9FE",
+                            color: t.agent_proposal.status === "error" ? "#991B1B"
+                              : t.agent_proposal.status === "approved" ? "#166534" : "#5B21B6",
+                          }}>
+                            {t.agent_proposal.status === "pending_review" ? "needs review" : t.agent_proposal.status}
+                          </span>
+                        )}
                       </div>
+                    )}
+                    {projectAgents.length > 0 && (
+                      <select
+                        value={t.assigned_to_agent || ""}
+                        disabled={assigningId === t.id}
+                        onChange={e => assignAgent(t.id, e.target.value)}
+                        style={{
+                          marginTop: 8, width: "100%", fontSize: 11, padding: "4px 6px",
+                          borderRadius: 8, border: `1px solid ${tokens.SLATE_200}`,
+                          background: "white", color: tokens.SLATE_600,
+                        }}
+                      >
+                        <option value="">{t.assigned_to_agent ? "Reassign agent…" : "Assign to agent…"}</option>
+                        {projectAgents.map(a => (
+                          <option key={a.id} value={a.agent_key || ""}>{a.agent_key}</option>
+                        ))}
+                      </select>
                     )}
                   </div>
                 );
@@ -157,7 +207,7 @@ const TaskBoard: React.FC<{ orgId: string; projectId: string }> = ({ orgId, proj
     </div>
     <TaskCreateDialog
       open={createOpen} onClose={() => setCreateOpen(false)}
-      projectId={projectId} defaultStatus={createStatus}
+      orgId={orgId} projectId={projectId} defaultStatus={createStatus}
       onCreated={() => { toast.success("Task created."); load(); }}
     />
     </>
