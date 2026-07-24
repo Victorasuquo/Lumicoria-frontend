@@ -92,7 +92,21 @@ export const WorkspaceHome: React.FC = () => {
       setTeams(t); setProjects(p); setOverview(ov); setActivity(ac); setLeaderboard(lb || []);
       const arr = (v: any) => Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : [];
       setPinned(arr(pn)); setRecent(arr(rc)); setStarred(arr(st));
-      setQuickActions(arr(qa)); setUnread(un as any);
+      // The backend returns three COUNTS ({due_soon, pending_proposals,
+      // unread_mentions}), not a list of actionable items — `arr(qa)`
+      // always resolved to [] (neither an array nor `.items`), so this
+      // strip was permanently empty. Turn each nonzero count into a
+      // real quick-action pill linking somewhere useful.
+      const qaObj = (qa && !Array.isArray(qa)) ? qa as Record<string, number> : {};
+      const built: QuickAction[] = [];
+      if (qaObj.due_soon) built.push({ id: "due_soon", label: `${qaObj.due_soon} due soon`, href: "/tasks?filter=due_soon" });
+      if (qaObj.pending_proposals) built.push({ id: "pending_proposals", label: `${qaObj.pending_proposals} proposals to review`, href: "/tasks?filter=pending_review" });
+      if (qaObj.unread_mentions) built.push({ id: "unread_mentions", label: `${qaObj.unread_mentions} unread mentions`, href: "/tasks?filter=mentions" });
+      setQuickActions(built);
+      // Backend key is `unread`, not `total` — the counter card always
+      // showed 0 regardless of actual unread count.
+      const unObj = un as any;
+      setUnread(unObj ? { total: unObj.unread ?? unObj.total ?? 0, by_category: unObj.by_category } : null);
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [activeOrgId]);
@@ -467,15 +481,16 @@ export const WorkspaceHome: React.FC = () => {
             />
             <TrendLineChart
               data={(() => {
-                const days = 14;
-                const baseline = Math.max(0, Math.round(((overview as any)?.agent_runs?.total ?? 0) / days));
-                return Array.from({ length: days }).map((_, i) => {
-                  const d = new Date(Date.now() - (days - 1 - i) * 86_400_000);
-                  return {
-                    day: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                    runs: Math.max(0, baseline + ((i % 4) - 1)),
-                  };
-                });
+                // Real per-day volume from agent_run_repository.analytics
+                // (org_overview now includes it) — this used to be a
+                // fabricated series (total/14 + a synthetic wobble).
+                const series = (overview as any)?.agent_runs?.series_by_day as
+                  Array<{ day: string; runs: number; errors?: number }> | undefined;
+                if (!series || series.length === 0) return [];
+                return series.map(pt => ({
+                  day: new Date(pt.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                  runs: pt.runs,
+                }));
               })()}
               xKey="day"
               series={[{ key: "runs", label: "Agent runs", color: tokens.PURPLE }]}

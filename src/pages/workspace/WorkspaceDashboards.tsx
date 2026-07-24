@@ -92,14 +92,13 @@ export const WorkspaceDashboards: React.FC = () => {
 
   if (!activeOrgId) return null;
 
-  const trendData = (() => {
-    const days = 14;
-    const baseline = Math.max(0, Math.round((data?.agent_runs_total ?? 0) / days));
-    return Array.from({ length: days }).map((_, i) => {
-      const d = new Date(Date.now() - (days - 1 - i) * 86_400_000);
-      return { day: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), runs: Math.max(0, baseline + ((i % 4) - 1)) };
-    });
-  })();
+  // Real per-day series from the backend (agent_run_repository.analytics
+  // via GET .../dashboards/{id}/data) — this used to be fabricated as a
+  // flat total/14 line with a synthetic wobble.
+  const trendData = (data?.agent_runs_series_by_day || []).map((pt: any) => ({
+    day: new Date(pt.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    runs: pt.runs,
+  }));
 
   const heat = (() => {
     const cells = new Map<string, number>();
@@ -179,13 +178,12 @@ export const WorkspaceDashboards: React.FC = () => {
                   )}
                   {w.widget === "burnup" && (
                     <BurnupChart
-                      data={Array.from({ length: 14 }).map((_, idx) => {
-                        const day = new Date(Date.now() - (13 - idx) * 86_400_000);
-                        return { date: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                          completed: Math.round(((idx + 1) / 14) * (data?.tasks_completed ?? 0)),
-                          scope: Math.round(data?.tasks_total ?? 0) };
-                      })}
-                      title="Task burnup (14d)" height={220} />
+                      data={(data?.tasks_burnup_series || []).map((pt: any) => ({
+                        date: new Date(pt.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                        completed: pt.completed,
+                        scope: pt.created,
+                      }))}
+                      title="Task burnup" height={220} />
                   )}
                 </motion.div>
               ))}

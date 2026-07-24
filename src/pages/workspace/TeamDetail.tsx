@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
-  teamApi, projectV2Api, analyticsV2Api,
+  teamApi, projectV2Api, analyticsV2Api, workspaceApi,
   type Team, type TeamMember, type ProjectV2, type AnalyticsOverview, type ActivityRow,
 } from "@/services/workspaceApi";
 import {
@@ -80,6 +80,11 @@ export const TeamDetail: React.FC = () => {
       if (cancelled) return;
       setTeam(t); setMembers(m); setProjects(p); setAgents(a); setActivity(ac); setAnalytics(an);
     }).finally(() => { if (!cancelled) setLoading(false); });
+    // Auto-populate WorkspaceHome's "Recent" rail on every real open —
+    // previously it only updated when a user clicked a resource FROM
+    // that rail, so directly navigating (nav link, bookmark, search)
+    // never registered.
+    workspaceApi.touchRecent(activeOrgId, { resource_type: "team", resource_id: teamId }).catch(() => {});
     return () => { cancelled = true; };
   }, [activeOrgId, teamId]);
 

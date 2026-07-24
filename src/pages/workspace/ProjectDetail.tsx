@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import api from "@/services/api";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
-  projectV2Api, agentsV2Api, teamApi,
+  projectV2Api, agentsV2Api, teamApi, workspaceApi,
   type ProjectV2, type ProjectMember, type ProjectAgent, type AnalyticsOverview,
   type Team,
 } from "@/services/workspaceApi";
@@ -356,6 +356,11 @@ export const ProjectDetail: React.FC = () => {
       if (cancelled) return;
       setProject(p); setMembers(m); setDocs(d as any); setActivity(ac as any); setAnalytics(an);
     }).finally(() => { if (!cancelled) setLoading(false); });
+    // "Recent" on WorkspaceHome only updated on an explicit click there —
+    // opening a project directly (nav, bookmark, search result) never
+    // touched it, so the rail rarely reflected what you'd actually been
+    // working on. Touch it on every real open.
+    workspaceApi.touchRecent(activeOrgId, { resource_type: "project", resource_id: projectId }).catch(() => {});
     return () => { cancelled = true; };
   }, [activeOrgId, projectId]);
 
