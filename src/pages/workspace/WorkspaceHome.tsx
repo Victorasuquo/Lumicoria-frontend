@@ -9,10 +9,12 @@ import {
   analyticsV2Api,
   agentsV2Api,
   workspaceApi,
+  remindersApi,
   type Team,
   type ProjectV2,
   type AnalyticsOverview,
   type ActivityRow,
+  type ReminderRow,
 } from "@/services/workspaceApi";
 import {
   GlassCard, BrandPill, SectionHeader, MemberStack, AgentChip, RoleChip,
@@ -69,8 +71,13 @@ export const WorkspaceHome: React.FC = () => {
   const [starred, setStarred] = useState<PinRow[]>([]);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [unread, setUnread] = useState<{ total?: number; by_category?: Record<string, number> } | null>(null);
+  const [reminders, setReminders] = useState<ReminderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  const loadReminders = () => {
+    remindersApi.upcoming().then(rows => setReminders(rows.slice(0, 6))).catch(() => {});
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +115,7 @@ export const WorkspaceHome: React.FC = () => {
       const unObj = un as any;
       setUnread(unObj ? { total: unObj.unread ?? unObj.total ?? 0, by_category: unObj.by_category } : null);
     }).finally(() => { if (!cancelled) setLoading(false); });
+    loadReminders();
     return () => { cancelled = true; };
   }, [activeOrgId]);
 
@@ -472,6 +480,42 @@ export const WorkspaceHome: React.FC = () => {
 
         {/* Right col */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Reminders */}
+          {reminders.length > 0 && (
+            <div>
+              <SectionHeader eyebrow="Reminders" title="Coming up" subtitle="Fires an in-app + push notification the moment it's due." />
+              <GlassCard padding={6}>
+                {reminders.map((r, idx) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: 8,
+                      padding: "10px 14px",
+                      borderBottom: idx < reminders.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {r.note || `${r.resource_type} reminder`}
+                      </div>
+                      <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>
+                        {new Date(r.due_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => remindersApi.snooze(r.id, 60).then(loadReminders).catch(() => toast.error("Couldn't snooze reminder."))}
+                      style={{ padding: "5px 10px", borderRadius: 999, border: `1px solid ${tokens.SLATE_200}`, background: "transparent", color: tokens.SLATE_600, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                    >Snooze 1h</button>
+                    <button
+                      onClick={() => remindersApi.delete(r.id).then(loadReminders).catch(() => toast.error("Couldn't dismiss reminder."))}
+                      style={{ padding: "5px 10px", borderRadius: 999, border: `1px solid ${tokens.SLATE_200}`, background: "transparent", color: tokens.SLATE_500, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                    >Dismiss</button>
+                  </div>
+                ))}
+              </GlassCard>
+            </div>
+          )}
+
           {/* Agent runs trend */}
           <div>
             <SectionHeader
