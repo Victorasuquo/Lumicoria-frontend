@@ -10,10 +10,20 @@ export const AdminAutomations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [catalogue, setCatalogue] = useState<{ events: Array<{ type: string }>; actions: Array<{ type: string; description: string }>; condition_ops: string[] } | null>(null);
   const [name, setName] = useState("");
+  const [triggerType, setTriggerType] = useState<"event" | "schedule">("event");
   const [event, setEvent] = useState("task.completed");
+  const [cron, setCron] = useState("0 9 * * *");
   const [actionType, setActionType] = useState("notify");
   const [actionConfig, setActionConfig] = useState('{"title":"Heads up","body":"A task just completed."}');
   const [busy, setBusy] = useState(false);
+
+  const CRON_PRESETS = [
+    { label: "Every hour", value: "0 * * * *" },
+    { label: "Daily 9am", value: "0 9 * * *" },
+    { label: "Weekdays 9am", value: "0 9 * * 1-5" },
+    { label: "Every 15 min", value: "*/15 * * * *" },
+    { label: "Weekly (Mon 9am)", value: "0 9 * * 1" },
+  ];
 
   const load = async () => {
     if (!activeOrgId) return;
@@ -35,9 +45,12 @@ export const AdminAutomations: React.FC = () => {
     try {
       let cfg: Record<string, unknown> = {};
       try { cfg = JSON.parse(actionConfig); } catch { cfg = {}; }
+      const trigger = triggerType === "schedule"
+        ? { type: "schedule" as const, config: { cron: cron.trim() || "0 9 * * *" } }
+        : { type: "event" as const, config: { event_type: event } };
       const row = await automationsApi.create({
         name: name.trim(),
-        trigger: { type: "event", config: { event_type: event } },
+        trigger,
         actions: [{ type: actionType, config: cfg }],
       }, activeOrgId);
       setRows(prev => [row, ...prev]);
@@ -68,11 +81,40 @@ export const AdminAutomations: React.FC = () => {
 
       <GlassCard padding={20}>
         <h3 style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 18, fontWeight: 700, margin: 0, marginBottom: 10 }}>New automation</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 12 }}>
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Name (e.g. Notify lead on completion)" />
-          <select value={event} onChange={e => setEvent(e.target.value)} style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`, background: "white", fontSize: 14 }}>
-            {(catalogue?.events || []).map(ev => <option key={ev.type} value={ev.type}>{ev.type}</option>)}
-          </select>
+          <div style={{ display: "flex", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`, overflow: "hidden" }}>
+            {(["event", "schedule"] as const).map(tt => (
+              <button
+                key={tt}
+                onClick={() => setTriggerType(tt)}
+                style={{
+                  flex: 1, padding: "10px 14px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  background: triggerType === tt ? tokens.PURPLE : "white",
+                  color: triggerType === tt ? "white" : tokens.SLATE_600,
+                }}
+              >{tt === "event" ? "On event" : "On schedule"}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 12, marginTop: 10 }}>
+          {triggerType === "event" ? (
+            <select value={event} onChange={e => setEvent(e.target.value)} style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`, background: "white", fontSize: 14 }}>
+              {(catalogue?.events || []).map(ev => <option key={ev.type} value={ev.type}>{ev.type}</option>)}
+            </select>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <select
+                value={CRON_PRESETS.some(p => p.value === cron) ? cron : "custom"}
+                onChange={e => { if (e.target.value !== "custom") setCron(e.target.value); }}
+                style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`, background: "white", fontSize: 14 }}
+              >
+                {CRON_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                <option value="custom">Custom cron…</option>
+              </select>
+              <Input value={cron} onChange={e => setCron(e.target.value)} placeholder="min hour dom mon dow" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12 }} />
+            </div>
+          )}
           <select value={actionType} onChange={e => setActionType(e.target.value)} style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${tokens.SLATE_200}`, background: "white", fontSize: 14 }}>
             {(catalogue?.actions || []).map(a => <option key={a.type} value={a.type}>{a.type}</option>)}
           </select>
@@ -98,7 +140,9 @@ export const AdminAutomations: React.FC = () => {
             <StatusDot tone={r.enabled ? "ok" : "off"} />
             <div>
               <div style={{ fontWeight: 700, fontSize: 13, color: tokens.INK }}>{r.name}</div>
-              <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>on {(r.trigger.config as any)?.event_type || r.trigger.type} · {r.actions.length} action(s)</div>
+              <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>
+                on {r.trigger.type === "schedule" ? `cron: ${(r.trigger.config as any)?.cron || "?"}` : ((r.trigger.config as any)?.event_type || r.trigger.type)} · {r.actions.length} action(s)
+              </div>
             </div>
             <span style={{ fontSize: 11, color: tokens.SLATE_500 }}>{r.run_count} runs · {r.error_count} errors</span>
             <BrandPill tone="ghost">{r.last_run_at ? new Date(r.last_run_at).toLocaleDateString() : "never"}</BrandPill>
