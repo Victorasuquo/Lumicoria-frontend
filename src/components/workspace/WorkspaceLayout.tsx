@@ -191,6 +191,8 @@ export const WorkspaceLayout: React.FC = () => {
               <NavLink to="/workspace/search" style={({ isActive }) => navLinkStyle(isActive)}>Search</NavLink>
               <NavLink to="/workspace/calendar" style={({ isActive }) => navLinkStyle(isActive)}>Calendar</NavLink>
               <NavLink to="/workspace/dashboards" style={({ isActive }) => navLinkStyle(isActive)}>Dashboards</NavLink>
+              <NavLink to="/workspace/analytics" style={({ isActive }) => navLinkStyle(isActive)}>Analytics</NavLink>
+              <NavLink to="/workspace/runs" style={({ isActive }) => navLinkStyle(isActive)}>Agent runs</NavLink>
               <NavLink to="/workspace/reviews" style={({ isActive }) => navLinkStyle(isActive)}>Reviews</NavLink>
               <NavLink to="/workspace/notifications/rules" style={({ isActive }) => navLinkStyle(isActive)}>Notification rules</NavLink>
               <NavLink to="/workspace/exports" style={({ isActive }) => navLinkStyle(isActive)}>Exports</NavLink>

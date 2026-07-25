@@ -99,6 +99,8 @@ const AdminOnboardingChecklist = lazy(() => import("./pages/workspace/admin/Admi
 const WorkspaceSearch = lazy(() => import("./pages/workspace/WorkspaceSearch"));
 const WorkspaceCalendar = lazy(() => import("./pages/workspace/WorkspaceCalendar"));
 const WorkspaceDashboards = lazy(() => import("./pages/workspace/WorkspaceDashboards"));
+const WorkspaceAnalytics = lazy(() => import("./pages/workspace/WorkspaceAnalytics"));
+const RunsConsole = lazy(() => import("./pages/workspace/RunsConsole"));
 const WorkspaceExports = lazy(() => import("./pages/workspace/WorkspaceExports"));
 const NotificationRules = lazy(() => import("./pages/workspace/NotificationRules"));
 const PendingReviews = lazy(() => import("./pages/workspace/PendingReviews"));
@@ -306,6 +308,8 @@ const AppRoutes = () => {
           <Route path="search" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceSearch /></Suspense>} />
           <Route path="calendar" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceCalendar /></Suspense>} />
           <Route path="dashboards" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceDashboards /></Suspense>} />
+          <Route path="analytics" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceAnalytics /></Suspense>} />
+          <Route path="runs" element={<Suspense fallback={<AgentPageFallback />}><RunsConsole /></Suspense>} />
           <Route path="exports" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceExports /></Suspense>} />
           <Route path="notifications/rules" element={<Suspense fallback={<AgentPageFallback />}><NotificationRules /></Suspense>} />
           <Route path="reviews" element={<Suspense fallback={<AgentPageFallback />}><PendingReviews /></Suspense>} />
