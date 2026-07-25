@@ -146,6 +146,7 @@ const SupportPortal = lazy(() => import("./pages/portal/SupportPortal"));
 const SupportPortalStatus = lazy(() => import("./pages/portal/SupportPortalStatus"));
 const SupportPortalHelp = lazy(() => import("./pages/portal/SupportPortalHelp"));
 const SupportPortalArticle = lazy(() => import("./pages/portal/SupportPortalArticle"));
+const PublicProjectShare = lazy(() => import("./pages/PublicProjectShare"));
 
 // Documentation — lazy loaded
 const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
@@ -221,6 +222,9 @@ const AppRoutes = () => {
       <Route path="/portal/:slug/status/:ticket_id" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalStatus /></Suspense>} />
       <Route path="/portal/:slug/help" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalHelp /></Suspense>} />
       <Route path="/portal/:slug/help/:article_slug" element={<Suspense fallback={<AgentPageFallback />}><SupportPortalArticle /></Suspense>} />
+
+      {/* Public read-only project share — full-bleed, no auth, no chrome. */}
+      <Route path="/p/:projectId/share/:token" element={<Suspense fallback={<AgentPageFallback />}><PublicProjectShare /></Suspense>} />
 
       {/* All other routes — MainNav + Footer layout */}
       <Route element={<MainLayout />}>

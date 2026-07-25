@@ -26,6 +26,24 @@ import { toast } from "sonner";
 
 const PROJECT_ROLES = ["viewer", "reviewer", "editor", "lead"];
 
+// projects-v2-extended methods are attached to projectV2Api via Object.assign
+// at runtime; this facade names the ones we call so they stay type-checked.
+type Row = Record<string, any>;
+const projExt = projectV2Api as typeof projectV2Api & {
+  taskUpcoming: (o: string, p: string) => Promise<Row[] | Row>;
+  taskTimeline: (o: string, p: string) => Promise<Row[] | Row>;
+  taskCalendar: (o: string, p: string) => Promise<Row[] | Row>;
+  analyticsBurndown: (o: string, p: string, r?: string) => Promise<{ series: Array<{ day: string; remaining: number }> }>;
+  analyticsCycleTime: (o: string, p: string, r?: string) => Promise<{ count: number; avg_hours: number; max_hours?: number }>;
+  analyticsCost: (o: string, p: string, r?: string) => Promise<{ cost_usd: number; credits_used: number; runs: number }>;
+  savedFilters: (o: string, p: string) => Promise<Row[]>;
+  createSavedFilter: (o: string, p: string, payload: { name: string; filters: any }) => Promise<Row>;
+  deleteSavedFilter: (o: string, p: string, id: string) => Promise<unknown>;
+  sharePublic: (o: string, p: string, payload?: { expires_at?: string }) => Promise<Row>;
+  unsharePublic: (o: string, p: string) => Promise<unknown>;
+  createExternalLink: (o: string, p: string, payload: { permissions?: string[]; expires_at?: string }) => Promise<Row>;
+};
+
 type Tab = "overview" | "tasks" | "agents" | "documents" | "chat" | "activity" | "analytics" | "members" | "settings";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -329,6 +347,63 @@ const AgentsPanel: React.FC<{ orgId: string; projectId: string }> = ({ orgId, pr
   );
 };
 
+// Tasks tab with a view switcher. Board is the existing kanban; Upcoming/
+// Timeline/Calendar consume the projects-v2 task-view endpoints that were
+// REAL but had no UI caller.
+const TASK_VIEWS = ["board", "upcoming", "timeline", "calendar"] as const;
+type TaskView = typeof TASK_VIEWS[number];
+const VIEW_LABELS: Record<TaskView, string> = { board: "Board", upcoming: "Upcoming", timeline: "Timeline", calendar: "Calendar" };
+
+const statusColor = (s?: string): string =>
+  s === "completed" ? tokens.GREEN : s === "blocked" ? tokens.RED : s === "in_progress" ? tokens.PURPLE : tokens.SLATE_400;
+
+const TaskRow: React.FC<{ t: Row }> = ({ t }) => (
+  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto auto", gap: 10, alignItems: "center", padding: "10px 16px", borderBottom: `1px solid ${tokens.SLATE_200}` }}>
+    <span style={{ width: 8, height: 8, borderRadius: 999, background: statusColor(t.status) }} />
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, color: tokens.INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title || "Untitled task"}</div>
+      <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>{(t.status || "todo").replace(/_/g, " ")}{t.assigned_to_agent ? ` · agent: ${t.assigned_to_agent}` : ""}</div>
+    </div>
+    {t.priority ? <span style={{ fontSize: 11, color: tokens.SLATE_500, textTransform: "uppercase", fontWeight: 700 }}>{t.priority}</span> : <span />}
+    <span style={{ fontSize: 11, color: tokens.SLATE_500 }}>{t.due_date ? new Date(t.due_date).toLocaleDateString() : "no due date"}</span>
+  </div>
+);
+
+const TaskViews: React.FC<{ orgId: string; projectId: string }> = ({ orgId, projectId }) => {
+  const [view, setView] = useState<TaskView>("board");
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (view === "board") return;
+    setLoading(true);
+    const p =
+      view === "upcoming" ? projExt.taskUpcoming(orgId, projectId).then((r: any) => Array.isArray(r) ? r : (r?.tasks || r?.timeline || [])) :
+      view === "timeline" ? projExt.taskTimeline(orgId, projectId).then((r: any) => r?.timeline || (Array.isArray(r) ? r : [])) :
+      projExt.taskCalendar(orgId, projectId).then((r: any) => r?.tasks || (Array.isArray(r) ? r : []));
+    p.then((list: Row[]) => setRows(list || [])).catch(() => setRows([])).finally(() => setLoading(false));
+  }, [view, orgId, projectId]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", gap: 4, padding: 4, background: "rgba(255,255,255,0.65)", borderRadius: 9999, border: `1px solid ${tokens.SLATE_200}`, width: "fit-content" }}>
+        {TASK_VIEWS.map(v => (
+          <button key={v} onClick={() => setView(v)} style={{ padding: "6px 14px", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12, background: view === v ? "white" : "transparent", color: view === v ? tokens.PURPLE_DEEP : tokens.SLATE_600, boxShadow: view === v ? "0 2px 8px rgba(15,23,42,0.06)" : "none" }}>{VIEW_LABELS[v]}</button>
+        ))}
+      </div>
+      {view === "board" ? (
+        <TaskBoard orgId={orgId} projectId={projectId} />
+      ) : loading ? (
+        <GlassCard padding={20}><Skeleton height={16} /><Skeleton height={16} style={{ marginTop: 10 }} /></GlassCard>
+      ) : rows.length === 0 ? (
+        <EmptyState title={`Nothing in ${VIEW_LABELS[view].toLowerCase()}`} body={view === "upcoming" ? "No tasks due in the next 14 days." : "No dated tasks to show here yet."} />
+      ) : (
+        <GlassCard padding={6}>{rows.map((t, i) => <TaskRow key={t.id || i} t={t} />)}</GlassCard>
+      )}
+    </div>
+  );
+};
+
 export const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { activeOrgId } = useWorkspace();
@@ -477,7 +552,7 @@ export const ProjectDetail: React.FC = () => {
         </div>
       )}
 
-      {tab === "tasks" && <TaskBoard orgId={activeOrgId} projectId={projectId} />}
+      {tab === "tasks" && <TaskViews orgId={activeOrgId} projectId={projectId} />}
       {tab === "agents" && <AgentsPanel orgId={activeOrgId} projectId={projectId} />}
 
       {tab === "documents" && (
@@ -519,7 +594,7 @@ export const ProjectDetail: React.FC = () => {
       )}
 
       {tab === "analytics" && (
-        <ProjectAnalyticsPanel project={project} analytics={analytics} activity={activity} />
+        <ProjectAnalyticsPanel orgId={activeOrgId} project={project} analytics={analytics} activity={activity} />
       )}
 
       {tab === "members" && (
@@ -594,41 +669,56 @@ export const ProjectDetail: React.FC = () => {
       )}
 
       {tab === "settings" && (
-        <GlassCard padding={24}>
-          <h3 style={{ margin: 0, fontFamily: tokens.DISPLAY_STACK }}>Project settings</h3>
-          <p style={{ color: tokens.SLATE_600, fontSize: 13, marginBottom: 16 }}>Adjust the project name, description, status, visibility, and strict mode.</p>
-          <ProjectSettingsForm project={project} orgId={activeOrgId} onSaved={p => setProject(p)} />
-        </GlassCard>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard padding={24}>
+            <h3 style={{ margin: 0, fontFamily: tokens.DISPLAY_STACK }}>Project settings</h3>
+            <p style={{ color: tokens.SLATE_600, fontSize: 13, marginBottom: 16 }}>Adjust the project name, description, status, visibility, and strict mode.</p>
+            <ProjectSettingsForm project={project} orgId={activeOrgId} onSaved={p => setProject(p)} />
+          </GlassCard>
+          <ProjectSharingCard orgId={activeOrgId} project={project} onChanged={p => setProject(p)} />
+        </div>
       )}
     </div>
   );
 };
 
-// Synthesises a 14-day burnup + a 7×24 activity heatmap from the
-// project's activity log + task counts.  Charts gracefully render an
-// empty state when the project is brand-new (zero activity).
+// Real project analytics — burnup/burndown/cycle-time/cost all come from
+// the analytics-v2 aggregations (previously this panel FABRICATED a burnup
+// and runs trend client-side from a single total, the same anti-pattern the
+// workspace home was fixed for).  A 7×24 heatmap is still derived from the
+// activity log (that's a genuine client-side rollup, not fabricated data).
 const ProjectAnalyticsPanel: React.FC<{
+  orgId: string;
   project: ProjectV2;
   analytics: AnalyticsOverview | null;
   activity: Array<Record<string, any>>;
-}> = ({ project, analytics, activity }) => {
-  const burnup: BurnupPoint[] = React.useMemo(() => {
-    const completed = analytics?.tasks?.completed ?? 0;
-    const total = analytics?.tasks?.total ?? Math.max(completed, 1);
-    const days = 14;
-    const out: BurnupPoint[] = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const day = new Date(Date.now() - i * 86_400_000);
-      const label = day.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      const progress = (days - i) / days;
-      out.push({
-        date: label,
-        scope: Math.round(total),
-        completed: Math.round(completed * progress),
-      });
-    }
-    return out;
-  }, [analytics]);
+}> = ({ orgId, project, analytics, activity }) => {
+  const [burnupSeries, setBurnupSeries] = useState<Array<{ day: string; created: number; completed: number }>>([]);
+  const [burndownSeries, setBurndownSeries] = useState<Array<{ day: string; remaining: number }>>([]);
+  const [cycle, setCycle] = useState<{ count: number; avg_hours: number; max_hours?: number } | null>(null);
+  const [cost, setCost] = useState<{ cost_usd: number; credits_used: number; runs: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    analyticsV2Api.projectBurnup(project.id, orgId).then((r: any) => !cancelled && setBurnupSeries(r?.series || [])).catch(() => {});
+    projExt.analyticsBurndown(orgId, project.id).then(r => !cancelled && setBurndownSeries(r?.series || [])).catch(() => {});
+    projExt.analyticsCycleTime(orgId, project.id).then(r => !cancelled && setCycle(r)).catch(() => {});
+    projExt.analyticsCost(orgId, project.id).then(r => !cancelled && setCost(r)).catch(() => {});
+    return () => { cancelled = true; };
+  }, [orgId, project.id]);
+
+  const burnup: BurnupPoint[] = React.useMemo(() =>
+    burnupSeries.map(s => ({
+      date: new Date(s.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      scope: s.created,
+      completed: s.completed,
+    })), [burnupSeries]);
+
+  const burndown = React.useMemo(() =>
+    burndownSeries.map(s => ({
+      day: new Date(s.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      remaining: s.remaining,
+    })), [burndownSeries]);
 
   const heat: ActivityCell[] = React.useMemo(() => {
     const cells = new Map<string, number>();
@@ -649,23 +739,9 @@ const ProjectAnalyticsPanel: React.FC<{
     });
   }, [activity]);
 
-  const runsTrend = React.useMemo(() => {
-    const days = 14;
-    const out: Array<Record<string, any>> = [];
-    const totalRuns = analytics?.agent_runs?.total ?? 0;
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86_400_000);
-      out.push({
-        day: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        runs: Math.max(0, Math.round((totalRuns / days) + (i % 3 === 0 ? 1 : 0))),
-      });
-    }
-    return out;
-  }, [analytics]);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         <GlassCard padding={20}>
           <div style={{ fontSize: 11, fontWeight: 800, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Tasks</div>
           <div style={{ marginTop: 8, display: "flex", gap: 22 }}>
@@ -684,20 +760,25 @@ const ProjectAnalyticsPanel: React.FC<{
           </div>
         </GlassCard>
         <GlassCard padding={20}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Agent runs (30d)</div>
-          <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 36, fontWeight: 700, marginTop: 8 }}>{(analytics?.agent_runs?.total ?? 0).toLocaleString()}</div>
-          <div style={{ color: tokens.SLATE_600, fontSize: 12, marginTop: 4 }}>{project.agent_keys.length + project.custom_agent_ids.length} agents attached.</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Cycle time</div>
+          <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 32, fontWeight: 700, marginTop: 8 }}>{cycle ? `${cycle.avg_hours}h` : "—"}</div>
+          <div style={{ color: tokens.SLATE_600, fontSize: 12, marginTop: 4 }}>avg over {cycle?.count ?? 0} completed{cycle?.max_hours ? ` · max ${cycle.max_hours}h` : ""}</div>
+        </GlassCard>
+        <GlassCard padding={20}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Agent cost (30d)</div>
+          <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 32, fontWeight: 700, marginTop: 8 }}>{cost ? `${cost.credits_used.toLocaleString()} cr` : "—"}</div>
+          <div style={{ color: tokens.SLATE_600, fontSize: 12, marginTop: 4 }}>{cost?.runs ?? 0} runs · ${cost?.cost_usd ?? 0} internal</div>
         </GlassCard>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16 }}>
-        <BurnupChart data={burnup} title="Task burnup (14d)" subtitle="Scope vs. completed work." height={240} />
+        <BurnupChart data={burnup} title="Task burnup" subtitle="Cumulative scope vs. completed (real)." height={240} />
         <TrendLineChart
-          data={runsTrend}
+          data={burndown}
           xKey="day"
-          series={[{ key: "runs", label: "Agent runs", color: tokens.PURPLE }]}
-          title="Agent activity (14d)"
-          subtitle="Daily runs across attached agents."
+          series={[{ key: "remaining", label: "Remaining", color: tokens.AMBER }]}
+          title="Burndown"
+          subtitle="Open tasks remaining over time."
           height={240}
         />
       </div>
@@ -795,6 +876,56 @@ const ProjectSettingsForm: React.FC<{ project: ProjectV2; orgId: string; onSaved
         {msg && <span style={{ color: tokens.SLATE_600, fontSize: 13 }}>{msg}</span>}
       </div>
     </div>
+  );
+};
+
+const ProjectSharingCard: React.FC<{ orgId: string; project: ProjectV2; onChanged: (p: ProjectV2) => void }> = ({ orgId, project, onChanged }) => {
+  const isOrgVisible = project.visibility === "org";
+  const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+
+  const toggleOrg = async () => {
+    setBusy(true);
+    try {
+      if (isOrgVisible) { await projExt.unsharePublic(orgId, project.id); onChanged({ ...project, visibility: "private" } as ProjectV2); toast.success("Now private."); }
+      else { await projExt.sharePublic(orgId, project.id); onChanged({ ...project, visibility: "org" } as ProjectV2); toast.success("Shared with the whole org."); }
+    } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not update sharing."); }
+    finally { setBusy(false); }
+  };
+
+  const makeLink = async () => {
+    setBusy(true);
+    try {
+      const r: any = await projExt.createExternalLink(orgId, project.id, {});
+      const url = `${window.location.origin}${r.url || `/p/${project.id}/share/${r.token}`}`;
+      setLink(url);
+      try { await navigator.clipboard.writeText(url); toast.success("Link copied to clipboard."); }
+      catch { toast.success("Link created."); }
+    } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not create link."); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <GlassCard padding={24}>
+      <h3 style={{ margin: 0, fontFamily: tokens.DISPLAY_STACK }}>Sharing</h3>
+      <p style={{ color: tokens.SLATE_600, fontSize: 13, marginBottom: 16 }}>Control who can see this project. External links are read-only and can be revoked any time.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: `1px solid ${tokens.SLATE_200}`, borderRadius: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, color: tokens.INK, fontSize: 14 }}>Visible to the whole organisation</div>
+            <div style={{ fontSize: 12, color: tokens.SLATE_500 }}>{isOrgVisible ? "Every org member can open this project." : "Only project members can open it."}</div>
+          </div>
+          <Button tone={isOrgVisible ? "outline" : "primary"} size="sm" disabled={busy} onClick={toggleOrg}>{isOrgVisible ? "Make private" : "Share with org"}</Button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: `1px solid ${tokens.SLATE_200}`, borderRadius: 12, gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: tokens.INK, fontSize: 14 }}>Read-only external link</div>
+            <div style={{ fontSize: 12, color: tokens.SLATE_500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{link || "Generate a token-protected link to share outside the org."}</div>
+          </div>
+          <Button tone="outline" size="sm" disabled={busy} onClick={makeLink}>{link ? "New link" : "Create link"}</Button>
+        </div>
+      </div>
+    </GlassCard>
   );
 };
 
