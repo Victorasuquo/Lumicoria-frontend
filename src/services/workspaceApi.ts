@@ -300,6 +300,10 @@ export interface SessionPolicy {
 // ───────────────────────────────────────────── workspace
 
 export const workspaceApi = {
+  list: async (): Promise<{ count: number; workspaces: Array<Record<string, any>> }> => {
+    const { data } = await api.get("/workspaces");
+    return data;
+  },
   // Resolve the user's current org context.  Falls back to organizationApi.getOrganization
   // when no explicit /workspaces/active is wired yet.
   active: async (): Promise<{ organization_id: ID; name?: string; plan?: string }> => {
@@ -963,7 +967,7 @@ Object.assign(teamApi, {
     api.patch(`/organizations/${orgId}/teams/${teamId}/settings/permissions`, patch).then(r => r.data),
   tags: (orgId: ID, teamId: ID) =>
     api.get(`/organizations/${orgId}/teams/${teamId}/tags`).then(r => r.data),
-  attachTag: (orgId: ID, teamId: ID, payload: { tag_id: string }) =>
+  attachTag: (orgId: ID, teamId: ID, payload: { name?: string; tag_id?: string; color?: string }) =>
     api.post(`/organizations/${orgId}/teams/${teamId}/tags`, payload).then(r => r.data),
   membersByRole: (orgId: ID, teamId: ID) =>
     api.get(`/organizations/${orgId}/teams/${teamId}/members/by-role`).then(r => r.data),

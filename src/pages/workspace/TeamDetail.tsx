@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { MoreVertical } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   teamApi, projectV2Api, analyticsV2Api, workspaceApi,
@@ -21,12 +22,33 @@ import { toast } from "sonner";
 
 const TEAM_ROLES = ["viewer", "operator", "editor", "team_admin"];
 
-type Tab = "overview" | "members" | "projects" | "agents" | "activity" | "analytics" | "settings";
+// The team-extended API methods live on `teamApi` via Object.assign at
+// runtime but aren't on its inferred type — this facade names the ones we
+// use so calls stay type-checked.
+interface TeamRow { id: string; [k: string]: unknown }
+const teamExt = teamApi as typeof teamApi & {
+  announcements: (o: string, t: string) => Promise<TeamRow[]>;
+  createAnnouncement: (o: string, t: string, p: { title: string; body: string; pinned?: boolean }) => Promise<TeamRow>;
+  deleteAnnouncement: (o: string, t: string, id: string) => Promise<unknown>;
+  reminders: (o: string, t: string) => Promise<TeamRow[]>;
+  createReminder: (o: string, t: string, p: { title: string; due_at: string; resource_type?: string; resource_id?: string }) => Promise<TeamRow>;
+  deleteReminder: (o: string, t: string, id: string) => Promise<unknown>;
+  savedViews: (o: string, t: string) => Promise<TeamRow[]>;
+  deleteSavedView: (o: string, t: string, id: string) => Promise<unknown>;
+  resendInvite: (o: string, t: string, id: string) => Promise<unknown>;
+  revokeInvite: (o: string, t: string, id: string) => Promise<unknown>;
+};
+
+type Tab = "overview" | "members" | "projects" | "agents" | "announcements" | "invites" | "reminders" | "views" | "activity" | "analytics" | "settings";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "members", label: "Members" },
   { id: "projects", label: "Projects" },
   { id: "agents", label: "Agents" },
+  { id: "announcements", label: "Announcements" },
+  { id: "invites", label: "Invites" },
+  { id: "reminders", label: "Reminders" },
+  { id: "views", label: "Saved views" },
   { id: "activity", label: "Activity" },
   { id: "analytics", label: "Analytics" },
   { id: "settings", label: "Settings" },
@@ -64,6 +86,18 @@ export const TeamDetail: React.FC = () => {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [privileged, setPrivileged] = useState(false);
+  const [announcements, setAnnouncements] = useState<TeamRow[]>([]);
+  const [invites, setInvites] = useState<Array<Record<string, unknown>>>([]);
+  const [reminders, setReminders] = useState<TeamRow[]>([]);
+  const [views, setViews] = useState<TeamRow[]>([]);
+  const [membersActive, setMembersActive] = useState<number | null>(null);
+  const [kebabOpen, setKebabOpen] = useState(false);
+
+  const reloadInvites = () => { if (activeOrgId && teamId) teamApi.invites(activeOrgId, teamId).then(setInvites).catch(() => {}); };
+  const reloadAnnouncements = () => { if (activeOrgId && teamId) teamExt.announcements(activeOrgId, teamId).then(setAnnouncements).catch(() => {}); };
+  const reloadReminders = () => { if (activeOrgId && teamId) teamExt.reminders(activeOrgId, teamId).then(setReminders).catch(() => {}); };
+  const reloadViews = () => { if (activeOrgId && teamId) teamExt.savedViews(activeOrgId, teamId).then(setViews).catch(() => {}); };
 
   useEffect(() => {
     let cancelled = false;
@@ -76,10 +110,20 @@ export const TeamDetail: React.FC = () => {
       teamApi.agents(activeOrgId, teamId).then(r => r.agents || []).catch(() => []),
       teamApi.activity(activeOrgId, teamId, 50).catch(() => []),
       teamApi.analytics(activeOrgId, teamId).catch(() => null),
-    ]).then(([t, m, p, a, ac, an]) => {
+      // Real permissions probe — replaces the hardcoded isPrivileged=true.
+      teamApi.permissions(activeOrgId, teamId).catch(() => null),
+    ]).then(([t, m, p, a, ac, an, perms]) => {
       if (cancelled) return;
       setTeam(t); setMembers(m); setProjects(p); setAgents(a); setActivity(ac); setAnalytics(an);
+      setPrivileged(Boolean(perms?.is_admin || perms?.is_owner));
     }).finally(() => { if (!cancelled) setLoading(false); });
+    // Lazy side-loads for the new tabs (best-effort; each tab renders once ready).
+    teamExt.announcements(activeOrgId, teamId).then(r => !cancelled && setAnnouncements(r)).catch(() => {});
+    teamApi.invites(activeOrgId, teamId).then(r => !cancelled && setInvites(r)).catch(() => {});
+    teamExt.reminders(activeOrgId, teamId).then(r => !cancelled && setReminders(r)).catch(() => {});
+    teamExt.savedViews(activeOrgId, teamId).then(r => !cancelled && setViews(r)).catch(() => {});
+    (teamApi as typeof teamApi & { analyticsMembers: (o: string, t: string) => Promise<{ active_users_30d?: number }> })
+      .analyticsMembers(activeOrgId, teamId).then(r => !cancelled && setMembersActive(r?.active_users_30d ?? null)).catch(() => {});
     // Auto-populate WorkspaceHome's "Recent" rail on every real open —
     // previously it only updated when a user clicked a resource FROM
     // that rail, so directly navigating (nav link, bookmark, search)
@@ -94,7 +138,7 @@ export const TeamDetail: React.FC = () => {
   }
   if (!team) return <EmptyState title="Team not found" body="It may have been archived or deleted." action={<Button onClick={() => navigate("/workspace/teams")}>Back to teams</Button>} />;
 
-  const isPrivileged = true; // sidebar already gates this — server enforces
+  const isPrivileged = privileged; // real probe: team admin/owner or org admin
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -149,10 +193,52 @@ export const TeamDetail: React.FC = () => {
                 <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 14, marginTop: 6, marginBottom: 0, maxWidth: 720, textShadow: "0 1px 8px rgba(15,23,42,0.4)" }}>{team.description}</p>
               )}
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <TeamHuddleButton teamId={team.id} teamName={team.name} />
               <Button tone="outline" size="sm" onClick={() => navigate(`/workspace/projects/new?team=${team.id}`)}>New project</Button>
               <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>Invite</Button>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setKebabOpen(o => !o)}
+                  style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.14)", color: "white", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                  aria-label="Team actions"
+                >
+                  <MoreVertical size={18} />
+                </button>
+                {kebabOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setKebabOpen(false)} />
+                    <div style={{ position: "absolute", top: 40, right: 0, zIndex: 41, minWidth: 190, background: "white", borderRadius: 12, boxShadow: "0 12px 34px rgba(15,23,42,0.18)", border: `1px solid ${tokens.SLATE_200}`, overflow: "hidden" }}>
+                      {[
+                        { label: team.is_archived ? "Restore team" : "Archive team", show: isPrivileged, run: async () => {
+                          try { const t = team.is_archived ? await teamApi.restore(activeOrgId!, team.id) : await teamApi.archive(activeOrgId!, team.id); setTeam(t); toast.success(team.is_archived ? "Team restored." : "Team archived."); }
+                          catch (e: any) { toast.error(e?.response?.data?.detail || "Action failed."); }
+                        } },
+                        { label: "Duplicate team", show: isPrivileged, run: async () => {
+                          try { const t = await teamApi.duplicate(activeOrgId!, team.id); toast.success("Team duplicated."); navigate(`/workspace/teams/${t.id}`); }
+                          catch (e: any) { toast.error(e?.response?.data?.detail || "Could not duplicate."); }
+                        } },
+                        { label: "Transfer ownership…", show: isPrivileged, run: async () => {
+                          const nid = window.prompt("New owner user id:"); if (!nid) return;
+                          try { const t = await teamApi.transferOwnership(activeOrgId!, team.id, nid.trim()); setTeam(t); toast.success("Ownership transferred."); }
+                          catch (e: any) { toast.error(e?.response?.data?.detail || "Transfer failed."); }
+                        } },
+                        { label: "Leave team", show: true, danger: true, run: async () => {
+                          if (!window.confirm("Leave this team?")) return;
+                          try { await teamApi.leave(activeOrgId!, team.id); toast.success("You left the team."); navigate("/workspace/teams"); }
+                          catch (e: any) { toast.error(e?.response?.data?.detail || "Could not leave."); }
+                        } },
+                      ].filter(a => a.show).map((a, i) => (
+                        <button key={i} onClick={() => { setKebabOpen(false); void a.run(); }}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: (a as any).danger ? tokens.RED : tokens.INK }}
+                          onMouseEnter={e => (e.currentTarget.style.background = tokens.SLATE_50)}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        >{a.label}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </CoverUpload>
@@ -295,6 +381,97 @@ export const TeamDetail: React.FC = () => {
         </GlassCard>
       )}
 
+      {tab === "announcements" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {isPrivileged && (
+            <AnnouncementComposer onPost={async (title, body, pinned) => {
+              try {
+                await teamExt.createAnnouncement(activeOrgId!, teamId!, { title, body, pinned });
+                reloadAnnouncements(); toast.success("Announcement posted.");
+              } catch (e: any) { toast.error(e?.response?.data?.detail || "Could not post."); }
+            }} />
+          )}
+          <GlassCard padding={6}>
+            {announcements.length === 0 ? (
+              <div style={{ padding: 24 }}><EmptyState title="No announcements" body="Team-wide notices show up here." /></div>
+            ) : announcements.map((a, idx) => (
+              <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, padding: "14px 16px", borderBottom: idx < announcements.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: tokens.INK, display: "flex", alignItems: "center", gap: 8 }}>
+                    {String(a.title || "Untitled")}
+                    {a.pinned ? <span style={{ fontSize: 10, fontWeight: 700, color: tokens.PURPLE_DEEP, background: `${tokens.PURPLE}12`, borderRadius: 999, padding: "2px 8px" }}>PINNED</span> : null}
+                  </div>
+                  <div style={{ fontSize: 13, color: tokens.SLATE_600, marginTop: 4 }}>{String(a.body || "")}</div>
+                </div>
+                {isPrivileged && (
+                  <button onClick={async () => { try { await teamExt.deleteAnnouncement(activeOrgId!, teamId!, a.id); reloadAnnouncements(); } catch { toast.error("Could not delete."); } }}
+                    style={{ alignSelf: "start", border: "none", background: "transparent", color: tokens.SLATE_500, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Delete</button>
+                )}
+              </div>
+            ))}
+          </GlassCard>
+        </div>
+      )}
+
+      {tab === "invites" && (
+        <GlassCard padding={6}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${tokens.SLATE_200}` }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase", color: tokens.SLATE_500 }}>{invites.length} pending {invites.length === 1 ? "invite" : "invites"}</span>
+            <Button tone="primary" size="sm" onClick={() => setInviteOpen(true)}>+ Invite</Button>
+          </div>
+          {invites.length === 0 ? (
+            <div style={{ padding: 24 }}><EmptyState title="No pending invites" body="Everyone invited has either joined or the invite expired." /></div>
+          ) : invites.map((inv: any, idx) => (
+            <div key={inv.id || inv._id || idx} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 10, alignItems: "center", padding: "12px 16px", borderBottom: idx < invites.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: tokens.INK }}>{inv.email || inv.invitee_email || "—"}</div>
+                <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>{inv.status || "pending"}{inv.expires_at ? ` · expires ${new Date(inv.expires_at).toLocaleDateString()}` : ""}</div>
+              </div>
+              <RoleChip role={(inv.role || inv.team_role || "member") as any} />
+              {isPrivileged && <button onClick={async () => { try { await teamExt.resendInvite(activeOrgId!, teamId!, (inv.id || inv._id)); toast.success("Invite resent."); } catch { toast.error("Resend failed."); } }} style={{ border: `1px solid ${tokens.SLATE_200}`, borderRadius: 999, padding: "5px 12px", background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 600, color: tokens.SLATE_700 }}>Resend</button>}
+              {isPrivileged && <button onClick={async () => { try { await teamExt.revokeInvite(activeOrgId!, teamId!, (inv.id || inv._id)); reloadInvites(); toast.success("Invite revoked."); } catch { toast.error("Revoke failed."); } }} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 600, color: tokens.RED }}>Revoke</button>}
+            </div>
+          ))}
+        </GlassCard>
+      )}
+
+      {tab === "reminders" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <ReminderComposer onCreate={async (title, dueAt) => {
+            try { await teamExt.createReminder(activeOrgId!, teamId!, { title, due_at: dueAt }); reloadReminders(); toast.success("Reminder set."); }
+            catch (e: any) { toast.error(e?.response?.data?.detail || "Could not create."); }
+          }} />
+          <GlassCard padding={6}>
+            {reminders.length === 0 ? (
+              <div style={{ padding: 24 }}><EmptyState title="No reminders" body="Set a team reminder — it fires an in-app + push notification when due." /></div>
+            ) : reminders.map((r: any, idx) => (
+              <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center", padding: "12px 16px", borderBottom: idx < reminders.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none" }}>
+                <div style={{ fontWeight: 600, color: tokens.INK }}>{r.title || r.note || "Reminder"}</div>
+                <span style={{ fontSize: 12, color: tokens.SLATE_500 }}>{r.due_at ? new Date(r.due_at).toLocaleString() : ""}</span>
+                <button onClick={async () => { try { await teamExt.deleteReminder(activeOrgId!, teamId!, r.id); reloadReminders(); } catch { toast.error("Could not delete."); } }} style={{ border: "none", background: "transparent", color: tokens.SLATE_500, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Delete</button>
+              </div>
+            ))}
+          </GlassCard>
+        </div>
+      )}
+
+      {tab === "views" && (
+        <GlassCard padding={6}>
+          {views.length === 0 ? (
+            <div style={{ padding: 24 }}><EmptyState title="No saved views" body="Saved filter views for this team's boards appear here." /></div>
+          ) : views.map((v: any, idx) => (
+            <div key={v.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center", padding: "12px 16px", borderBottom: idx < views.length - 1 ? `1px solid ${tokens.SLATE_200}` : "none" }}>
+              <div>
+                <div style={{ fontWeight: 700, color: tokens.INK }}>{v.name || "Untitled view"}</div>
+                <div style={{ fontSize: 11, color: tokens.SLATE_500 }}>{v.view_type || "board"}</div>
+              </div>
+              <span style={{ fontSize: 11, color: tokens.SLATE_500 }}>{v.created_at ? new Date(v.created_at).toLocaleDateString() : ""}</span>
+              {isPrivileged && <button onClick={async () => { try { await teamExt.deleteSavedView(activeOrgId!, teamId!, v.id); reloadViews(); } catch { toast.error("Could not delete."); } }} style={{ border: "none", background: "transparent", color: tokens.RED, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Delete</button>}
+            </div>
+          ))}
+        </GlassCard>
+      )}
+
       {tab === "activity" && (
         <GlassCard padding={6}>
           {activity.length === 0 ? (
@@ -336,6 +513,11 @@ export const TeamDetail: React.FC = () => {
             <div style={{ fontSize: 12, fontWeight: 700, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Agent runs (30d)</div>
             <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 36, fontWeight: 700, marginTop: 8 }}>{(analytics?.agent_runs?.total ?? 0).toLocaleString()}</div>
             <div style={{ color: tokens.SLATE_600, fontSize: 12, marginTop: 6 }}>{agents.length} agents bound to this team across {projects.length} projects.</div>
+          </GlassCard>
+          <GlassCard padding={20}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: tokens.SLATE_500, letterSpacing: 1, textTransform: "uppercase" }}>Active members (30d)</div>
+            <div style={{ fontFamily: tokens.DISPLAY_STACK, fontSize: 36, fontWeight: 700, marginTop: 8 }}>{membersActive ?? "—"}</div>
+            <div style={{ color: tokens.SLATE_600, fontSize: 12, marginTop: 6 }}>of {members.length} members did something in the last 30 days.</div>
           </GlassCard>
         </div>
       )}
@@ -394,6 +576,53 @@ const TeamSettingsForm: React.FC<{ team: Team; orgId: string; onSaved: (t: Team)
         {msg && <span style={{ color: tokens.SLATE_600, fontSize: 13 }}>{msg}</span>}
       </div>
     </div>
+  );
+};
+
+const AnnouncementComposer: React.FC<{ onPost: (title: string, body: string, pinned: boolean) => Promise<void> }> = ({ onPost }) => {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [busy, setBusy] = useState(false);
+  return (
+    <GlassCard padding={18}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+        <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Announcement title" />
+        <Input value={body} onChange={e => setBody(e.target.value)} placeholder="What do you want the team to know?" />
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: tokens.SLATE_600 }}>
+            <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /> Pin to top
+          </label>
+          <Button tone="primary" size="sm" disabled={busy || !title.trim()} onClick={async () => { setBusy(true); try { await onPost(title.trim(), body.trim(), pinned); setTitle(""); setBody(""); setPinned(false); } finally { setBusy(false); } }}>
+            {busy ? "Posting…" : "Post announcement"}
+          </Button>
+        </div>
+      </div>
+    </GlassCard>
+  );
+};
+
+const ReminderComposer: React.FC<{ onCreate: (title: string, dueAt: string) => Promise<void> }> = ({ onCreate }) => {
+  const [title, setTitle] = useState("");
+  const [due, setDue] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <GlassCard padding={18}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <label>
+          <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Reminder</div>
+          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Ship the Q3 report" />
+        </label>
+        <label>
+          <div style={{ fontSize: 12, color: tokens.SLATE_500, marginBottom: 6, fontWeight: 600 }}>Due</div>
+          <input type="datetime-local" value={due} onChange={e => setDue(e.target.value)}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${tokens.SLATE_200}`, fontSize: 14 }} />
+        </label>
+        <Button tone="primary" disabled={busy || !title.trim() || !due} onClick={async () => { setBusy(true); try { await onCreate(title.trim(), new Date(due).toISOString()); setTitle(""); setDue(""); } finally { setBusy(false); } }}>
+          {busy ? "Saving…" : "Add"}
+        </Button>
+      </div>
+    </GlassCard>
   );
 };
 
