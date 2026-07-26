@@ -188,6 +188,37 @@ const ScrollToTop = () => {
   return null;
 };
 
+/**
+ * Trades a `?sso_code=` (from the SAML ACS redirect) for a real JWT via
+ * POST /enterprise/sso/exchange, stores it, and strips the code from the
+ * URL. Keeps the token out of browser history / referer / logs. No-op when
+ * no code is present.
+ */
+const SsoCodeHandler = () => {
+  const { search } = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const code = params.get("sso_code");
+    if (!code) return;
+    (async () => {
+      try {
+        const { default: api } = await import("@/services/api");
+        const { data } = await api.post("/enterprise/sso/exchange", { code });
+        if (data?.access_token) {
+          localStorage.setItem("accessToken", data.access_token);
+          // Clean the code out of the URL, then reload into the authed app.
+          params.delete("sso_code");
+          const clean = window.location.pathname + (params.toString() ? `?${params}` : "");
+          window.location.replace(clean || "/workspace");
+        }
+      } catch {
+        /* invalid/expired code — leave the user on the page to retry login */
+      }
+    })();
+  }, [search]);
+  return null;
+};
+
 /** Standard app shell: MainNav + content + Footer */
 const MainLayout = () => {
   // Meeting room: nav auto-collapses (see MainNav), so drop the top
@@ -394,6 +425,7 @@ const App = () => (
     <TooltipProvider>
       <Router>
         <ScrollToTop />
+        <SsoCodeHandler />
         <AuthProvider>
           <WorkspaceProvider>
             <PermissionsProvider>
