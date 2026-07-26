@@ -9,7 +9,6 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { organizationApi } from "@/services/api";
 import { workspaceApi, orgBillingApi, type OrgSubscription, type ID } from "@/services/workspaceApi";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -44,6 +43,19 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [subscription, setSubscription] = useState<OrgSubscription | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const normalizeMembership = (row: any): WorkspaceMembership | null => {
+    const id = row?.id || row?._id || row?.organization_id;
+    if (!id) return null;
+    return {
+      id: String(id),
+      name: row?.name || "Workspace",
+      logo_url: row?.logo_url || null,
+      cover_url: row?.cover_url || null,
+      plan: row?.plan || row?.subscription?.plan || null,
+      role: row?.role || (row?.is_owner ? "owner" : "member"),
+    };
+  };
+
   const loadMemberships = useCallback(async () => {
     if (!user) {
       setMemberships([]); setActiveOrg(null); setActiveOrgId(null); setSubscription(null);
@@ -52,22 +64,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     setLoading(true);
     try {
-      // Hydrate the primary org via /organizations/me (already wired in
-      // existing organizationApi) — this gives us the bare minimum.
-      const primary = await organizationApi.getMyOrg().catch(() => null);
-      const ms: WorkspaceMembership[] = [];
-      if (primary && ((primary as any).id || (primary as any)._id)) {
-        ms.push({
-          id: String((primary as any).id || (primary as any)._id),
-          name: (primary as any).name || "Workspace",
-          logo_url: (primary as any).logo_url || null,
-          cover_url: (primary as any).cover_url || null,
-          plan: (primary as any).plan || null,
-        });
-      }
+      const response = await workspaceApi.list().catch(() => ({ workspaces: [] }));
+      const rows = Array.isArray((response as any).workspaces) ? (response as any).workspaces : [];
+      const ms = rows.map(normalizeMembership).filter(Boolean) as WorkspaceMembership[];
       setMemberships(ms);
       const stored = localStorage.getItem(STORAGE_KEY);
-      const next = ms.find(m => m.id === stored) || ms[0] || null;
+      const preferred = user.organization_id ? String(user.organization_id) : null;
+      const next = ms.find(m => m.id === preferred) || ms.find(m => m.id === stored) || ms[0] || null;
       if (next) {
         setActiveOrg(next);
         setActiveOrgId(next.id);

@@ -20,6 +20,7 @@ import {
   Mail,
   Building2,
   ScrollText,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,15 +33,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
-import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function MainNav() {
   const { user, logout } = useAuth();
+  const { memberships, activeOrg, switchTo } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
   const isAuthenticated = !!user;
+  const hasMultipleWorkspaces = memberships.length > 1;
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -110,6 +113,11 @@ export default function MainNav() {
     } catch (error) {
       console.error('Logout failed', error);
     }
+  };
+
+  const handleWorkspaceSelect = async (orgId: string) => {
+    await switchTo(orgId);
+    navigate('/workspace');
   };
 
   return (
@@ -220,27 +228,85 @@ export default function MainNav() {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                    <Avatar className="h-9 w-9 ring-2 ring-white/50">
-                      <AvatarImage src={resolveAvatarUrl(user?.avatar_url)} />
-                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
+                  <Button
+                    variant="ghost"
+                    className="relative h-11 w-11 rounded-full p-0"
+                    aria-label={hasMultipleWorkspaces ? "Switch workspace" : "Open account menu"}
+                  >
+                    <span
+                      className={cn(
+                        "relative inline-grid place-items-center rounded-full transition-transform duration-200",
+                        hasMultipleWorkspaces
+                          ? "p-[2px] bg-[conic-gradient(from_225deg,#feda75_0deg,#fa7e1e_70deg,#d62976_145deg,#962fbf_230deg,#4f5bd5_300deg,#feda75_360deg)] hover:scale-105"
+                          : "bg-transparent"
+                      )}
+                      title={hasMultipleWorkspaces ? "Switch workspace" : "Account menu"}
+                    >
+                      <span
+                        className={cn(
+                          "relative rounded-full",
+                          hasMultipleWorkspaces && "bg-white p-[2px] dark:bg-gray-900"
+                        )}
+                      >
+                        <Avatar className="relative h-9 w-9 ring-1 ring-white/70">
+                          <AvatarImage src={resolveAvatarUrl(user?.avatar_url)} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm">
+                            {userInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                      </span>
+                      {hasMultipleWorkspaces && (
+                        <span className="sr-only">Multiple workspaces available</span>
+                      )}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 mt-2 rounded-2xl border-white/20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+                <DropdownMenuContent align="end" className="mt-2 max-h-[70vh] w-72 overflow-y-auto rounded-2xl border-white/20 bg-white/80 backdrop-blur-xl dark:bg-gray-900/80">
                   <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user?.email}</p>
                     </div>
-                    <div className="mt-3">
-                      <ErrorBoundary>
-                        <WorkspaceSwitcher />
-                      </ErrorBoundary>
-                    </div>
                   </DropdownMenuLabel>
+                  {memberships.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
+                      <DropdownMenuLabel className="px-4 py-2 text-xs font-medium text-purple-500">
+                        Switch workspace
+                      </DropdownMenuLabel>
+                      {memberships.map((workspace) => {
+                        const active = workspace.id === activeOrg?.id;
+                        const initials = (workspace.name || "W")
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((part) => part[0])
+                          .join("")
+                          .toUpperCase();
+
+                        return (
+                          <DropdownMenuItem
+                            key={workspace.id}
+                            onClick={() => void handleWorkspaceSelect(workspace.id)}
+                            className={cn(
+                              "mx-2 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2",
+                              active && "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200"
+                            )}
+                          >
+                            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-500 to-amber-300 text-xs font-bold text-white">
+                              {initials}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium">{workspace.name}</span>
+                              <span className="block truncate text-xs text-gray-500">
+                                {workspace.role || "member"} · {workspace.plan || "free"}
+                              </span>
+                            </span>
+                            {active && <span className="h-2 w-2 rounded-full bg-purple-500" />}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </>
+                  )}
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
                   <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
                     <Link to="/profile">Profile</Link>
@@ -284,6 +350,14 @@ export default function MainNav() {
                       Audit log
                     </Link>
                   </DropdownMenuItem>
+                  {user?.is_superuser && (
+                    <DropdownMenuItem asChild className="px-4 py-2 rounded-lg mx-2 cursor-pointer">
+                      <Link to="/admin" className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin Portal
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
                   <DropdownMenuItem onClick={handleLogout} className="px-4 py-2 rounded-lg mx-2 mb-2 cursor-pointer text-red-600 dark:text-red-400">
                     <LogOut className="mr-2 h-4 w-4" />

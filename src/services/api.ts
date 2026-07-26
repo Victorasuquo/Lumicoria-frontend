@@ -148,6 +148,9 @@ export interface User {
   full_name: string;
   avatar_url?: string;
   is_active: boolean;
+  is_superuser?: boolean;
+  organization_id?: string | null;
+  organization_ids?: string[];
   created_at: string;
   updated_at?: string;
   onboarding_completed?: boolean;
@@ -3731,6 +3734,19 @@ const publicApi = axios.create({
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
 });
+
+export const contactApi = {
+  submit: async (payload: {
+    name: string;
+    email: string;
+    topic: string;
+    message: string;
+    website?: string;
+  }): Promise<{ ok: boolean; ticket_id?: string; status?: string; created_at?: string }> => {
+    const response = await publicApi.post("/contact", payload);
+    return response.data;
+  },
+};
 
 export const customerServicePublicApi = {
   getBranding: async (slug: string): Promise<PublicBranding> => {

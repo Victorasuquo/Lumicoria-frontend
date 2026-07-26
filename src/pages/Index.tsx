@@ -8,17 +8,11 @@ import Integrations from '../components/Integrations';
 import AgentBuilder from '../components/AgentBuilder';
 import Pricing from '../components/Pricing';
 import {
-  CompetitionAdvantageSection,
-  DailyValueSection,
   EnterpriseSection,
   FinalCTA,
   OperationsProofSection,
   ProviderTrustBar,
-  ReviewsSection,
   SecureSharedEnvironmentsSection,
-  StorySpineSection,
-  TrustedBySection,
-  WellbeingRhythmSection,
 } from '../components/LandingSections';
 import { SEO } from "@/components/SEO";
 import { KEYWORDS } from "@/lib/seo";
@@ -59,9 +53,6 @@ const Index = () => {
       />
       <Hero />
       <ProviderTrustBar />
-      <StorySpineSection />
-      <DailyValueSection />
-      <WellbeingRhythmSection />
       <AgentsUniverse />
       <Features />
       <OperationsProofSection />
@@ -69,10 +60,7 @@ const Index = () => {
       <AgentBuilder />
       <Integrations />
       <SecureSharedEnvironmentsSection />
-      <TrustedBySection />
-      <ReviewsSection />
       <Personas />
-      <CompetitionAdvantageSection />
       <EnterpriseSection />
       <Pricing />
       <FinalCTA />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, MessageSquare, MapPin, Send, CheckCircle, Clock } from 'lucide-react';
 import Footer from '@/components/Footer';
+import { contactApi, getErrorMessage } from '@/services/api';
 
 const CONTACT_OPTIONS = [
     {
@@ -31,10 +32,28 @@ const Contact: React.FC = () => {
         message: '',
     });
     const [submitted, setSubmitted] = useState(false);
+    const [ticketId, setTicketId] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitted(true);
+        setSubmitting(true);
+        setError(null);
+        try {
+            const result = await contactApi.submit({
+                name: formState.name.trim(),
+                email: formState.email.trim().toLowerCase(),
+                topic: formState.subject,
+                message: formState.message.trim(),
+            });
+            setTicketId(result.ticket_id || null);
+            setSubmitted(true);
+        } catch (err) {
+            setError(getErrorMessage(err, "We couldn't send your message. Please try again."));
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -106,10 +125,13 @@ const Contact: React.FC = () => {
                                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Message Sent!</h3>
                                     <p className="text-gray-500 mb-6">
                                         Thank you for reaching out. We'll get back to you within 24 hours.
+                                        {ticketId ? <span className="block mt-2 text-sm text-gray-400">Reference: {ticketId}</span> : null}
                                     </p>
                                     <button
                                         onClick={() => {
                                             setSubmitted(false);
+                                            setTicketId(null);
+                                            setError(null);
                                             setFormState({ name: '', email: '', subject: '', message: '' });
                                         }}
                                         className="text-sm text-lumicoria-purple hover:underline transition-colors"
@@ -118,7 +140,12 @@ const Contact: React.FC = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <form onSubmit={handleSubmit} className="space-y-5">
+	                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    {error && (
+                                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                            {error}
+                                        </div>
+                                    )}
                                     <div className="grid sm:grid-cols-2 gap-5">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -175,13 +202,14 @@ const Contact: React.FC = () => {
                                         />
                                     </div>
 
-                                    <button
-                                        type="submit"
-                                        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all"
-                                    >
-                                        <Send className="w-4 h-4" />
-                                        Send Message
-                                    </button>
+	                                    <button
+	                                        type="submit"
+                                            disabled={submitting}
+	                                        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all"
+	                                    >
+	                                        <Send className="w-4 h-4" />
+	                                        {submitting ? 'Sending…' : 'Send Message'}
+	                                    </button>
                                 </form>
                             )}
                         </div>
