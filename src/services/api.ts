@@ -5216,14 +5216,44 @@ export const brainApi = {
     return response.data;
   },
 
+  // Enqueues a run on the worker (the pipeline no longer runs inline in the
+  // API process). Returns a run_id to poll — never the finished summary.
   trigger: async (
     payload: BrainTriggerRequest,
-  ): Promise<BrainRunSummary> => {
-    const response = await api.post<BrainRunSummary>(
+  ): Promise<{ queued: boolean; run_id: string; task_id?: string; mode: string }> => {
+    const response = await api.post(
       "/brain/trigger",
       payload,
+      { timeout: 20000 }, // enqueue is fast; a long wait here means trouble
     );
     return response.data;
+  },
+
+  // Convenience: enqueue then poll GET /brain/runs/{id} until the run reaches
+  // a terminal status. `onUpdate` fires on each poll so the UI can show live
+  // progress; `timeoutMs` caps the wait so a stuck run doesn't spin forever.
+  triggerAndWait: async (
+    payload: BrainTriggerRequest,
+    opts: { onUpdate?: (run: BrainRunDetail) => void; timeoutMs?: number; intervalMs?: number } = {},
+  ): Promise<BrainRunDetail> => {
+    const { onUpdate, timeoutMs = 180000, intervalMs = 2000 } = opts;
+    const { run_id } = await brainApi.trigger(payload);
+    const deadline = Date.now() + timeoutMs;
+    const terminal = new Set(["ok", "degraded", "failed", "skipped"]);
+    // brief grace so the worker has a moment to pick the row up
+    let last: BrainRunDetail | null = null;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      try {
+        last = await brainApi.getRun(run_id);
+        onUpdate?.(last);
+        if (terminal.has(last.status)) return last;
+      } catch {
+        /* transient — keep polling until the deadline */
+      }
+    }
+    if (last) return last; // return the last known state on timeout
+    throw new Error("Timed out waiting for the brain run to finish.");
   },
 
   listRuns: async (limit: number = 20): Promise<BrainRun[]> => {

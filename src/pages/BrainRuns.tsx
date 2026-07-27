@@ -46,12 +46,13 @@ export default function BrainRunsPage() {
   const fire = async (mode: "morning" | "evening") => {
     setTriggering(mode);
     try {
-      const summary = await brainApi.trigger({ mode });
+      // Enqueue on the worker (the pipeline no longer runs inline) and drill
+      // straight into the run detail, which polls until it finishes.
+      const { run_id } = await brainApi.trigger({ mode });
       toast({
-        description: `${mode === "morning" ? "Morning" : "Evening"} brain run completed (${summary.status}).`,
+        description: `${mode === "morning" ? "Morning" : "Evening"} brain run queued.`,
       });
-      // Drill straight into the run that just finished.
-      navigate(`/brain/runs/${summary.run_id}`);
+      navigate(`/brain/runs/${run_id}`);
     } catch (e) {
       toast({ description: getErrorMessage(e, "Could not trigger a brain run") });
     } finally {

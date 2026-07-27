@@ -27,7 +27,11 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string; 
   degraded: { label: "Degraded", color: "text-amber-700",   bg: "bg-amber-50",   Icon: AlertTriangle },
   failed:   { label: "Failed",   color: "text-red-700",     bg: "bg-red-50",     Icon: XCircle },
   skipped:  { label: "Skipped",  color: "text-gray-600",    bg: "bg-gray-100",   Icon: MinusCircle },
+  running:  { label: "Running",  color: "text-purple-700",  bg: "bg-purple-50",  Icon: Loader2 },
+  queued:   { label: "Queued",   color: "text-blue-700",    bg: "bg-blue-50",    Icon: Clock },
 };
+
+const TERMINAL = new Set(["ok", "degraded", "failed", "skipped"]);
 
 function fmtDuration(ms?: number | null): string {
   if (ms == null) return "—";
@@ -56,6 +60,21 @@ export default function BrainRunDetailPage() {
   useEffect(() => {
     if (runId) load();
   }, [runId]);
+
+  // Auto-poll while the run is still in flight (queued/running) so the page
+  // fills in live as the worker progresses, then stops once it's terminal.
+  useEffect(() => {
+    if (!runId || !run || TERMINAL.has(run.status)) return;
+    const t = setInterval(async () => {
+      try {
+        const data = await brainApi.getRun(runId);
+        setRun(data);
+      } catch {
+        /* transient — keep polling */
+      }
+    }, 2500);
+    return () => clearInterval(t);
+  }, [runId, run?.status]);
 
   const load = async () => {
     if (!runId) return;
@@ -156,7 +175,7 @@ export default function BrainRunDetailPage() {
                   {run.mode} run
                 </h1>
                 <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-[2px] rounded-md ${status.bg} ${status.color}`}>
-                  <status.Icon className="w-3 h-3" />
+                  <status.Icon className={`w-3 h-3 ${run.status === "running" ? "animate-spin" : ""}`} />
                   {status.label}
                 </span>
                 {run.digest_sent && (

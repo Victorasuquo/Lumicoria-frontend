@@ -23,7 +23,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   brainApi,
   BrainPreferences,
-  BrainRunSummary,
+  BrainRunDetail,
   getErrorMessage,
 } from "@/services/api";
 
@@ -57,7 +57,7 @@ export default function BrainPreferencesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState<null | "morning" | "evening">(null);
-  const [lastRun, setLastRun] = useState<BrainRunSummary | null>(null);
+  const [lastRun, setLastRun] = useState<BrainRunDetail | null>(null);
 
   // ── Load + save ────────────────────────────────────────────────────────
   useEffect(() => { load(); }, []);
@@ -92,13 +92,21 @@ export default function BrainPreferencesPage() {
     setTriggering(mode);
     setLastRun(null);
     try {
-      const summary = await brainApi.trigger({ mode });
-      setLastRun(summary);
+      // Enqueue → poll. The pipeline runs on the worker (never inline in the
+      // API process), so we watch the run row until it reaches a terminal state.
+      const run = await brainApi.triggerAndWait(
+        { mode },
+        { onUpdate: (r) => setLastRun(r) },
+      );
+      setLastRun(run);
+      const terminal = ["ok", "degraded", "failed", "skipped"].includes(run.status);
       toast({
         description:
-          summary.status === "ok"
-            ? `${mode === "morning" ? "Morning" : "Evening"} digest fired — ${summary.tasks_created} tasks created.`
-            : `Run finished with status: ${summary.status}${summary.skip_reason ? ` (${summary.skip_reason})` : ""}`,
+          run.status === "ok"
+            ? `${mode === "morning" ? "Morning" : "Evening"} digest fired — ${run.tasks_created} tasks created.`
+            : terminal
+              ? `Run finished with status: ${run.status}${run.skip_reason ? ` (${run.skip_reason})` : ""}`
+              : `Run is still processing — check the run history.`,
       });
     } catch (e) {
       toast({ description: getErrorMessage(e, "Could not trigger a brain run") });
@@ -336,12 +344,21 @@ export default function BrainPreferencesPage() {
               {lastRun && (
                 <div className="mt-5 bg-white border border-gray-200 rounded-xl p-4">
                   <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600" />
-                    Run completed
+                    {["running", "queued"].includes(lastRun.status) ? (
+                      <>
+                        <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
+                        Run in progress…
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        Run completed
+                      </>
+                    )}
                   </div>
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <Stat label="Status" value={lastRun.status} />
-                    <Stat label="Duration" value={`${(lastRun.duration_ms / 1000).toFixed(1)}s`} />
+                    <Stat label="Duration" value={`${((lastRun.duration_ms ?? 0) / 1000).toFixed(1)}s`} />
                     <Stat label="Emails read" value={lastRun.emails_processed} />
                     <Stat label="Attachments" value={lastRun.attachments_processed} />
                     <Stat label="Tasks created" value={lastRun.tasks_created} />
@@ -350,7 +367,7 @@ export default function BrainPreferencesPage() {
                   </div>
                   <div className="mt-3 flex items-center gap-2">
                     <Link
-                      to={`/brain/runs/${lastRun.run_id}`}
+                      to={`/brain/runs/${lastRun.id}`}
                       className="text-sm font-medium text-purple-700 hover:text-purple-900 inline-flex items-center gap-1"
                     >
                       View node timeline
