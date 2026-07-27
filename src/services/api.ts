@@ -4769,7 +4769,8 @@ export const taskProposalApi = {
     return response.data;
   },
 
-  runNow: async (taskId: string): Promise<{ started: boolean; task_id: string; result: any }> => {
+  runNow: async (taskId: string): Promise<{ queued: boolean; task_id: string }> => {
+    // Enqueues the draft on the worker pool (no longer blocks on the LLM call).
     const response = await api.post(`/tasks/${taskId}/proposal/run`);
     return response.data;
   },
