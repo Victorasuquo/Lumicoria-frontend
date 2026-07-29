@@ -86,6 +86,51 @@ export interface AdminSentEmailStats {
   };
 }
 
+export interface AgentStatRow {
+  agent_key: string;
+  name: string;
+  description?: string | null;
+  in_catalog: boolean;
+  runs: number;
+  unique_users: number;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+  errors: number;
+  avg_duration_ms?: number | null;
+}
+
+export interface AgentRunRow {
+  _id?: string;
+  agent_key?: string;
+  user_id?: string;
+  status?: string;
+  trigger?: string;
+  provider?: string | null;
+  model_used?: string | null;
+  tokens_input?: number | null;
+  tokens_output?: number | null;
+  cost_usd?: number | null;
+  duration_ms?: number | null;
+  started_at?: string | null;
+  error?: string | null;
+  parent_run_id?: string | null;
+  conversation_id?: string | null;
+  task_id?: string | null;
+}
+
+export interface AgentDetail {
+  agent_key: string;
+  name: string;
+  description?: string | null;
+  range: string;
+  total_runs: number;
+  errors: number;
+  p50_ms?: number | null;
+  p95_ms?: number | null;
+  runs: AgentRunRow[];
+}
+
 export interface DigestUser {
   user_id: string;
   email?: string | null;
@@ -152,7 +197,8 @@ export const adminApi = {
   planUpgrade: (payload: { email: string; plan: string; reason: string; send_email?: boolean; expires_at?: string | null }) =>
     api.post("/admin/users/plan-upgrade", payload).then(r => r.data),
   orgs: (params: { page?: number; page_size?: number } = {}) => api.get("/admin/orgs", { params }).then(r => r.data),
-  agents: (range: Range = "30d") => api.get("/admin/agents/stats", { params: { range } }).then(r => r.data),
+  agents: (range: Range = "30d") => api.get<{ range: string; agents: AgentStatRow[] }>("/admin/agents/stats", { params: { range } }).then(r => r.data),
+  agentDetail: (agentKey: string, range: Range = "30d") => api.get<AgentDetail>(`/admin/agents/${encodeURIComponent(agentKey)}`, { params: { range } }).then(r => r.data),
   finance: () => api.get("/admin/finance/summary").then(r => r.data),
   previewEmail: (payload: { subject: string; message: string; user_name?: string }) =>
     api.post<{ subject: string; from_name: string; html: string }>("/admin/email/preview", payload).then(r => r.data),
