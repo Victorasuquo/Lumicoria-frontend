@@ -86,6 +86,38 @@ export interface AdminSentEmailStats {
   };
 }
 
+export interface UserConversation {
+  id: string;
+  title: string;
+  type?: string | null;
+  description?: string | null;
+  message_count: number;
+  member_count: number;
+  last_message_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface UserChatMessage {
+  id: string;
+  role: "user" | "agent";
+  user_id?: string | null;
+  agent_key?: string | null;
+  content?: string | null;
+  mentions?: any;
+  created_at?: string | null;
+}
+
+export interface UserTaskRow {
+  id: string;
+  title?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  assigned_to_agent?: string | null;
+  due_date?: string | null;
+  created_at?: string | null;
+  proposal_status?: string | null;
+}
+
 export interface AgentStatRow {
   agent_key: string;
   name: string;
@@ -193,6 +225,11 @@ export const adminApi = {
   users: (params: { q?: string; page?: number; page_size?: number; sort?: string; order?: "asc" | "desc" } = {}) =>
     api.get<AdminList<AdminUserRow>>("/admin/users", { params }).then(r => r.data),
   userDetail: (id: string) => api.get(`/admin/users/${id}`).then(r => r.data),
+  userConversations: (id: string) => api.get<{ conversations: UserConversation[] }>(`/admin/users/${id}/conversations`).then(r => r.data),
+  userConversationMessages: (id: string, cid: string) => api.get<{ messages: UserChatMessage[] }>(`/admin/users/${id}/conversations/${cid}/messages`).then(r => r.data),
+  userAgentRuns: (id: string) => api.get<{ runs: AgentRunRow[] }>(`/admin/users/${id}/agent-runs`).then(r => r.data),
+  userAgentRun: (id: string, runId: string) => api.get<any>(`/admin/users/${id}/agent-runs/${runId}`).then(r => r.data),
+  userTasks: (id: string) => api.get<{ tasks: UserTaskRow[] }>(`/admin/users/${id}/tasks`).then(r => r.data),
   patchUser: (id: string, payload: { is_active: boolean }) => api.patch(`/admin/users/${id}`, payload).then(r => r.data),
   planUpgrade: (payload: { email: string; plan: string; reason: string; send_email?: boolean; expires_at?: string | null }) =>
     api.post("/admin/users/plan-upgrade", payload).then(r => r.data),

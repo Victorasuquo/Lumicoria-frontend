@@ -143,6 +143,7 @@ const PlatformAdminEmail = lazy(() => import("./pages/admin/AdminEmail"));
 const PlatformAdminSystem = lazy(() => import("./pages/admin/AdminSystem"));
 const PlatformAdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const PlatformAdminDigest = lazy(() => import("./pages/admin/AdminDigest"));
+const PlatformAdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
 
 // Public hosted support portal — NO ProtectedRoute, NO MainLayout (full-bleed, branded).
 const SupportPortal = lazy(() => import("./pages/portal/SupportPortal"));
@@ -295,6 +296,7 @@ const AppRoutes = () => {
         >
           <Route index element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminOverview /></Suspense>} />
           <Route path="users" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminUsers /></Suspense>} />
+          <Route path="users/:userId" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminUserDetail /></Suspense>} />
           <Route path="orgs" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminOrgs /></Suspense>} />
           <Route path="agents" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminAgents /></Suspense>} />
           <Route path="finance" element={<Suspense fallback={<AgentPageFallback />}><PlatformAdminFinance /></Suspense>} />

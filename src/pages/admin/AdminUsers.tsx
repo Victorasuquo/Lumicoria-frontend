@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import adminApi, { AdminUserRow } from "@/services/adminApi";
 import { getErrorMessage } from "@/services/api";
 import { Card, Kpi, Loading, PageHeader, StatusPill } from "./adminUi";
@@ -206,7 +207,10 @@ const AdminUsers: React.FC = () => {
                 <h2 className="text-lg font-black">{selected.user?.full_name || "No name"}</h2>
                 <p className="text-sm text-slate-500">{selected.user?.email}</p>
               </div>
-              <StatusPill tone={selected.user?.is_active === false ? "bad" : "ok"}>{selected.user?.is_active === false ? "Suspended" : "Active"}</StatusPill>
+              <div className="flex flex-col items-end gap-2">
+                <StatusPill tone={selected.user?.is_active === false ? "bad" : "ok"}>{selected.user?.is_active === false ? "Suspended" : "Active"}</StatusPill>
+                <Link to={`/admin/users/${selected.user?.id || selected.user?._id}`} className="rounded-lg bg-[#6C4AB0] px-3 py-1.5 text-xs font-bold text-white">View full activity →</Link>
+              </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Detail label="Runs" value={selected.usage?.totals?.runs || 0} />
