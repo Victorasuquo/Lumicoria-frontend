@@ -158,9 +158,13 @@ const AdminEmail: React.FC = () => {
   const sendBroadcast = async () => {
     setSending(true);
     try {
-      const response = await adminApi.sendBroadcast(broadcastPayload);
+      const response: any = await adminApi.sendBroadcast(broadcastPayload);
       setPreview(response);
-      setResult(`Broadcast sent to ${response.sent || 0} users. ${response.failed || 0} failed.`);
+      setResult(
+        response.queued || response.status === "queued"
+          ? `Broadcast queued to ${response.recipient_count || 0} recipients — sending in the background.`
+          : `Broadcast sent to ${response.sent || 0} users. ${response.failed || 0} failed.`
+      );
       setHistoryPage(1);
       await loadHistory(1, historyFilters);
     } catch (err) {

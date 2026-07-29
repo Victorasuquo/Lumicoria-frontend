@@ -86,6 +86,19 @@ export interface AdminSentEmailStats {
   };
 }
 
+export interface AdminDirectMessage {
+  _id?: string;
+  user_id: string;
+  user_email?: string | null;
+  admin_email?: string | null;
+  direction: string;
+  subject?: string | null;
+  body: string;
+  channels: string[];
+  delivered?: Record<string, any>;
+  created_at?: string | null;
+}
+
 export interface UserConversation {
   id: string;
   title: string;
@@ -230,6 +243,9 @@ export const adminApi = {
   userAgentRuns: (id: string) => api.get<{ runs: AgentRunRow[] }>(`/admin/users/${id}/agent-runs`).then(r => r.data),
   userAgentRun: (id: string, runId: string) => api.get<any>(`/admin/users/${id}/agent-runs/${runId}`).then(r => r.data),
   userTasks: (id: string) => api.get<{ tasks: UserTaskRow[] }>(`/admin/users/${id}/tasks`).then(r => r.data),
+  userMessages: (id: string) => api.get<{ messages: AdminDirectMessage[] }>(`/admin/users/${id}/messages`).then(r => r.data),
+  sendUserMessage: (id: string, payload: { subject: string; body: string; channels: string[] }) =>
+    api.post<{ ok: boolean; message: AdminDirectMessage }>(`/admin/users/${id}/message`, payload).then(r => r.data),
   patchUser: (id: string, payload: { is_active: boolean }) => api.patch(`/admin/users/${id}`, payload).then(r => r.data),
   planUpgrade: (payload: { email: string; plan: string; reason: string; send_email?: boolean; expires_at?: string | null }) =>
     api.post("/admin/users/plan-upgrade", payload).then(r => r.data),

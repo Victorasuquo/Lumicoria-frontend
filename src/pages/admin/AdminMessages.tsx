@@ -9,8 +9,17 @@ const AdminMessages: React.FC = () => {
   const [reply, setReply] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
-  const load = () => adminApi.messages({ page_size: 100 }).then(res => setTickets(res.tickets || [])).finally(() => setLoading(false));
-  useEffect(() => { load(); }, []);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [q, setQ] = useState("");
+  const load = () => {
+    setLoading(true);
+    return adminApi
+      .messages({ page_size: 100, status: filterStatus || undefined, q: q || undefined })
+      .then(res => setTickets(res.tickets || []))
+      .catch(() => setTickets([]))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [filterStatus]);
   const open = async (id: string) => { const t = await adminApi.message(id); setActive(t); setStatus(t.status); };
   const send = async () => { if (!active || !reply.trim()) return; await adminApi.replyMessage(active.id, reply); setReply(""); await open(active.id); await load(); };
   const update = async () => { if (!active || !status) return; const t = await adminApi.patchMessage(active.id, status); setActive(t); await load(); };
@@ -22,9 +31,22 @@ const AdminMessages: React.FC = () => {
         subtitle="Contact-page submissions and Lumicoria platform support tickets."
         action={<Link to="/admin/email" className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">Broadcast to users</Link>}
       />
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold">
+          <option value="">All statuses</option>
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && load()} placeholder="Search subject or email" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+        <button onClick={() => load()} className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">Search</button>
+        {(q || filterStatus) && <button onClick={() => { setQ(""); setFilterStatus(""); }} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Clear</button>}
+      </div>
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
         <Card className="max-h-[75vh] overflow-auto p-0">
-          {loading ? <Loading /> : tickets.map(ticket => (
+          {loading ? <Loading /> : tickets.length === 0 ? <div className="p-6 text-sm text-slate-500">No tickets match.</div> : tickets.map(ticket => (
             <button key={ticket.id} onClick={() => open(ticket.id)} className={`block w-full border-b border-slate-100 p-4 text-left hover:bg-purple-50/40 ${active?.id === ticket.id ? "bg-purple-50" : ""}`}>
               <div className="flex items-center justify-between gap-3"><b className="line-clamp-1">{ticket.subject}</b><StatusPill tone={ticket.status === "Open" ? "warn" : ticket.status === "Resolved" ? "ok" : "neutral"}>{ticket.status}</StatusPill></div>
               <div className="mt-1 text-xs text-slate-500">{ticket.customer_email} · {new Date(ticket.created_at).toLocaleString()}</div>

@@ -7,14 +7,14 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Bot, MessageSquare, ListChecks, Brain } from "lucide-react";
+import { ArrowLeft, Bot, MessageSquare, ListChecks, Brain, Send } from "lucide-react";
 import adminApi, {
-  AgentRunRow, UserConversation, UserChatMessage, UserTaskRow, DigestRun,
+  AgentRunRow, UserConversation, UserChatMessage, UserTaskRow, DigestRun, AdminDirectMessage,
 } from "@/services/adminApi";
 import { Card, Kpi, Loading, PageHeader, StatusPill } from "./adminUi";
 
-type Tab = "Overview" | "Chats" | "Agent runs" | "Tasks" | "Digest";
-const TABS: Tab[] = ["Overview", "Chats", "Agent runs", "Tasks", "Digest"];
+type Tab = "Overview" | "Messages" | "Chats" | "Agent runs" | "Tasks" | "Digest";
+const TABS: Tab[] = ["Overview", "Messages", "Chats", "Agent runs", "Tasks", "Digest"];
 
 function fmtMs(ms?: number | null) { return ms == null ? "—" : ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`; }
 function when(s?: string | null) { return s ? new Date(s).toLocaleString() : "—"; }
@@ -49,6 +49,72 @@ const OverviewTab: React.FC<{ userId: string }> = ({ userId }) => {
             </div>
           ))}
           {(!d.usage?.by_agent || d.usage.by_agent.length === 0) && <div className="text-sm text-slate-500">No agent usage.</div>}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+/* ── Messages (admin → user direct messages) ── */
+const MessagesTab: React.FC<{ userId: string }> = ({ userId }) => {
+  const [thread, setThread] = useState<AdminDirectMessage[] | null>(null);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [inApp, setInApp] = useState(true);
+  const [email, setEmail] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const load = () => adminApi.userMessages(userId).then((r) => setThread(r.messages)).catch(() => setThread([]));
+  useEffect(() => { load(); }, [userId]);
+
+  const send = async () => {
+    if (!body.trim()) return;
+    const channels = [inApp && "in_app", email && "email"].filter(Boolean) as string[];
+    if (channels.length === 0) { setNote("Pick at least one channel."); return; }
+    setSending(true); setNote(null);
+    try {
+      const res = await adminApi.sendUserMessage(userId, { subject, body, channels });
+      const d = res.message?.delivered || {};
+      setNote(`Sent · ${Object.entries(d).map(([k, v]) => `${k}: ${v ? "✓" : "✗"}`).join("  ")}`);
+      setSubject(""); setBody("");
+      await load();
+    } catch { setNote("Failed to send."); }
+    finally { setSending(false); }
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr,380px]">
+      <Card className="!p-0">
+        <div className="border-b border-black/5 px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-400">Message thread</div>
+        {!thread ? <div className="p-6"><Loading /></div>
+          : thread.length === 0 ? <div className="p-6 text-sm text-slate-500">No messages sent to this user yet.</div>
+          : <div className="max-h-[520px] space-y-2 overflow-auto p-4">
+              {thread.map((m) => (
+                <div key={m._id} className="rounded-xl bg-[#6C4AB0]/5 px-3 py-2 text-sm">
+                  <div className="mb-0.5 flex items-center justify-between text-[10px] font-bold uppercase text-slate-400">
+                    <span>Admin{m.admin_email ? ` · ${m.admin_email}` : ""}</span><span>{when(m.created_at)}</span>
+                  </div>
+                  {m.subject && <div className="font-semibold text-slate-800">{m.subject}</div>}
+                  <div className="whitespace-pre-wrap break-words text-slate-700">{m.body}</div>
+                  <div className="mt-1 text-[10px] text-slate-400">{(m.channels || []).join(", ")}</div>
+                </div>
+              ))}
+            </div>}
+      </Card>
+      <Card>
+        <div className="text-sm font-black text-slate-800">Send a message</div>
+        <div className="mt-3 space-y-2">
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject (optional)" className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm" />
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder="Message to the user…" className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm" />
+          <div className="flex items-center gap-4 text-sm">
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={inApp} onChange={(e) => setInApp(e.target.checked)} /> In-app</label>
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} /> Email</label>
+          </div>
+          <button onClick={send} disabled={sending || !body.trim()} className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#6C4AB0] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+            <Send className="h-4 w-4" /> {sending ? "Sending…" : "Send message"}
+          </button>
+          {note && <div className="text-[11px] text-slate-500">{note}</div>}
         </div>
       </Card>
     </div>
@@ -193,7 +259,7 @@ const DigestTab: React.FC<{ userId: string }> = ({ userId }) => {
   );
 };
 
-const TAB_ICON: Record<Tab, React.ElementType> = { "Overview": Bot, "Chats": MessageSquare, "Agent runs": Bot, "Tasks": ListChecks, "Digest": Brain };
+const TAB_ICON: Record<Tab, React.ElementType> = { "Overview": Bot, "Messages": Send, "Chats": MessageSquare, "Agent runs": Bot, "Tasks": ListChecks, "Digest": Brain };
 
 export default function AdminUserDetail() {
   const { userId = "" } = useParams();
@@ -218,6 +284,7 @@ export default function AdminUserDetail() {
       </div>
 
       {tab === "Overview" && <OverviewTab userId={userId} />}
+      {tab === "Messages" && <MessagesTab userId={userId} />}
       {tab === "Chats" && <ChatsTab userId={userId} />}
       {tab === "Agent runs" && <RunsTab userId={userId} />}
       {tab === "Tasks" && <TasksTab userId={userId} />}
