@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { BarChart3, Bot, Building2, CreditCard, HeartPulse, Inbox, Mail, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bot, Brain, Building2, CreditCard, HeartPulse, Inbox, Mail, ShieldCheck, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/orgs", label: "Organizations", icon: Building2 },
   { to: "/admin/agents", label: "Agents", icon: Bot },
+  { to: "/admin/digest", label: "Daily Digest", icon: Brain },
   { to: "/admin/finance", label: "Finance", icon: CreditCard },
   { to: "/admin/messages", label: "Messages", icon: Inbox },
   { to: "/admin/email", label: "Email", icon: Mail },

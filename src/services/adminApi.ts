@@ -86,6 +86,62 @@ export interface AdminSentEmailStats {
   };
 }
 
+export interface DigestUser {
+  user_id: string;
+  email?: string | null;
+  full_name?: string | null;
+  runs: number;
+  last_run?: string | null;
+}
+
+export interface DigestRun {
+  id: string;
+  user_id: string;
+  organization_id?: string | null;
+  mode: string;
+  status: string;
+  started_at?: string | null;
+  ended_at?: string | null;
+  duration_ms?: number | null;
+  emails_processed: number;
+  attachments_processed: number;
+  tasks_created: number;
+  proposals_drafted: number;
+  digest_sent: boolean;
+  skip_reason?: string | null;
+  error?: string | null;
+  has_raw_capture: boolean;
+}
+
+export interface DigestTrace {
+  node: string;
+  started_at?: string | null;
+  ended_at?: string | null;
+  duration_ms?: number | null;
+  status: string;
+  eval_score?: number | null;
+  payload_summary: Record<string, any>;
+}
+
+export interface DigestRunDetail extends DigestRun {
+  traces: DigestTrace[];
+}
+
+export interface DigestRawResponse {
+  available: boolean;
+  reason?: string;
+  run_id: string;
+  bundle?: {
+    run_id: string;
+    mode: string;
+    user_id: string;
+    captured_at?: string;
+    expires_at?: string;
+    nodes: Record<string, any>;
+    meta?: Record<string, any>;
+  };
+}
+
 export const adminApi = {
   me: () => api.get("/admin/me").then(r => r.data),
   overview: (range: Range = "30d") => api.get("/admin/overview", { params: { range } }).then(r => r.data),
@@ -116,6 +172,12 @@ export const adminApi = {
   systemStorage: () => api.get("/admin/system/storage").then(r => r.data),
   audit: (params: { action?: string; admin_email?: string; target_type?: string; limit?: number; skip?: number } = {}) =>
     api.get("/admin/audit", { params }).then(r => r.data),
+  // Daily-digest (brain) observability
+  digestUsers: () => api.get<{ users: DigestUser[] }>("/admin/digest/users").then(r => r.data),
+  digestRuns: (userId: string, limit = 50) =>
+    api.get<{ runs: DigestRun[] }>("/admin/digest/runs", { params: { user_id: userId, limit } }).then(r => r.data),
+  digestRun: (runId: string) => api.get<DigestRunDetail>(`/admin/digest/runs/${runId}`).then(r => r.data),
+  digestRaw: (runId: string) => api.get<DigestRawResponse>(`/admin/digest/runs/${runId}/raw`).then(r => r.data),
 };
 
 export default adminApi;
