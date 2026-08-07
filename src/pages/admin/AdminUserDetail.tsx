@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Bot, MessageSquare, ListChecks, Brain, Send } from "lucide-react";
+import { ArrowLeft, Bot, MessageSquare, ListChecks, Brain, Send, LogIn, LogOut, Coins } from "lucide-react";
 import adminApi, {
   AgentRunRow, UserConversation, UserChatMessage, UserTaskRow, DigestRun, AdminDirectMessage,
 } from "@/services/adminApi";
@@ -259,6 +259,61 @@ const DigestTab: React.FC<{ userId: string }> = ({ userId }) => {
   );
 };
 
+/* ── Actions bar (impersonate / grant credits / force logout) ── */
+const ActionsBar: React.FC<{ userId: string }> = ({ userId }) => {
+  const [amount, setAmount] = useState(100);
+  const [reason, setReason] = useState("Goodwill credit");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const impersonate = async () => {
+    if (!window.confirm("Log in as this user? This replaces your current session — you'll need to sign back in as admin afterwards.")) return;
+    setBusy("impersonate"); setNote(null);
+    try {
+      const res = await adminApi.impersonateUser(userId);
+      localStorage.setItem("adminTokenBackup", localStorage.getItem("accessToken") || "");
+      localStorage.setItem("accessToken", res.access_token);
+      window.location.href = "/dashboard";
+    } catch { setNote("Impersonation failed."); setBusy(null); }
+  };
+  const grant = async () => {
+    if (!amount || amount < 1) { setNote("Enter a positive amount."); return; }
+    setBusy("grant"); setNote(null);
+    try {
+      const res = await adminApi.grantCredits(userId, { amount, reason });
+      setNote(`Granted ${res.granted} credits${res.balance != null ? ` · new balance ${res.balance}` : ""}.`);
+    } catch { setNote("Grant failed."); }
+    finally { setBusy(null); }
+  };
+  const forceLogout = async () => {
+    if (!window.confirm("Force-logout this user? Their existing tokens are revoked and push devices dropped.")) return;
+    setBusy("logout"); setNote(null);
+    try {
+      const res = await adminApi.forceLogout(userId);
+      setNote(`Sessions revoked · ${res.revoked_device_tokens} device token(s) removed.`);
+    } catch { setNote("Force-logout failed."); }
+    finally { setBusy(null); }
+  };
+
+  return (
+    <Card className="flex flex-wrap items-center gap-3">
+      <button onClick={impersonate} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-xl bg-[#6C4AB0] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+        <LogIn className="h-4 w-4" /> Login as
+      </button>
+      <div className="flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-2 py-1.5">
+        <Coins className="h-4 w-4 text-amber-500" />
+        <input type="number" min={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="w-20 rounded-lg border border-black/10 px-2 py-1 text-sm" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="reason" className="w-32 rounded-lg border border-black/10 px-2 py-1 text-sm" />
+        <button onClick={grant} disabled={!!busy} className="rounded-lg bg-slate-900 px-3 py-1 text-xs font-bold text-white disabled:opacity-50">{busy === "grant" ? "…" : "Grant"}</button>
+      </div>
+      <button onClick={forceLogout} disabled={!!busy} className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-50">
+        <LogOut className="h-4 w-4" /> Force logout
+      </button>
+      {note && <span className="text-[12px] text-slate-500">{note}</span>}
+    </Card>
+  );
+};
+
 const TAB_ICON: Record<Tab, React.ElementType> = { "Overview": Bot, "Messages": Send, "Chats": MessageSquare, "Agent runs": Bot, "Tasks": ListChecks, "Digest": Brain };
 
 export default function AdminUserDetail() {
@@ -271,6 +326,8 @@ export default function AdminUserDetail() {
     <div className="space-y-4">
       <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"><ArrowLeft className="h-4 w-4" /> All users</Link>
       <PageHeader eyebrow="Per-user" title={email || userId} subtitle="Chats, agent runs (with lineage), tasks, and digest runs for this user." />
+
+      <ActionsBar userId={userId} />
 
       <div className="flex flex-wrap gap-1.5">
         {TABS.map((t) => {

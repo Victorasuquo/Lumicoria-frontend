@@ -246,6 +246,12 @@ export const adminApi = {
   userMessages: (id: string) => api.get<{ messages: AdminDirectMessage[] }>(`/admin/users/${id}/messages`).then(r => r.data),
   sendUserMessage: (id: string, payload: { subject: string; body: string; channels: string[] }) =>
     api.post<{ ok: boolean; message: AdminDirectMessage }>(`/admin/users/${id}/message`, payload).then(r => r.data),
+  impersonateUser: (id: string) =>
+    api.post<{ access_token: string; token_type: string; user: { id: string; email: string; full_name: string } }>(`/admin/users/${id}/impersonate`).then(r => r.data),
+  grantCredits: (id: string, payload: { amount: number; reason: string }) =>
+    api.post<{ granted: number; balance: number | null }>(`/admin/users/${id}/grant-credits`, payload).then(r => r.data),
+  forceLogout: (id: string) =>
+    api.post<{ ok: boolean; revoked_device_tokens: number }>(`/admin/users/${id}/force-logout`).then(r => r.data),
   patchUser: (id: string, payload: { is_active: boolean }) => api.patch(`/admin/users/${id}`, payload).then(r => r.data),
   planUpgrade: (payload: { email: string; plan: string; reason: string; send_email?: boolean; expires_at?: string | null }) =>
     api.post("/admin/users/plan-upgrade", payload).then(r => r.data),
