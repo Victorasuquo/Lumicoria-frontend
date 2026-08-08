@@ -36,11 +36,14 @@ export const NotificationRules: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
+    // Guard every shape — a non-array/non-object 200 (e.g. an HTML fallback or
+    // a wrapped payload) must never reach render, or `.map`/`Object.entries`
+    // throw and blank the page.
     await Promise.all([
-      notificationsV2Api.listRules().then(setRules).catch(() => setRules([])),
-      notificationsV2Api.listTopics().then((d: any) => setTopics(d?.topics || [])).catch(() => setTopics([])),
-      notificationsV2Api.listSubscriptions().then((d: any) => setSubscribedTopics((d || []).map((s: any) => s.topic).filter(Boolean))).catch(() => setSubscribedTopics([])),
-      notificationsV2Api.unreadByCategory().then(setUnreadByCategory).catch(() => setUnreadByCategory({})),
+      notificationsV2Api.listRules().then((d: any) => setRules(Array.isArray(d) ? d : [])).catch(() => setRules([])),
+      notificationsV2Api.listTopics().then((d: any) => setTopics(Array.isArray(d?.topics) ? d.topics : [])).catch(() => setTopics([])),
+      notificationsV2Api.listSubscriptions().then((d: any) => setSubscribedTopics(Array.isArray(d) ? d.map((s: any) => s?.topic).filter(Boolean) : [])).catch(() => setSubscribedTopics([])),
+      notificationsV2Api.unreadByCategory().then((d: any) => setUnreadByCategory(d && typeof d === "object" && !Array.isArray(d) ? d : {})).catch(() => setUnreadByCategory({})),
       notificationsV2Api.digestPreview().then(setDigest).catch(() => setDigest(null)),
     ]);
     setLoading(false);
@@ -196,7 +199,7 @@ export const NotificationRules: React.FC = () => {
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
               fontSize: 12, color: tokens.SLATE_700, whiteSpace: "pre-wrap",
               maxHeight: 320, overflow: "auto", margin: 0,
-            }}>{JSON.stringify(digest, null, 2)}</pre>
+            }}>{(() => { try { return JSON.stringify(digest, null, 2); } catch { return String(digest); } })()}</pre>
           </GlassCard>
         </>
       )}

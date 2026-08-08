@@ -5,6 +5,7 @@ import { WellbeingProvider } from './contexts/WellbeingContext';
 import { MoodPromptModal } from './components/wellbeing/MoodPromptModal';
 import { CoachBubble } from './components/wellbeing/CoachBubble';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import SuperadminRoute from './components/admin/SuperadminRoute';
 import RequireCap from './components/workspace/RequireCap';
 import { Toaster } from './components/ui/toaster';
@@ -346,7 +347,7 @@ const AppRoutes = () => {
           <Route path="analytics" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceAnalytics /></Suspense>} />
           <Route path="runs" element={<Suspense fallback={<AgentPageFallback />}><RunsConsole /></Suspense>} />
           <Route path="exports" element={<Suspense fallback={<AgentPageFallback />}><WorkspaceExports /></Suspense>} />
-          <Route path="notifications/rules" element={<Suspense fallback={<AgentPageFallback />}><NotificationRules /></Suspense>} />
+          <Route path="notifications/rules" element={<ErrorBoundary fallback={<div className="p-6 text-sm text-red-600">This page hit an error. Try reloading — if it persists, check the browser console.</div>}><Suspense fallback={<AgentPageFallback />}><NotificationRules /></Suspense></ErrorBoundary>} />
           <Route path="reviews" element={<Suspense fallback={<AgentPageFallback />}><PendingReviews /></Suspense>} />
         </Route>
 
