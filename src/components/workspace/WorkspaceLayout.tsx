@@ -8,6 +8,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { motion } from "framer-motion";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { tokens, BRAND_GRADIENT, initials } from "./tokens";
@@ -267,7 +268,9 @@ export const WorkspaceLayout: React.FC = () => {
 
         {/* Main */}
         <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-          <Outlet />
+          <ErrorBoundary fallback={<div className="p-8 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl m-4">This page hit an error. Try reloading — if it persists, open DevTools (F12) → Console and share the red error.</div>}>
+            <Outlet />
+          </ErrorBoundary>
         </motion.main>
       </div>
     </div>

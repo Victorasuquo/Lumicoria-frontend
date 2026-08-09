@@ -47,7 +47,11 @@ export const AdminEmails: React.FC = () => {
         emailsApi.getBranding(activeOrgId).catch(() => ({})),
         emailsApi.deliverability(activeOrgId).catch(() => ({})),
       ]);
-      setTemplates(t as any); setSent(s as any);
+      // /emails/templates returns { templates: [...] } (an object), not a bare
+      // array — unwrap it, and guard every list so .map can't crash the page.
+      const tArr = Array.isArray(t) ? t : (Array.isArray((t as any)?.templates) ? (t as any).templates : []);
+      const sArr = Array.isArray(s) ? s : (Array.isArray((s as any)?.sent) ? (s as any).sent : (Array.isArray((s as any)?.items) ? (s as any).items : []));
+      setTemplates(tArr as any); setSent(sArr as any);
       setDomains(Array.isArray(d) ? (d as any) : []);
       setBranding(b); setDeliverability(dl);
     } finally { setLoading(false); }
