@@ -26,7 +26,9 @@ const CHANNEL_OPTS = [
 
 export const NotificationRules: React.FC = () => {
   const [rules, setRules] = useState<NotificationRule[]>([]);
-  const [topics, setTopics] = useState<string[]>([]);
+  // Topics come back as { key, label } objects; normalize (also tolerate a
+  // plain-string API) so we never render an object as a React child.
+  const [topics, setTopics] = useState<Array<{ key: string; label: string }>>([]);
   const [subscribedTopics, setSubscribedTopics] = useState<string[]>([]);
   const [unreadByCategory, setUnreadByCategory] = useState<Record<string, number>>({});
   const [digest, setDigest] = useState<any | null>(null);
@@ -41,7 +43,14 @@ export const NotificationRules: React.FC = () => {
     // throw and blank the page.
     await Promise.all([
       notificationsV2Api.listRules().then((d: any) => setRules(Array.isArray(d) ? d : [])).catch(() => setRules([])),
-      notificationsV2Api.listTopics().then((d: any) => setTopics(Array.isArray(d?.topics) ? d.topics : [])).catch(() => setTopics([])),
+      notificationsV2Api.listTopics().then((d: any) => setTopics(
+        Array.isArray(d?.topics)
+          ? d.topics.map((t: any) => typeof t === "string"
+              ? { key: t, label: t }
+              : { key: String(t?.key ?? t?.id ?? ""), label: String(t?.label ?? t?.key ?? t?.id ?? "") })
+            .filter((t: any) => t.key)
+          : [],
+      )).catch(() => setTopics([])),
       notificationsV2Api.listSubscriptions().then((d: any) => setSubscribedTopics(Array.isArray(d) ? d.map((s: any) => s?.topic).filter(Boolean) : [])).catch(() => setSubscribedTopics([])),
       notificationsV2Api.unreadByCategory().then((d: any) => setUnreadByCategory(d && typeof d === "object" && !Array.isArray(d) ? d : {})).catch(() => setUnreadByCategory({})),
       notificationsV2Api.digestPreview().then(setDigest).catch(() => setDigest(null)),
@@ -169,7 +178,7 @@ export const NotificationRules: React.FC = () => {
         <Toolbar
           left={
             <FilterChips
-              options={topics.map(t => ({ id: t, label: t }))}
+              options={topics.map(t => ({ id: t.key, label: t.label }))}
               value={subscribedTopics}
               onChange={() => { /* handled in toggle */ }}
               multi
@@ -178,12 +187,12 @@ export const NotificationRules: React.FC = () => {
           right={
             <div style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" }}>
               {topics.map(t => (
-                <button key={t} onClick={() => toggleTopic(t)} style={{
-                  border: `1px solid ${subscribedTopics.includes(t) ? tokens.PURPLE : tokens.SLATE_200}`,
-                  background: subscribedTopics.includes(t) ? `${tokens.PURPLE}10` : "white",
-                  color: subscribedTopics.includes(t) ? tokens.PURPLE_DEEP : tokens.SLATE_700,
+                <button key={t.key} onClick={() => toggleTopic(t.key)} style={{
+                  border: `1px solid ${subscribedTopics.includes(t.key) ? tokens.PURPLE : tokens.SLATE_200}`,
+                  background: subscribedTopics.includes(t.key) ? `${tokens.PURPLE}10` : "white",
+                  color: subscribedTopics.includes(t.key) ? tokens.PURPLE_DEEP : tokens.SLATE_700,
                   padding: "5px 11px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                }}>{t}</button>
+                }}>{t.label}</button>
               ))}
             </div>
           }
