@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
   ListChecks, CheckCircle2, Loader2, Search,
@@ -284,7 +283,7 @@ const Tasks: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-[600px]">
+                <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
                   <div className="divide-y divide-gray-50">
                     {filtered.map((task, i) => {
                       const si = statusConfig[task.status] || statusConfig.todo;
@@ -345,7 +344,7 @@ const Tasks: React.FC = () => {
                       );
                     })}
                   </div>
-                </ScrollArea>
+                </div>
               )}
             </div>
           </div>
