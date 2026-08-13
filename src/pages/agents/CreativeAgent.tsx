@@ -9,6 +9,8 @@ import {
 import AgentPageLayout from "@/components/AgentPageLayout";
 import { creativeApi } from "@/services/api";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const contentTypes = [
   { id: "marketing", label: "Marketing Copy", icon: Megaphone },
@@ -219,7 +221,11 @@ const CreativeAgent: React.FC = () => {
                   </div>
                 ) : (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{output}</p>
+                    {/* The LLM returns Markdown — render it with the shared
+                        brand-themed .ai-markdown styles (Lumicoria purple). */}
+                    <div className="ai-markdown">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{output}</ReactMarkdown>
+                    </div>
                   </motion.div>
                 )}
                 {output && (
