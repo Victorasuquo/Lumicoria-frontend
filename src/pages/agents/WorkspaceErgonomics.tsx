@@ -84,9 +84,9 @@ const WorkspaceErgonomics: React.FC = () => {
 
   useEffect(() => {
     setHistory(loadHistory());
-    workspaceErgonomicsApi.getErgonomicCategories()
+    workspaceErgonomicsApi.getCategories()
       .then(setErgonomicCategories).catch(() => {});
-    workspaceErgonomicsApi.getIssueSeverityLevels()
+    workspaceErgonomicsApi.getSeverityLevels()
       .then(setSeverityLevels).catch(() => {});
     workspaceErgonomicsApi.getGuidelines({})
       .catch(() => {});
@@ -148,7 +148,7 @@ const WorkspaceErgonomics: React.FC = () => {
   const analyzeSetup = async () => {
     setAnalyzing(true);
     try {
-      const res: any = await workspaceErgonomicsApi.analyze({
+      const res: any = await workspaceErgonomicsApi.analyzeWorkspace({
         desk_type: setup.desk_type,
         chair_type: setup.chair_type,
         monitor_count: setup.monitor_count,
@@ -165,9 +165,8 @@ const WorkspaceErgonomics: React.FC = () => {
   const analyzeImage = async (file: File) => {
     setImageAnalyzing(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res: any = await workspaceErgonomicsApi.analyzeImage(formData);
+      // The API method builds its own FormData from the File — pass the raw File.
+      const res: any = await workspaceErgonomicsApi.analyzeImage(file);
       applyAnalysis(res);
       toast.success("Photo analyzed");
     } catch (e: any) {
@@ -180,7 +179,7 @@ const WorkspaceErgonomics: React.FC = () => {
     setMonitoring(m => !m);
     if (monitoring) return;
     try {
-      await workspaceErgonomicsApi.monitor({
+      await workspaceErgonomicsApi.monitorWorkspace({
         active: true,
         setup,
       });
