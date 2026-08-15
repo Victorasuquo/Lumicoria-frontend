@@ -94,6 +94,14 @@ const Footer = () => {
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Company</h4>
               <ul className="space-y-3">
                 <li><Link to="/about" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li>
+                  <Link to="/careers" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                    Careers
+                    <span className="rounded-full bg-lumicoria-purple/20 px-1.5 py-0.5 text-[10px] font-semibold text-lumicoria-purple">
+                      Hiring
+                    </span>
+                  </Link>
+                </li>
                 <li><Link to="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link to="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
                 <li><Link to="/security" className="text-sm text-gray-400 hover:text-white transition-colors">Security</Link></li>

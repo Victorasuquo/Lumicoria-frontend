@@ -38,6 +38,9 @@ import Privacy from "./pages/Privacy";
 import Security from "./pages/Security";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
+import CareersIndex from "./pages/careers/CareersIndex";
+import RoleDetail from "./pages/careers/RoleDetail";
+import RoleApply from "./pages/careers/RoleApply";
 import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
 import Audit from "./pages/Audit";
@@ -279,6 +282,14 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/contact" element={<Contact />} />
+
+        {/* Careers — board, per-role pages, and the application form.
+            `/careers/apply` is the speculative route; the 3-segment routes are
+            role-specific (e.g. /careers/design/user-experience-designer). */}
+        <Route path="/careers" element={<CareersIndex />} />
+        <Route path="/careers/apply" element={<RoleApply />} />
+        <Route path="/careers/:department/:slug" element={<RoleDetail />} />
+        <Route path="/careers/:department/:slug/apply" element={<RoleApply />} />
 
         {/* Blog — inside MainLayout */}
         <Route path="/blog" element={<Suspense fallback={<AgentPageFallback />}><BlogListing /></Suspense>} />

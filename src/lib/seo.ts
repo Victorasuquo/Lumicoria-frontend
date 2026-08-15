@@ -341,6 +341,7 @@ export const PUBLIC_ROUTES: Array<{
   { path: "/models", changefreq: "weekly", priority: 0.85 },
   { path: "/about", changefreq: "monthly", priority: 0.7 },
   { path: "/contact", changefreq: "yearly", priority: 0.65 },
+  { path: "/careers", changefreq: "weekly", priority: 0.8 },
 
   // Documentation
   { path: "/docs", changefreq: "weekly", priority: 0.9 },
