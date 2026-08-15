@@ -44,68 +44,76 @@ export interface Role {
  * from the Lumicoria palette (Outcome Gold, Cognitive Violet, Core indigo,
  * Signal blue) so the board is scannable by team at a glance.
  *
- * The hue appears in one place only, the rule under the group heading.
- * Everything interactive stays a single accent (Lumicoria violet), so the
- * categorical hues never compete with actions.
+ * Every rule resolves toward Lumicoria violet, so the four teams blend into
+ * one family rather than reading as unrelated swatches. The hue appears in
+ * this one place only; everything interactive stays a single violet accent,
+ * so the categorical colours never compete with actions.
  */
 export const DEPARTMENTS: Department[] = [
   {
     id: 'marketing',
     label: 'Marketing and Growth',
     blurb: 'Reaching the people whose work Lumicoria changes.',
-    ruleClass: 'bg-[#E8C766]',
+    ruleClass: 'bg-gradient-to-r from-[#E8C766] via-[#C08A6B] to-lumicoria-purple',
   },
   {
     id: 'design',
     label: 'Design',
     blurb: 'Making capable software feel calm and obvious.',
-    ruleClass: 'bg-lumicoria-purple',
+    ruleClass: 'bg-gradient-to-r from-lumicoria-lightPurple to-lumicoria-deepPurple',
   },
   {
     id: 'engineering',
     label: 'Engineering',
     blurb: 'Building the platform that runs agents in production.',
-    ruleClass: 'bg-[#372673]',
+    ruleClass: 'bg-gradient-to-r from-lumicoria-obsidian to-lumicoria-purple',
   },
   {
     id: 'operations',
     label: 'Operations and Go to market',
     blurb: 'Turning early interest into customers who stay.',
-    ruleClass: 'bg-lumicoria-blue',
+    ruleClass: 'bg-gradient-to-r from-lumicoria-blue to-lumicoria-purple',
   },
 ];
 
-/** Why join. About scope, craft and growth, never compensation. */
+/**
+ * Why join. Grounded in the company's stated beliefs (see /about): AI should
+ * amplify human potential rather than replace it, powerful AI should be
+ * accessible to everyone, and judgment stays with people.
+ *
+ * Ambitious but never inflated. No compensation claims, no invented metrics,
+ * no headcount or funding boasts.
+ */
 export const BENEFITS = [
+  {
+    title: 'Problems nobody has solved yet',
+    description:
+      'An agent that runs unattended has to be right. Retrieval that stays grounded, evaluation you can trust, orchestration across six model providers. This is research-adjacent engineering, not configuration.',
+  },
+  {
+    title: 'Autonomy that answers to people',
+    description:
+      'We ship approval gates, evaluation before production authority, and a named owner for every workflow. If you think AI should be accountable rather than merely impressive, you will recognise how we build.',
+  },
+  {
+    title: 'Global from the first line of code',
+    description:
+      'Remote-first across time zones, multilingual, and culturally aware by design. We build for people everywhere rather than for one market that happens to look like us.',
+  },
   {
     title: 'Real ownership',
     description:
-      'You own a surface of the product, make the call, and ship it. There is no committee and no queue of approvals between your work and production.',
+      'You own a surface of the product end to end and ship it. No committee, no queue of approvals, and no waiting a quarter to find out whether you were right.',
   },
   {
-    title: 'Direct mentorship',
+    title: 'Well-being is in the product',
     description:
-      'You work with the founder on production AI systems: architecture, evaluation, and the tradeoffs that only appear once real users depend on something.',
+      'We build a platform that protects focus and notices burnout, which makes it difficult to work any other way ourselves. Deep work is the standard here, not a perk.',
   },
   {
-    title: 'Work that ships',
+    title: 'Work at the frontier',
     description:
-      'We are a small team, so nothing sits in a backlog for a quarter. What you build this week is usually in front of users the next.',
-  },
-  {
-    title: 'Remote and async',
-    description:
-      'Work from wherever you are. We optimise for written clarity and long stretches of focus rather than meetings and status calls.',
-  },
-  {
-    title: 'Current tooling',
-    description:
-      'Hands on access to the current generation of models and agent tooling as part of the daily job, not as a side experiment.',
-  },
-  {
-    title: 'A small, high trust team',
-    description:
-      'Low ego, little process, high standards. Ideas are argued on merit and decisions get made in hours rather than weeks.',
+      'Hands on with the current generation of models and agent tooling every day, alongside the people making the architecture decisions rather than three layers away from them.',
   },
 ];
 
@@ -160,8 +168,8 @@ export const ROLES: Role[] = [
     summary:
       'Own how Lumicoria sounds in public and turn attention into a community of people who use the product.',
     about: [
-      'We have a product we believe in and very little audience. That is the problem this role exists to solve.',
-      'This is not a scheduling job. You decide what Lumicoria sounds like in public, which platforms deserve our time, and what we say to earn the first thousand people who genuinely care. You get the freedom to run experiments and the responsibility for what they produce.',
+      'Our product is in the hands of people across dozens of countries. Our public voice has not caught up with it yet. That is the problem this role exists to solve.',
+      'This is not a scheduling job. You decide what Lumicoria sounds like in public, which platforms deserve our time, and what we say to earn an audience that genuinely cares. You get the freedom to run experiments and the responsibility for what they produce.',
     ],
     responsibilities: [
       'Own the content calendar across X, LinkedIn, Instagram and TikTok',
@@ -258,7 +266,7 @@ export const ROLES: Role[] = [
       'Mentorship directly from the founder',
       'Real experiments and real data in your portfolio',
       'A written reference on successful completion',
-      'A path to a larger role as the company grows',
+      'A route into a permanent role on the team',
     ],
   },
 
@@ -275,7 +283,7 @@ export const ROLES: Role[] = [
       'Own the product experience end to end and make AI agents feel calm and trustworthy to people who are not engineers.',
     about: [
       'AI products share a hard design problem. There is enormous capability behind an interface that usually overwhelms people. Most products solve it by exposing everything and calling that power. We want the opposite.',
-      'You own the product experience across the platform, from the agent builder to the workspace to onboarding, and decide how something genuinely complex becomes something a person can trust on the first try. This is a senior scope on a small team. You set the design direction, not just the screens.',
+      'You own the product experience across the platform, from the agent builder to the workspace to onboarding, and decide how something genuinely complex becomes something a person can trust on the first try. This is a senior scope. You set the design direction, not just the screens.',
     ],
     responsibilities: [
       'Own end to end product design: research, flows, wireframes, high fidelity UI and prototypes',
@@ -374,7 +382,7 @@ export const ROLES: Role[] = [
       'Direct mentorship on product and brand design',
       'Shipped work in your portfolio with real users behind it',
       'A written reference on successful completion',
-      'A path to a larger role as the company grows',
+      'A route into a permanent role on the team',
     ],
   },
 
@@ -409,7 +417,7 @@ export const ROLES: Role[] = [
       'Open source contributions',
     ],
     whatYoullGet: [
-      'Ownership of the frontend architecture at an early stage',
+      'Ownership of the frontend architecture, and the standards everything after it follows',
       'Genuinely novel interface problems',
       'Direct collaboration with design and the founder',
     ],
@@ -513,7 +521,7 @@ export const ROLES: Role[] = [
       'Mentorship and genuine code review from the founder',
       'Production code in your portfolio',
       'A written reference on successful completion',
-      'A path to a larger role as the company grows',
+      'A route into a permanent role on the team',
     ],
   },
 
@@ -544,7 +552,7 @@ export const ROLES: Role[] = [
       'Real patience with people learning something new',
     ],
     niceToHave: [
-      'You have worked at an early stage startup',
+      'You have built a function from nothing before',
       'A SaaS or developer tool background',
     ],
     whatYoullGet: [
@@ -597,7 +605,7 @@ export const ROLES: Role[] = [
     type: 'Internship',
     summary: 'See how a company actually gets built, and help keep it running.',
     about: [
-      'A broad internship for someone who wants exposure to how an early stage company operates, from customer support through process and research.',
+      'A broad internship for someone who wants to see how a company is actually run, from customer support through process and research.',
     ],
     responsibilities: [
       'Support customer onboarding and day to day operations',
@@ -618,7 +626,7 @@ export const ROLES: Role[] = [
       'A view of company building that most people never get',
       'Mentorship directly from the founder',
       'A written reference on successful completion',
-      'A path to a larger role as the company grows',
+      'A route into a permanent role on the team',
     ],
   },
 ];

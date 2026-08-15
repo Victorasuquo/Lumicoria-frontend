@@ -70,11 +70,13 @@ export default function CareersIndex() {
             <section className="border-b border-gray-200 bg-[#F8F6FC]">
                 <div className="mx-auto max-w-5xl px-4 pt-20 pb-16">
                     <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-lumicoria-obsidian md:text-5xl">
-                        Build the tools that change how work happens
+                        AI should amplify people, not replace them
                     </h1>
                     <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-600">
-                        Lumicoria is a small, remote team building an AI platform that does real work for real people.
-                        Joining now means shaping the product and the way we work, not just the backlog.
+                        Lumicoria was founded on that belief, and it is a harder engineering problem than it sounds.
+                        We are building the environment where people and AI agents do real work together: agents that
+                        run unattended and stay accountable, across six model providers, for users on every continent.
+                        We are hiring the people who want to own that.
                     </p>
                     <div className="mt-8 flex flex-wrap gap-3">
                         <a href="#open-roles" className={primaryButton}>
@@ -91,11 +93,12 @@ export default function CareersIndex() {
             <section className="border-b border-gray-200">
                 <div className="mx-auto max-w-5xl px-4 py-20">
                     <h2 className="text-2xl font-semibold tracking-tight text-lumicoria-obsidian">
-                        Why join Lumicoria
+                        Why people join Lumicoria
                     </h2>
                     <p className="mt-3 max-w-2xl text-gray-600">
-                        We are early. That comes with real trade offs, and with things you cannot get at a larger
-                        company.
+                        Most AI products are demos with a waiting list. We are building the part that has to keep
+                        working on a Tuesday afternoon when nobody is watching, and that is where the interesting
+                        problems live.
                     </p>
 
                     <div className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
