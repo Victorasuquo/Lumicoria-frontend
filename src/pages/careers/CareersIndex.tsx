@@ -104,23 +104,34 @@ export default function CareersIndex() {
                     <div className="absolute -top-10 right-[-5%] h-[360px] w-[460px] rounded-full bg-lumicoria-blue/10 blur-3xl" />
                 </motion.div>
 
-                <div className="relative mx-auto max-w-5xl px-4 pt-20 pb-16">
-                    <motion.h1
-                        {...heroItem(0.05)}
-                        className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-lumicoria-obsidian md:text-5xl"
-                    >
-                        AI should amplify people, not replace them
-                    </motion.h1>
-                    <motion.p
-                        {...heroItem(0.18)}
-                        className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-600"
-                    >
-                        Lumicoria was founded on that belief, and it is a harder engineering problem than it sounds.
-                        We are building the environment where people and AI agents do real work together: agents that
-                        run unattended and stay accountable, across six model providers, for users on every continent.
-                        We are hiring the people who want to own that.
+                <div className="relative mx-auto max-w-5xl px-4 pt-24 pb-24">
+                    {/*
+                     * Line mask reveal. Each line sits in an overflow-hidden
+                     * block and rises from below, which reads as the statement
+                     * being set rather than fading in. Leading is 1.2 so the
+                     * descenders in "amplify" clear the mask edge.
+                     */}
+                    <h1 className="max-w-4xl text-4xl font-semibold leading-[1.2] tracking-tight text-lumicoria-obsidian sm:text-5xl md:text-6xl">
+                        {['AI should amplify people,', 'not replace them.'].map((line, index) => (
+                            <span key={line} className="block overflow-hidden pb-1">
+                                <motion.span
+                                    className="block"
+                                    initial={reduce ? false : { y: '110%' }}
+                                    animate={reduce ? undefined : { y: 0 }}
+                                    transition={{ duration: 0.85, delay: 0.05 + index * 0.1, ease: EASE }}
+                                >
+                                    {line}
+                                </motion.span>
+                            </span>
+                        ))}
+                    </h1>
+
+                    <motion.p {...heroItem(0.42)} className="mt-8 max-w-lg text-lg leading-relaxed text-gray-600">
+                        That belief turns out to be a hard engineering problem. We are hiring the people who want to
+                        own it.
                     </motion.p>
-                    <motion.div {...heroItem(0.3)} className="mt-8 flex flex-wrap gap-3">
+
+                    <motion.div {...heroItem(0.52)} className="mt-10 flex flex-wrap items-center gap-3">
                         <a href="#open-roles" className={primaryButton}>
                             See open roles
                         </a>
