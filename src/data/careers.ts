@@ -17,11 +17,7 @@ export interface Department {
   id: DepartmentId;
   label: string;
   blurb: string;
-  /** Monogram shown in the department tile on the board. */
-  initials: string;
-  /** Tile colours. Tinted surface with brand-derived text, all WCAG AA. */
-  tileClass: string;
-  /** Rule under the group heading, in the same family as the tile. */
+  /** Rule under the group heading. The team's colour on the board. */
   ruleClass: string;
 }
 
@@ -45,44 +41,36 @@ export interface Role {
 
 /**
  * Team colours are categorical, not decorative: each team keeps one hue drawn
- * from the Lumicoria palette (Cognitive Violet, Outcome Gold, Core indigo,
+ * from the Lumicoria palette (Outcome Gold, Cognitive Violet, Core indigo,
  * Signal blue) so the board is scannable by team at a glance.
  *
- * They appear in exactly two places, the department tile and the rule under
- * the group heading. Everything interactive on the page stays a single accent
- * (Lumicoria violet), so the categorical hues never compete with actions.
+ * The hue appears in one place only, the rule under the group heading.
+ * Everything interactive stays a single accent (Lumicoria violet), so the
+ * categorical hues never compete with actions.
  */
 export const DEPARTMENTS: Department[] = [
   {
     id: 'marketing',
     label: 'Marketing and Growth',
     blurb: 'Reaching the people whose work Lumicoria changes.',
-    initials: 'MG',
-    tileClass: 'bg-[#FDF4D6] text-[#7A5B12]',
     ruleClass: 'bg-[#E8C766]',
   },
   {
     id: 'design',
     label: 'Design',
     blurb: 'Making capable software feel calm and obvious.',
-    initials: 'DE',
-    tileClass: 'bg-[#EFE9FA] text-[#4B2E83]',
     ruleClass: 'bg-lumicoria-purple',
   },
   {
     id: 'engineering',
     label: 'Engineering',
     blurb: 'Building the platform that runs agents in production.',
-    initials: 'EN',
-    tileClass: 'bg-[#E7E4F4] text-[#372673]',
     ruleClass: 'bg-[#372673]',
   },
   {
     id: 'operations',
     label: 'Operations and Go to market',
     blurb: 'Turning early interest into customers who stay.',
-    initials: 'OP',
-    tileClass: 'bg-[#E2F0FF] text-[#0B4A6F]',
     ruleClass: 'bg-lumicoria-blue',
   },
 ];

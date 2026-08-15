@@ -134,20 +134,14 @@ export default function CareersIndex() {
                                     key={department.id}
                                     className="overflow-hidden rounded-lg border border-gray-200 bg-white"
                                 >
-                                    <div className="flex items-center gap-4 px-4 pt-5 pb-4">
-                                        <span
-                                            aria-hidden="true"
-                                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tracking-wide ${department.tileClass}`}
-                                        >
-                                            {department.initials}
-                                        </span>
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="text-base font-semibold text-gray-900">
+                                    <div className="flex items-baseline justify-between gap-4 px-4 pt-5 pb-4">
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg font-semibold text-lumicoria-obsidian">
                                                 {department.label}
                                             </h3>
-                                            <p className="mt-0.5 text-sm text-gray-500">{department.blurb}</p>
+                                            <p className="mt-1 text-sm text-gray-500">{department.blurb}</p>
                                         </div>
-                                        <span className="hidden shrink-0 text-sm text-gray-500 sm:block">
+                                        <span className="shrink-0 text-sm text-gray-500">
                                             {roles.length} {roles.length === 1 ? 'role' : 'roles'}
                                         </span>
                                     </div>
