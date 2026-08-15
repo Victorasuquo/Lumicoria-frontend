@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
     CAREERS_CONTACT_EMAIL,
     ROLES_POSTED_AT,
@@ -9,6 +10,7 @@ import {
     type Role,
 } from '@/data/careers';
 import ProcessTimeline from '@/components/careers/ProcessTimeline';
+import Reveal, { EASE } from '@/components/careers/Reveal';
 import SEO from '@/components/SEO';
 
 /**
@@ -43,27 +45,35 @@ function jobPostingJsonLd(role: Role) {
 }
 
 const primaryButton =
-    'inline-flex items-center justify-center rounded-md bg-lumicoria-purple px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-lumicoria-deepPurple';
+    'inline-flex items-center justify-center rounded-md bg-lumicoria-purple px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-lumicoria-deepPurple hover:shadow-lg hover:shadow-lumicoria-purple/20 active:translate-y-0 active:scale-[0.98]';
 const secondaryButton =
-    'inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:border-lumicoria-purple hover:text-lumicoria-purple';
+    'inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 transition-all duration-200 hover:-translate-y-px hover:border-lumicoria-purple hover:text-lumicoria-purple active:translate-y-0 active:scale-[0.98]';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <section>
+        <Reveal as="section">
             <h2 className="text-lg font-semibold tracking-tight text-lumicoria-obsidian">{title}</h2>
             <div className="mt-4">{children}</div>
-        </section>
+        </Reveal>
     );
 }
 
 function Bullets({ items }: { items: string[] }) {
+    const reduce = useReducedMotion();
     return (
         <ul className="space-y-3">
-            {items.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-relaxed text-gray-600">
+            {items.map((item, index) => (
+                <motion.li
+                    key={item}
+                    className="flex gap-3 text-sm leading-relaxed text-gray-600"
+                    initial={reduce ? false : { opacity: 0, x: -8 }}
+                    whileInView={reduce ? undefined : { opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3), ease: EASE }}
+                >
                     <span aria-hidden="true" className="mt-2 h-px w-3 shrink-0 bg-lumicoria-purple" />
                     <span>{item}</span>
-                </li>
+                </motion.li>
             ))}
         </ul>
     );
@@ -72,6 +82,8 @@ function Bullets({ items }: { items: string[] }) {
 export default function RoleDetail() {
     const { department = '', slug = '' } = useParams();
     const role = getRole(department, slug);
+
+    const reduce = useReducedMotion();
 
     // Unknown role. Send people back to the board rather than a dead end.
     if (!role) return <Navigate to="/careers" replace />;
@@ -88,8 +100,17 @@ export default function RoleDetail() {
             />
 
             {/* Header */}
-            <section className="border-b border-gray-200 bg-[#F8F6FC]">
-                <div className="mx-auto max-w-3xl px-4 pt-12 pb-12">
+            <section className="relative overflow-hidden border-b border-gray-200 bg-[#F8F6FC]">
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-24 -top-24 h-72 w-96 rounded-full bg-lumicoria-purple/10 blur-3xl"
+                />
+                <motion.div
+                    className="relative mx-auto max-w-3xl px-4 pt-12 pb-12"
+                    initial={reduce ? false : { opacity: 0, y: 18 }}
+                    animate={reduce ? undefined : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: EASE }}
+                >
                     <Link
                         to="/careers"
                         className="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-lumicoria-purple"
@@ -117,7 +138,7 @@ export default function RoleDetail() {
                             Apply for this role
                         </Link>
                     </div>
-                </div>
+                </motion.div>
             </section>
 
             {/* Body */}
