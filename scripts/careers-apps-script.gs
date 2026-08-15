@@ -1,5 +1,5 @@
 /**
- * Lumicoria — Careers application receiver (Google Apps Script)
+ * Lumicoria Careers application receiver (Google Apps Script)
  * ---------------------------------------------------------------
  * Receives applications from lumicoria.ai/careers and appends them to the
  * bound Google Sheet. Optionally saves an attached CV to Drive and emails
@@ -7,19 +7,19 @@
  *
  * Setup: see docs/CAREERS_SHEET_SETUP.md
  *
- * IMPORTANT — the frontend posts with Content-Type "text/plain" on purpose.
+ * IMPORTANT: the frontend posts with Content-Type "text/plain" on purpose.
  * That keeps it a CORS "simple request" so the browser skips the preflight
  * OPTIONS call, which Apps Script cannot answer. Do not "fix" it to
  * application/json: the submission will start failing silently.
  */
 
-// ── Configuration ────────────────────────────────────────────────────
+// Configuration
 
 /** Tab name inside the spreadsheet. Created automatically if missing. */
 var SHEET_NAME = 'Applications';
 
 /** Drive folder for uploaded CVs. Created automatically on first upload. */
-var CV_FOLDER_NAME = 'Lumicoria Careers — CVs';
+var CV_FOLDER_NAME = 'Lumicoria Careers CVs';
 
 /** Send applicants an automatic confirmation email. */
 var SEND_CONFIRMATION_EMAIL = true;
@@ -30,7 +30,7 @@ var NOTIFY_EMAIL = 'careers@lumicoria.ai';
 /** Largest accepted CV, in bytes (must match the frontend's 5MB limit). */
 var MAX_CV_BYTES = 5 * 1024 * 1024;
 
-/** Column order — must match docs/careers-sheet-template.csv exactly. */
+/** Column order. Must match docs/careers-sheet-template.csv exactly. */
 var HEADERS = [
   'Submitted At',
   'Role',
@@ -51,9 +51,9 @@ var HEADERS = [
   'Status',
 ];
 
-// ── Entry points ─────────────────────────────────────────────────────
+// Entry points
 
-/** Health check — visiting the /exec URL in a browser should show "ok". */
+/** Health check. Visiting the /exec URL in a browser should show "ok". */
 function doGet() {
   return json({ ok: true, service: 'lumicoria-careers', time: new Date().toISOString() });
 }
@@ -66,7 +66,7 @@ function doPost(e) {
 
     var data = JSON.parse(e.postData.contents);
 
-    // Required fields — mirrors the client-side zod schema.
+    // Required fields. Mirrors the client-side zod schema.
     if (!data.fullName || !data.email || !data.coverNote) {
       return json({ ok: false, error: 'Missing required fields.' });
     }
@@ -115,7 +115,7 @@ function doPost(e) {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// Helpers
 
 function json(payload) {
   return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(
@@ -164,26 +164,26 @@ function saveCvToDrive(data) {
   }
 }
 
-/** "Ada Lovelace — Product Designer.pdf" */
+/** "Ada Lovelace - Product Designer.pdf" */
 function buildCvFileName(data) {
   var extension = (data.cvFileName || '').split('.').pop();
   var safeName = String(data.fullName || 'applicant').replace(/[^\w\s-]/g, '');
   var safeRole = String(data.roleTitle || 'role').replace(/[^\w\s-]/g, '');
-  return safeName + ' — ' + safeRole + (extension ? '.' + extension : '');
+  return safeName + ' - ' + safeRole + (extension ? '.' + extension : '');
 }
 
 function trySendConfirmation(data) {
   try {
     MailApp.sendEmail({
       to: data.email,
-      subject: 'We received your application — ' + (data.roleTitle || 'Lumicoria'),
+      subject: 'We received your application: ' + (data.roleTitle || 'Lumicoria'),
       htmlBody:
         '<p>Hi ' + escapeHtml(String(data.fullName).split(' ')[0]) + ',</p>' +
         '<p>Thanks for applying for <strong>' + escapeHtml(data.roleTitle || 'a role') +
         '</strong> at Lumicoria. Your application has reached us and a real person will read it.</p>' +
         '<p>We come back to every applicant either way. If it looks like a fit, the next step is a short intro ' +
         'call where we walk through the role, the expectations, and the terms together.</p>' +
-        '<p>— The Lumicoria team</p>' +
+        '<p>The Lumicoria team</p>' +
         '<hr><p style="color:#888;font-size:12px">We never ask candidates for payment at any stage of hiring.</p>',
     });
   } catch (err) {
@@ -196,15 +196,15 @@ function tryNotifyTeam(data, cvFileLink) {
   try {
     MailApp.sendEmail({
       to: NOTIFY_EMAIL,
-      subject: 'New application — ' + (data.roleTitle || 'Lumicoria'),
+      subject: 'New application: ' + (data.roleTitle || 'Lumicoria'),
       htmlBody:
         '<p><strong>' + escapeHtml(data.fullName) + '</strong> applied for ' +
         escapeHtml(data.roleTitle || 'a role') + '.</p>' +
         '<p>Email: ' + escapeHtml(data.email) + '<br>' +
-        'Location: ' + escapeHtml(data.location || '—') + '<br>' +
-        'Portfolio: ' + escapeHtml(data.portfolioUrl || '—') + '<br>' +
-        'LinkedIn: ' + escapeHtml(data.linkedinUrl || '—') + '<br>' +
-        'CV: ' + escapeHtml(cvFileLink || data.cvUrl || '—') + '</p>' +
+        'Location: ' + escapeHtml(data.location || 'Not provided') + '<br>' +
+        'Portfolio: ' + escapeHtml(data.portfolioUrl || 'Not provided') + '<br>' +
+        'LinkedIn: ' + escapeHtml(data.linkedinUrl || 'Not provided') + '<br>' +
+        'CV: ' + escapeHtml(cvFileLink || data.cvUrl || 'Not provided') + '</p>' +
         '<p><em>' + escapeHtml(data.coverNote).slice(0, 500) + '</em></p>',
     });
   } catch (err) {

@@ -37,7 +37,7 @@ const schema = z
         coverNote: z
             .string()
             .trim()
-            .min(80, 'A few sentences, please — at least 80 characters')
+            .min(80, 'A few sentences, please. At least 80 characters')
             .max(4000, 'Please keep this under 4000 characters'),
         earliestStart: z.string().trim().optional(),
         heardFrom: z.string().trim().optional(),
@@ -47,14 +47,14 @@ const schema = z
         consent: z.literal(true, {
             errorMap: () => ({ message: 'We need your consent to process the application' }),
         }),
-        /** Hidden anti-spam field — real people never fill this in. */
+        /** Hidden anti-spam field. Real people never fill this in. */
         website: z.string().max(0).optional(),
     })
     // We need to be able to see the person's work somehow.
     .refine(
         (values) => Boolean(values.portfolioUrl || values.linkedinUrl || values.cvUrl),
         {
-            message: 'Add at least one link — portfolio, LinkedIn, or a CV link (or attach a CV below)',
+            message: 'Add at least one link: portfolio, LinkedIn, or a CV link. You can also attach a CV below',
             path: ['portfolioUrl'],
         },
     );
@@ -62,7 +62,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 const inputClass =
-    'w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-lumicoria-purple focus:ring-2 focus:ring-lumicoria-purple/20';
+    'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900';
 
 function Field({
     label,
@@ -83,7 +83,7 @@ function Field({
         <div>
             <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-gray-700">
                 {label}
-                {required && <span className="ml-0.5 text-lumicoria-purple">*</span>}
+                {required && <span className="ml-0.5 text-gray-400">*</span>}
             </label>
             {hint && <p className="mb-1.5 text-xs text-gray-500">{hint}</p>}
             {children}
@@ -147,7 +147,7 @@ export default function RoleApply() {
     const onSubmit = async (values: FormValues) => {
         // Bots fill forms instantly; humans do not.
         if (Date.now() - mountedAt.current < 3000) {
-            toast.error('That was a little too quick — please try again.');
+            toast.error('That was a little too quick. Please try again.');
             return;
         }
         if (values.website) return; // honeypot tripped
@@ -182,29 +182,29 @@ export default function RoleApply() {
             return;
         }
 
-        // Never strand the candidate — offer the email route instead.
+        // Never strand the candidate. Offer the email route instead.
         setFailedPayload(payload);
         toast.error(result.message);
     };
 
-    // ── Success ──────────────────────────────────────────────────────
+    // Success
     if (submitted) {
         return (
             <div className="bg-white">
-                <SEO title="Application received — Careers" description="Thank you for applying to Lumicoria." noindex />
+                <SEO title="Application received" description="Thank you for applying to Lumicoria." noindex />
                 <section className="container mx-auto px-4 py-24">
                     <div className="mx-auto max-w-xl rounded-2xl border border-gray-100 bg-white p-10 text-center">
                         <CheckCircle2 className="mx-auto mb-5 h-12 w-12 text-green-500" aria-hidden="true" />
                         <h1 className="mb-3 text-2xl font-bold text-gray-900">Application received</h1>
                         <p className="mb-6 leading-relaxed text-gray-500">
-                            Thank you — it landed with us. We read every application ourselves, and we&rsquo;ll come
+                            Thank you. It reached us. We read every application ourselves, and we&rsquo;ll come
                             back to you either way. If it&rsquo;s a fit, the next step is a short intro call where we
                             walk through the role and the terms together.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-3">
                             <Link
                                 to="/careers"
-                                className="rounded-xl bg-lumicoria-purple px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                                className="rounded-md bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                             >
                                 Back to open roles
                             </Link>
@@ -218,7 +218,7 @@ export default function RoleApply() {
     return (
         <div className="bg-white">
             <SEO
-                title={routeRole ? `Apply — ${routeRole.title}` : 'Apply — Careers'}
+                title={routeRole ? `Apply for ${routeRole.title}` : 'Apply'}
                 description={
                     routeRole
                         ? `Apply for the ${routeRole.title} role at Lumicoria.`
@@ -232,13 +232,13 @@ export default function RoleApply() {
                     <div className="mx-auto max-w-2xl">
                         <Link
                             to={routeRole ? roleHref(routeRole) : '/careers'}
-                            className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-lumicoria-purple"
+                            className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
                         >
                             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                             {routeRole ? `Back to ${routeRole.title}` : 'Back to careers'}
                         </Link>
                         <h1 className="mb-3 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
-                            {routeRole ? `Apply — ${routeRole.title}` : 'Speculative application'}
+                            {routeRole ? `Apply for ${routeRole.title}` : 'Speculative application'}
                         </h1>
                         <p className="leading-relaxed text-gray-500">
                             {routeRole
@@ -251,7 +251,7 @@ export default function RoleApply() {
 
             <section className="container mx-auto px-4 py-12">
                 <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-2xl space-y-6" noValidate>
-                    {/* Honeypot — visually hidden, never focusable */}
+                    {/* Honeypot. Visually hidden, never focusable. */}
                     <div className="absolute left-[-9999px]" aria-hidden="true">
                         <label htmlFor="website">Leave this field empty</label>
                         <input id="website" type="text" tabIndex={-1} autoComplete="off" {...register('website')} />
@@ -279,7 +279,7 @@ export default function RoleApply() {
                     <Field
                         label="Where are you based?"
                         htmlFor="location"
-                        hint="City and country — we're remote-first, we just want to know your time zone"
+                        hint="City and country. We are remote, we just want to know your time zone"
                         error={errors.location?.message}
                         required
                     >
@@ -314,7 +314,7 @@ export default function RoleApply() {
                                     </span>
                                     <Link
                                         to="/careers"
-                                        className="text-xs font-medium text-lumicoria-purple hover:underline"
+                                        className="text-xs font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600"
                                     >
                                         Change
                                     </Link>
@@ -359,7 +359,7 @@ export default function RoleApply() {
                                 <Field
                                     label="CV link"
                                     htmlFor="cvUrl"
-                                    hint="Drive, Dropbox, Notion…"
+                                    hint="Drive, Dropbox, Notion"
                                     error={errors.cvUrl?.message}
                                 >
                                     <input
@@ -375,7 +375,7 @@ export default function RoleApply() {
                             <Field
                                 label="Or attach your CV"
                                 htmlFor="cvFile"
-                                hint="PDF or Word, up to 5MB — optional if you've linked it above"
+                                hint="PDF or Word, up to 5MB. Optional if you have linked it above"
                                 error={cvError ?? undefined}
                             >
                                 <input
@@ -383,7 +383,7 @@ export default function RoleApply() {
                                     type="file"
                                     accept=".pdf,.doc,.docx"
                                     onChange={handleFile}
-                                    className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-lumicoria-purple/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-lumicoria-purple hover:file:bg-lumicoria-purple/20"
+                                    className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900 hover:file:bg-gray-200"
                                 />
                                 {cvFile && (
                                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-600">
@@ -447,7 +447,7 @@ export default function RoleApply() {
                             <span>
                                 I consent to Lumicoria storing this information to assess my application, for up to 12
                                 months. See the{' '}
-                                <Link to="/privacy" className="font-medium text-lumicoria-purple hover:underline">
+                                <Link to="/privacy" className="font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600">
                                     privacy policy
                                 </Link>
                                 .
@@ -472,11 +472,11 @@ export default function RoleApply() {
                         </div>
                     )}
 
-                    {/* Submission failed — hand them the email route rather than a dead end. */}
+                    {/* Submission failed. Hand them the email route rather than a dead end. */}
                     {failedPayload && (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                             <p className="mb-3 text-sm text-amber-900">
-                                We couldn&rsquo;t submit that automatically — but your application isn&rsquo;t lost.
+                                We could not submit that automatically, but your application is not lost.
                                 Send it by email instead and it reaches the same place.
                             </p>
                             <a
@@ -492,7 +492,7 @@ export default function RoleApply() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full rounded-xl bg-lumicoria-purple px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-xl bg-gray-900 px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isSubmitting ? 'Sending…' : 'Submit application'}
                     </button>

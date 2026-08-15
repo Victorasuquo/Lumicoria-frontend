@@ -217,7 +217,7 @@ export const canonicalUrl = (path?: string): string => {
 export const buildTitle = (title: string): string => {
   const t = title.trim();
   if (t.toLowerCase().includes("lumicoria")) return t;
-  return `${t} — ${SITE.name}`;
+  return `${t} | ${SITE.name}`;
 };
 
 /** Resolve an OG image URL to absolute. */

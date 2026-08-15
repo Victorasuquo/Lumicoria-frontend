@@ -83,7 +83,7 @@ export function buildMailtoFallback(payload: ApplicationPayload): string {
         .join('\n');
 
     return `mailto:${CAREERS_CONTACT_EMAIL}?subject=${encodeURIComponent(
-        `Application — ${payload.roleTitle}`,
+        `Application: ${payload.roleTitle}`,
     )}&body=${encodeURIComponent(body)}`;
 }
 
@@ -144,7 +144,7 @@ export async function submitApplication(payload: ApplicationPayload): Promise<Su
         const response = await fetch(ENDPOINT, {
             method: 'POST',
             // IMPORTANT: text/plain keeps this a CORS "simple request" so the
-            // browser skips the preflight OPTIONS call — Apps Script cannot
+            // browser skips the preflight OPTIONS call. Apps Script cannot
             // answer preflight, and this is the #1 cause of silent failures.
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(body),
