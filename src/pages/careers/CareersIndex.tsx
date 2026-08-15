@@ -192,42 +192,48 @@ export default function CareersIndex() {
                     </Reveal>
 
                     {grouped.length > 0 ? (
-                        <div className="mt-10 space-y-12">
+                        /*
+                         * Split index. The team holds a sticky left column while
+                         * its roles scroll past on the right, so the reader
+                         * always knows which team they are looking at and the
+                         * row width is actually used.
+                         */
+                        <div className="mt-12 space-y-16">
                             {grouped.map(({ department, roles }) => (
-                                <Reveal
-                                    key={department.id}
-                                    className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
-                                >
-                                    <div className="flex items-baseline justify-between gap-4 px-4 pt-5 pb-4">
-                                        <div className="min-w-0">
-                                            <h3 className="text-lg font-semibold text-lumicoria-obsidian">
-                                                {department.label}
-                                            </h3>
-                                            <p className="mt-1 text-sm text-gray-500">{department.blurb}</p>
+                                <Reveal key={department.id} className="border-t border-gray-200 pt-8">
+                                    <div className="grid gap-x-12 gap-y-6 md:grid-cols-12">
+                                        <div className="md:col-span-4 lg:col-span-3">
+                                            <div className="md:sticky md:top-24">
+                                                {/* Team accent, drawn on entry. */}
+                                                <motion.span
+                                                    aria-hidden="true"
+                                                    className={`block h-1 w-12 origin-left rounded-full ${department.ruleClass}`}
+                                                    initial={reduce ? false : { scaleX: 0 }}
+                                                    whileInView={reduce ? undefined : { scaleX: 1 }}
+                                                    viewport={{ once: true, margin: '-80px' }}
+                                                    transition={{ duration: 0.6, ease: EASE }}
+                                                />
+                                                <h3 className="mt-5 text-xl font-semibold tracking-tight text-lumicoria-obsidian">
+                                                    {department.label}
+                                                </h3>
+                                                <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                                                    {department.blurb}
+                                                </p>
+                                                <p className="mt-4 text-sm text-gray-400">
+                                                    {roles.length} {roles.length === 1 ? 'open role' : 'open roles'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <span className="shrink-0 text-sm text-gray-500">
-                                            {roles.length} {roles.length === 1 ? 'role' : 'roles'}
-                                        </span>
-                                    </div>
 
-                                    {/* The team rule draws itself, which announces the group. */}
-                                    <motion.div
-                                        aria-hidden="true"
-                                        className={`h-1 w-full origin-left ${department.ruleClass}`}
-                                        initial={reduce ? false : { scaleX: 0 }}
-                                        whileInView={reduce ? undefined : { scaleX: 1 }}
-                                        viewport={{ once: true, margin: '-80px' }}
-                                        transition={{ duration: 0.75, ease: EASE }}
-                                    />
-
-                                    <div>
-                                        {roles.map((role, index) => (
-                                            <RoleCard
-                                                key={`${role.department}/${role.slug}`}
-                                                role={role}
-                                                index={index}
-                                            />
-                                        ))}
+                                        <div className="md:col-span-8 lg:col-span-9">
+                                            {roles.map((role, index) => (
+                                                <RoleCard
+                                                    key={`${role.department}/${role.slug}`}
+                                                    role={role}
+                                                    index={index}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 </Reveal>
                             ))}
