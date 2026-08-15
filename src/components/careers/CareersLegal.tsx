@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { CAREERS_CONTACT_EMAIL } from '@/data/careers';
 
-const linkClass = 'text-gray-900 underline underline-offset-4 hover:text-gray-600';
+const linkClass = 'text-lumicoria-purple underline underline-offset-4 hover:text-lumicoria-deepPurple';
 
 /**
  * Equal opportunity, adjustments, candidate data, and an anti scam notice.

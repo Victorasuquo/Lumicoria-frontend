@@ -62,7 +62,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 const inputClass =
-    'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900';
+    'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-lumicoria-purple focus:ring-1 focus:ring-lumicoria-purple';
 
 function Field({
     label,
@@ -83,7 +83,7 @@ function Field({
         <div>
             <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-gray-700">
                 {label}
-                {required && <span className="ml-0.5 text-gray-400">*</span>}
+                {required && <span className="ml-0.5 text-lumicoria-purple">*</span>}
             </label>
             {hint && <p className="mb-1.5 text-xs text-gray-500">{hint}</p>}
             {children}
@@ -193,9 +193,9 @@ export default function RoleApply() {
             <div className="bg-white">
                 <SEO title="Application received" description="Thank you for applying to Lumicoria." noindex />
                 <section className="container mx-auto px-4 py-24">
-                    <div className="mx-auto max-w-xl rounded-2xl border border-gray-100 bg-white p-10 text-center">
+                    <div className="mx-auto max-w-xl rounded-lg border border-gray-200 bg-white p-10 text-center">
                         <CheckCircle2 className="mx-auto mb-5 h-12 w-12 text-green-500" aria-hidden="true" />
-                        <h1 className="mb-3 text-2xl font-bold text-gray-900">Application received</h1>
+                        <h1 className="mb-3 text-2xl font-semibold text-lumicoria-obsidian">Application received</h1>
                         <p className="mb-6 leading-relaxed text-gray-500">
                             Thank you. It reached us. We read every application ourselves, and we&rsquo;ll come
                             back to you either way. If it&rsquo;s a fit, the next step is a short intro call where we
@@ -204,7 +204,7 @@ export default function RoleApply() {
                         <div className="flex flex-wrap items-center justify-center gap-3">
                             <Link
                                 to="/careers"
-                                className="rounded-md bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                                className="rounded-md bg-lumicoria-purple px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-lumicoria-deepPurple"
                             >
                                 Back to open roles
                             </Link>
@@ -227,17 +227,17 @@ export default function RoleApply() {
                 noindex
             />
 
-            <section className="border-b border-gray-100 bg-gray-50/50">
+            <section className="border-b border-gray-200 bg-[#F8F6FC]">
                 <div className="container mx-auto px-4 py-12">
                     <div className="mx-auto max-w-2xl">
                         <Link
                             to={routeRole ? roleHref(routeRole) : '/careers'}
-                            className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
+                            className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-lumicoria-purple"
                         >
                             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                             {routeRole ? `Back to ${routeRole.title}` : 'Back to careers'}
                         </Link>
-                        <h1 className="mb-3 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
+                        <h1 className="mb-3 text-3xl font-semibold tracking-tight text-lumicoria-obsidian md:text-4xl">
                             {routeRole ? `Apply for ${routeRole.title}` : 'Speculative application'}
                         </h1>
                         <p className="leading-relaxed text-gray-500">
@@ -307,14 +307,14 @@ export default function RoleApply() {
                             <>
                                 <div
                                     id="roleKey"
-                                    className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-800"
+                                    className="flex items-center justify-between rounded-md border border-gray-300 bg-[#F8F6FC] px-3.5 py-2.5 text-sm text-gray-800"
                                 >
                                     <span>
                                         {routeRole?.title} · {routeRole?.type}
                                     </span>
                                     <Link
                                         to="/careers"
-                                        className="text-xs font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600"
+                                        className="text-xs font-medium text-lumicoria-purple underline underline-offset-4 hover:text-lumicoria-deepPurple"
                                     >
                                         Change
                                     </Link>
@@ -324,7 +324,7 @@ export default function RoleApply() {
                         )}
                     </Field>
 
-                    <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5">
+                    <div className="rounded-lg border border-gray-200 bg-[#FAFAFD] p-5">
                         <h2 className="mb-1 text-sm font-semibold text-gray-900">Your work</h2>
                         <p className="mb-4 text-xs text-gray-500">
                             Add at least one link, and attach a CV if you have one. This matters far more to us than
@@ -383,7 +383,7 @@ export default function RoleApply() {
                                     type="file"
                                     accept=".pdf,.doc,.docx"
                                     onChange={handleFile}
-                                    className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900 hover:file:bg-gray-200"
+                                    className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-lumicoria-purple/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-lumicoria-purple hover:file:bg-lumicoria-purple/20"
                                 />
                                 {cvFile && (
                                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-600">
@@ -429,7 +429,7 @@ export default function RoleApply() {
                         </Field>
                     </div>
 
-                    <div className="space-y-3 rounded-2xl border border-gray-100 p-5">
+                    <div className="space-y-3 rounded-lg border border-gray-200 p-5">
                         <label className="flex gap-3 text-sm text-gray-600">
                             <input type="checkbox" className="mt-1 h-4 w-4 shrink-0" {...register('rightToWork')} />
                             <span>
@@ -447,7 +447,7 @@ export default function RoleApply() {
                             <span>
                                 I consent to Lumicoria storing this information to assess my application, for up to 12
                                 months. See the{' '}
-                                <Link to="/privacy" className="font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600">
+                                <Link to="/privacy" className="font-medium text-lumicoria-purple underline underline-offset-4 hover:text-lumicoria-deepPurple">
                                     privacy policy
                                 </Link>
                                 .
@@ -459,7 +459,7 @@ export default function RoleApply() {
                     </div>
 
                     {!isCareersEndpointConfigured() && (
-                        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        <div className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                             <p>
                                 Online applications aren&rsquo;t connected yet. Fill this in and we&rsquo;ll open a
@@ -474,14 +474,14 @@ export default function RoleApply() {
 
                     {/* Submission failed. Hand them the email route rather than a dead end. */}
                     {failedPayload && (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
                             <p className="mb-3 text-sm text-amber-900">
                                 We could not submit that automatically, but your application is not lost.
                                 Send it by email instead and it reaches the same place.
                             </p>
                             <a
                                 href={buildMailtoFallback(failedPayload)}
-                                className="inline-flex items-center gap-2 rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                                className="inline-flex items-center gap-2 rounded-md bg-amber-800 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-900"
                             >
                                 <Mail className="h-4 w-4" aria-hidden="true" />
                                 Email my application
@@ -492,7 +492,7 @@ export default function RoleApply() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full rounded-xl bg-gray-900 px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-md bg-lumicoria-purple px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-lumicoria-deepPurple disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isSubmitting ? 'Sending…' : 'Submit application'}
                     </button>

@@ -15,8 +15,8 @@ export function ProcessTimeline({ compact = false }: { compact?: boolean }) {
                     <div
                         className={
                             compact
-                                ? 'shrink-0 text-sm tabular-nums text-gray-400'
-                                : 'mb-2 text-sm tabular-nums text-gray-400'
+                                ? 'shrink-0 text-sm font-semibold tabular-nums text-lumicoria-purple'
+                                : 'mb-2 text-sm font-semibold tabular-nums text-lumicoria-purple'
                         }
                     >
                         {stage.step}

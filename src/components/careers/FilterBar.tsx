@@ -14,7 +14,7 @@ interface FilterBarProps {
 }
 
 const controlClass =
-    'h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900';
+    'h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition-colors focus:border-lumicoria-purple focus:ring-1 focus:ring-lumicoria-purple';
 
 /**
  * Team, type and search filters. State lives in the URL (see CareersIndex) so
@@ -92,7 +92,7 @@ export function FilterBar({ filters, onChange, onReset, resultCount }: FilterBar
                     <button
                         type="button"
                         onClick={onReset}
-                        className="text-sm text-gray-500 underline underline-offset-4 transition-colors hover:text-gray-900"
+                        className="text-sm text-gray-500 underline underline-offset-4 transition-colors hover:text-lumicoria-purple"
                     >
                         Clear filters
                     </button>
