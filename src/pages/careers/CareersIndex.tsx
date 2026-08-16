@@ -74,21 +74,6 @@ export default function CareersIndex() {
         roles: visibleRoles.filter((role) => role.department === department.id),
     })).filter((group) => group.roles.length > 0);
 
-    // Hero copy arrives in reading order: belief, then problem, then actions.
-    const heroItem = (delay: number) =>
-        reduce
-            ? {}
-            : {
-                  initial: { opacity: 0, y: 22 },
-                  // whileInView rather than animate. Mount-time animations do
-                  // not run reliably when a tab loads in the background, which
-                  // would leave the hero blank; an IntersectionObserver reveal
-                  // fires whenever the section is actually seen.
-                  whileInView: { opacity: 1, y: 0 },
-                  viewport: { once: true, margin: '0px' },
-                  transition: { duration: 0.7, delay, ease: EASE },
-              };
-
     return (
         <div className="bg-white">
             <SEO
@@ -111,40 +96,42 @@ export default function CareersIndex() {
 
                 <div className="relative mx-auto max-w-5xl px-4 pt-24 pb-24">
                     {/*
-                     * Line mask reveal. Each line sits in an overflow-hidden
-                     * block and rises from below, which reads as the statement
-                     * being set rather than fading in. Leading is 1.2 so the
-                     * descenders in "amplify" clear the mask edge.
+                     * The headline carries no entry animation on purpose.
+                     *
+                     * It previously used a line mask, each line starting
+                     * translated below an overflow-hidden block. That cannot be
+                     * driven by whileInView: IntersectionObserver measures an
+                     * element after ancestor clipping, so a line parked outside
+                     * its own mask reports zero intersection and never triggers,
+                     * leaving the headline permanently invisible. Driving it from
+                     * mount instead is no safer, since mount animations do not
+                     * run reliably when a page loads in an unfocused tab.
+                     *
+                     * This is the most important text on the page, so it renders
+                     * unconditionally. The motion budget is spent below it, on
+                     * elements that are never clipped.
                      */}
-                    <h1 className="max-w-5xl text-4xl font-semibold leading-[1.2] tracking-tight text-lumicoria-obsidian sm:text-5xl">
-                        {['AI should amplify human potential,', 'not replace it.'].map((line, index) => (
-                            <span key={line} className="block overflow-hidden pb-1">
-                                <motion.span
-                                    className="block"
-                                    initial={reduce ? false : { y: '110%' }}
-                                    whileInView={reduce ? undefined : { y: 0 }}
-                                    viewport={{ once: true, margin: '0px' }}
-                                    transition={{ duration: 0.85, delay: 0.05 + index * 0.1, ease: EASE }}
-                                >
-                                    {line}
-                                </motion.span>
-                            </span>
-                        ))}
+                    <h1 className="max-w-5xl text-4xl font-semibold leading-[1.15] tracking-tight text-lumicoria-obsidian sm:text-5xl">
+                        AI should amplify human potential,
+                        <br />
+                        not replace it.
                     </h1>
 
-                    <motion.p {...heroItem(0.42)} className="mt-8 max-w-xl text-lg leading-relaxed text-gray-600">
+                    {/* Also unconditional. The calls to action must never depend
+                        on an animation having run. */}
+                    <p className="mt-8 max-w-xl text-lg leading-relaxed text-gray-600">
                         We are building the research, the systems and the safeguards to make that true for everyone,
                         everywhere.
-                    </motion.p>
+                    </p>
 
-                    <motion.div {...heroItem(0.52)} className="mt-10 flex flex-wrap items-center gap-3">
+                    <div className="mt-10 flex flex-wrap items-center gap-3">
                         <a href="#open-roles" className={primaryButton}>
                             See open roles
                         </a>
                         <Link to="/careers/apply" className={secondaryButton}>
                             Apply speculatively
                         </Link>
-                    </motion.div>
+                    </div>
                 </div>
             </section>
 
