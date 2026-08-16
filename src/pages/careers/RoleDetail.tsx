@@ -108,7 +108,8 @@ export default function RoleDetail() {
                 <motion.div
                     className="relative mx-auto max-w-3xl px-4 pt-12 pb-12"
                     initial={reduce ? false : { opacity: 0, y: 18 }}
-                    animate={reduce ? undefined : { opacity: 1, y: 0 }}
+                    whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '0px' }}
                     transition={{ duration: 0.6, ease: EASE }}
                 >
                     <Link

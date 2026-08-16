@@ -80,7 +80,12 @@ export default function CareersIndex() {
             ? {}
             : {
                   initial: { opacity: 0, y: 22 },
-                  animate: { opacity: 1, y: 0 },
+                  // whileInView rather than animate. Mount-time animations do
+                  // not run reliably when a tab loads in the background, which
+                  // would leave the hero blank; an IntersectionObserver reveal
+                  // fires whenever the section is actually seen.
+                  whileInView: { opacity: 1, y: 0 },
+                  viewport: { once: true, margin: '0px' },
                   transition: { duration: 0.7, delay, ease: EASE },
               };
 
@@ -111,13 +116,14 @@ export default function CareersIndex() {
                      * being set rather than fading in. Leading is 1.2 so the
                      * descenders in "amplify" clear the mask edge.
                      */}
-                    <h1 className="max-w-4xl text-4xl font-semibold leading-[1.2] tracking-tight text-lumicoria-obsidian sm:text-5xl md:text-6xl">
-                        {['AI should amplify people,', 'not replace them.'].map((line, index) => (
+                    <h1 className="max-w-5xl text-4xl font-semibold leading-[1.2] tracking-tight text-lumicoria-obsidian sm:text-5xl">
+                        {['AI should amplify human potential,', 'not replace it.'].map((line, index) => (
                             <span key={line} className="block overflow-hidden pb-1">
                                 <motion.span
                                     className="block"
                                     initial={reduce ? false : { y: '110%' }}
-                                    animate={reduce ? undefined : { y: 0 }}
+                                    whileInView={reduce ? undefined : { y: 0 }}
+                                    viewport={{ once: true, margin: '0px' }}
                                     transition={{ duration: 0.85, delay: 0.05 + index * 0.1, ease: EASE }}
                                 >
                                     {line}
@@ -126,9 +132,9 @@ export default function CareersIndex() {
                         ))}
                     </h1>
 
-                    <motion.p {...heroItem(0.42)} className="mt-8 max-w-lg text-lg leading-relaxed text-gray-600">
-                        That belief turns out to be a hard engineering problem. We are hiring the people who want to
-                        own it.
+                    <motion.p {...heroItem(0.42)} className="mt-8 max-w-xl text-lg leading-relaxed text-gray-600">
+                        We are building the research, the systems and the safeguards to make that true for everyone,
+                        everywhere.
                     </motion.p>
 
                     <motion.div {...heroItem(0.52)} className="mt-10 flex flex-wrap items-center gap-3">
@@ -150,9 +156,8 @@ export default function CareersIndex() {
                             Why people join Lumicoria
                         </h2>
                         <p className="mt-3 max-w-2xl text-gray-600">
-                            Most AI products are demos with a waiting list. We are building the part that has to keep
-                            working on a Tuesday afternoon when nobody is watching, and that is where the interesting
-                            problems live.
+                            Our work runs from applied research through to the systems people rely on every day. The
+                            questions are still open, the scale is global, and the answers are not in a paper yet.
                         </p>
                     </Reveal>
 

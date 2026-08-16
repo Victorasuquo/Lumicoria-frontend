@@ -88,17 +88,17 @@ export const BENEFITS = [
   {
     title: 'Problems nobody has solved yet',
     description:
-      'An agent that runs unattended has to be right. Retrieval that stays grounded, evaluation you can trust, orchestration across six model providers. This is research-adjacent engineering, not configuration.',
+      'Grounded retrieval, evaluation you can actually trust, reasoning that holds up under real load. Some of it is applied research, some of it ships on Friday, and none of it has a settled answer yet.',
   },
   {
     title: 'Autonomy that answers to people',
     description:
-      'We ship approval gates, evaluation before production authority, and a named owner for every workflow. If you think AI should be accountable rather than merely impressive, you will recognise how we build.',
+      'Approval gates, evaluation before production authority, a named owner for every decision path. If you believe capable AI has to be accountable rather than merely impressive, you will recognise how we build.',
   },
   {
     title: 'Global from the first line of code',
     description:
-      'Remote-first across time zones, multilingual, and culturally aware by design. We build for people everywhere rather than for one market that happens to look like us.',
+      'Remote-first across time zones, multilingual, and culturally aware by design. We are building for people everywhere, not for one market that happens to look like us.',
   },
   {
     title: 'Real ownership',
@@ -113,7 +113,7 @@ export const BENEFITS = [
   {
     title: 'Work at the frontier',
     description:
-      'Hands on with the current generation of models and agent tooling every day, alongside the people making the architecture decisions rather than three layers away from them.',
+      'Hands on with frontier models and the tooling around them every day, alongside the people making the architecture calls rather than three layers away from them.',
   },
 ];
 
