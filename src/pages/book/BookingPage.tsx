@@ -202,17 +202,26 @@ function BookingFlow({ handle, slug }: { handle: string; slug: string }) {
     }, [handle, slug]);
 
     const loadSlots = useCallback(async () => {
+        // Pad the request by a day either side so slots near the month
+        // boundary are not clipped when the viewer's zone shifts the date.
+        const from = new Date(monthCursor);
+        from.setDate(from.getDate() - 1);
+        const to = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
+        to.setDate(to.getDate() + 1);
+        const now = new Date();
+        // Never ask for times that have already passed.
+        const start = from > now ? from : now;
+
+        // A month entirely in the past leaves `to` before the clamped `start`,
+        // which the API rejects as an invalid range. There is nothing bookable
+        // back there anyway, so skip the request rather than 422.
+        if (to <= start) {
+            setSlots([]);
+            return;
+        }
+
         setSlotsLoading(true);
         try {
-            // Pad the request by a day either side so slots near the month
-            // boundary are not clipped when the viewer's zone shifts the date.
-            const from = new Date(monthCursor);
-            from.setDate(from.getDate() - 1);
-            const to = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
-            to.setDate(to.getDate() + 1);
-            const now = new Date();
-            const start = from > now ? from : now;
-
             const data = await bookingPublicApi.getSlots(
                 handle,
                 slug,
@@ -250,6 +259,15 @@ function BookingFlow({ handle, slug }: { handle: string; slug: string }) {
             setSelectedSlot(null);
         }
     }, [slotsByDay, selectedDay]);
+
+    /** True when the cursor is on the current month, so we cannot go back. */
+    const atCurrentMonth = useMemo(() => {
+        const now = new Date();
+        return (
+            monthCursor.getFullYear() === now.getFullYear() &&
+            monthCursor.getMonth() === now.getMonth()
+        );
+    }, [monthCursor]);
 
     const monthGrid = useMemo(() => {
         const year = monthCursor.getFullYear();
@@ -454,6 +472,9 @@ function BookingFlow({ handle, slug }: { handle: string; slug: string }) {
                                         <button
                                             type="button"
                                             aria-label="Previous month"
+                                            // Past months hold nothing bookable, so going
+                                            // back beyond the current one is disabled.
+                                            disabled={atCurrentMonth}
                                             onClick={() =>
                                                 setMonthCursor(
                                                     new Date(
@@ -463,7 +484,7 @@ function BookingFlow({ handle, slug }: { handle: string; slug: string }) {
                                                     ),
                                                 )
                                             }
-                                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100"
+                                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-200 disabled:hover:bg-transparent"
                                         >
                                             <ChevronLeft className="h-4 w-4" />
                                         </button>
