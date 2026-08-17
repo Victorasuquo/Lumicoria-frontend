@@ -9,6 +9,7 @@
  * surfaces the Phase-3-ready endpoint result.
  */
 
+import { Link } from "react-router-dom";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -300,6 +301,12 @@ const Calendar: React.FC = () => {
                 </button>
               ))}
             </div>
+            <Link
+              to="/bookings"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-purple-300 hover:text-purple-700"
+            >
+              <Link2 size={13} /> Bookings
+            </Link>
             <Button
               onClick={() => setShowCreate(anchor)}
               size="sm"

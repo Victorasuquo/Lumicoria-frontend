@@ -49,6 +49,50 @@ const primaryBtn =
 const ghostBtn =
     "inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-lumicoria-purple hover:text-lumicoria-purple";
 
+
+/** Uploaded avatars come back server-relative, so point them at the API host. */
+function avatarSrc(url?: string | null): string | null {
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    const base = (import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1")
+        .replace(/\/api\/v1\/?$/, "");
+    return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function Avatar({ url, name, size = 56 }: { url?: string | null; name: string; size?: number }) {
+    const [broken, setBroken] = useState(false);
+    const src = avatarSrc(url);
+    const initials = name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase())
+        .join("");
+
+    if (src && !broken) {
+        return (
+            <img
+                src={src}
+                alt=""
+                width={size}
+                height={size}
+                onError={() => setBroken(true)}
+                className="shrink-0 rounded-full object-cover ring-2 ring-white"
+                style={{ width: size, height: size }}
+            />
+        );
+    }
+    return (
+        <div
+            aria-hidden="true"
+            className="flex shrink-0 items-center justify-center rounded-full bg-lumicoria-purple/10 font-semibold text-lumicoria-purple"
+            style={{ width: size, height: size, fontSize: size * 0.36 }}
+        >
+            {initials || "?"}
+        </div>
+    );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-[100dvh] bg-[#F8F6FC] px-4 py-10">
@@ -102,11 +146,14 @@ function TypePicker({ handle }: { handle: string }) {
 
     return (
         <Shell>
-            <div className="mb-8">
-                <h1 className="text-2xl font-semibold tracking-tight text-lumicoria-obsidian">
-                    {page!.display_name}
-                </h1>
-                <p className="mt-2 text-gray-600">Choose a meeting to book.</p>
+            <div className="mb-8 flex items-center gap-4">
+                <Avatar url={page!.avatar_url} name={page!.display_name} size={56} />
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-lumicoria-obsidian">
+                        {page!.display_name}
+                    </h1>
+                    <p className="mt-1 text-gray-600">Choose a meeting to book.</p>
+                </div>
             </div>
 
             {page!.booking_types.length === 0 ? (
@@ -412,8 +459,17 @@ function BookingFlow({ handle, slug }: { handle: string; slug: string }) {
                 <div className="grid md:grid-cols-12">
                     {/* Meeting summary */}
                     <div className="border-b border-gray-200 p-6 md:col-span-4 md:border-b-0 md:border-r">
-                        <p className="text-sm text-gray-500">{type!.display_name}</p>
-                        <h1 className="mt-1 text-xl font-semibold tracking-tight text-lumicoria-obsidian">
+                        <div className="mb-4 flex items-center gap-3">
+                            <Avatar
+                                url={(type as any).avatar_url}
+                                name={type!.display_name}
+                                size={40}
+                            />
+                            <p className="text-sm font-medium text-gray-700">
+                                {type!.display_name}
+                            </p>
+                        </div>
+                        <h1 className="text-xl font-semibold tracking-tight text-lumicoria-obsidian">
                             {type!.title}
                         </h1>
                         {type!.description && (

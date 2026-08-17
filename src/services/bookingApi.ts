@@ -187,6 +187,10 @@ export const bookingApi = {
         await api.delete(`/booking/overrides/${id}`);
     },
 
+    getBooking: async (id: string): Promise<Booking> => {
+        const { data } = await api.get(`/booking/bookings/${id}`);
+        return data;
+    },
     listBookings: async (params?: {
         status?: BookingStatus;
         upcoming_only?: boolean;
@@ -243,6 +247,17 @@ export const bookingPublicApi = {
         },
     ): Promise<BookingResult> => {
         const { data } = await publicClient.post(`/public/booking/${handle}/${slug}`, payload);
+        return data;
+    },
+    /** Host approve/decline from an email link. Token is the credential. */
+    getRespond: async (token: string) => {
+        const { data } = await publicClient.get(`/public/booking/respond/${token}`);
+        return data;
+    },
+    respond: async (token: string, action: "approve" | "decline") => {
+        const { data } = await publicClient.post(
+            `/public/booking/respond/${token}/${action}`,
+        );
         return data;
     },
     getByToken: async (token: string) => {

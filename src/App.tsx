@@ -160,6 +160,9 @@ const PublicProjectShare = lazy(() => import("./pages/PublicProjectShare"));
 const BookingPage = lazy(() => import("./pages/book/BookingPage"));
 const ManageBooking = lazy(() => import("./pages/book/ManageBooking"));
 const Scheduling = lazy(() => import("./pages/calendar/Scheduling"));
+const RespondBooking = lazy(() => import("./pages/book/RespondBooking"));
+const BookingsList = lazy(() => import("./pages/bookings/BookingsList"));
+const BookingDetail = lazy(() => import("./pages/bookings/BookingDetail"));
 
 // Documentation — lazy loaded
 const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
@@ -277,6 +280,7 @@ const AppRoutes = () => {
       <Route path="/book/:handle" element={<Suspense fallback={<AgentPageFallback />}><BookingPage /></Suspense>} />
       <Route path="/book/:handle/:slug" element={<Suspense fallback={<AgentPageFallback />}><BookingPage /></Suspense>} />
       <Route path="/booking/manage/:token" element={<Suspense fallback={<AgentPageFallback />}><ManageBooking /></Suspense>} />
+      <Route path="/booking/respond/:token" element={<Suspense fallback={<AgentPageFallback />}><RespondBooking /></Suspense>} />
 
       {/* All other routes — MainNav + Footer layout */}
       <Route element={<MainLayout />}>
@@ -391,6 +395,8 @@ const AppRoutes = () => {
         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
         <Route path="/calendar/scheduling" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><Scheduling /></Suspense></ProtectedRoute>} />
+        <Route path="/bookings" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BookingsList /></Suspense></ProtectedRoute>} />
+        <Route path="/bookings/:id" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BookingDetail /></Suspense></ProtectedRoute>} />
         <Route path="/invites" element={<ProtectedRoute><Invites /></ProtectedRoute>} />
         <Route path="/organization" element={<ProtectedRoute><Organization /></ProtectedRoute>} />
         {/* Public — token is the credential */}
