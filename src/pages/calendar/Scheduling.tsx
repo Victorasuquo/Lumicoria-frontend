@@ -58,6 +58,14 @@ export default function Scheduling() {
     const [week, setWeek] = useState<DayRow[]>(DEFAULT_WEEK);
     const [timezone, setTimezone] = useState(detectTimezone);
     const [savingWeek, setSavingWeek] = useState(false);
+    /**
+     * Whether any availability exists on the server.
+     *
+     * The editor pre-fills a sensible week, which looks identical to a saved
+     * one. Without this flag a new user reasonably assumes they are already
+     * bookable, shares a link, and it shows no times at all.
+     */
+    const [hasSavedAvailability, setHasSavedAvailability] = useState(true);
 
     const [types, setTypes] = useState<BookingType[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -82,6 +90,7 @@ export default function Scheduling() {
             setTypes(t);
             setBookings(b);
 
+            setHasSavedAvailability(rules.length > 0);
             if (rules.length) {
                 const next = WEEKDAY_LABELS.map((_, i) => {
                     const rule = rules.find((r) => r.weekday === i);
@@ -137,7 +146,8 @@ export default function Scheduling() {
                         timezone,
                     })),
             );
-            toast.success("Availability saved.");
+            setHasSavedAvailability(week.some((d) => d.enabled));
+            toast.success("Availability saved. Your links are live.");
         } catch {
             toast.error("Could not save availability.");
         } finally {
@@ -271,6 +281,29 @@ export default function Scheduling() {
                     </button>
                 ))}
             </div>
+
+            {/* Availability not saved yet. The editor pre-fills a week, which
+                looks identical to a saved one, so this has to be explicit. */}
+            {!hasSavedAvailability && (
+                <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-medium text-amber-900">
+                        Your availability is not saved yet
+                    </p>
+                    <p className="mt-1 text-sm text-amber-800">
+                        The hours below are a suggested starting point, not live. Until you save
+                        them, your booking links show no available times.
+                    </p>
+                    {tab !== "availability" && (
+                        <button
+                            type="button"
+                            onClick={() => setTab("availability")}
+                            className="mt-3 text-sm font-medium text-amber-900 underline underline-offset-4"
+                        >
+                            Set your availability
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Availability */}
             {tab === "availability" && (
