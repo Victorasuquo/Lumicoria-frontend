@@ -156,6 +156,11 @@ const SupportPortalHelp = lazy(() => import("./pages/portal/SupportPortalHelp"))
 const SupportPortalArticle = lazy(() => import("./pages/portal/SupportPortalArticle"));
 const PublicProjectShare = lazy(() => import("./pages/PublicProjectShare"));
 
+// Public booking pages — anonymous visitors, NO ProtectedRoute, NO MainLayout.
+const BookingPage = lazy(() => import("./pages/book/BookingPage"));
+const ManageBooking = lazy(() => import("./pages/book/ManageBooking"));
+const Scheduling = lazy(() => import("./pages/calendar/Scheduling"));
+
 // Documentation — lazy loaded
 const DocsLayout = lazy(() => import("./pages/docs/DocsLayout"));
 
@@ -264,6 +269,14 @@ const AppRoutes = () => {
 
       {/* Public read-only project share — full-bleed, no auth, no chrome. */}
       <Route path="/p/:projectId/share/:token" element={<Suspense fallback={<AgentPageFallback />}><PublicProjectShare /></Suspense>} />
+
+      {/* Public booking — an external visitor picks a slot. No auth, no chrome.
+          These MUST stay above MainLayout: the booking page has no toaster and
+          uses an interceptor-free client so a 401 cannot bounce a visitor to
+          /login mid-booking. */}
+      <Route path="/book/:handle" element={<Suspense fallback={<AgentPageFallback />}><BookingPage /></Suspense>} />
+      <Route path="/book/:handle/:slug" element={<Suspense fallback={<AgentPageFallback />}><BookingPage /></Suspense>} />
+      <Route path="/booking/manage/:token" element={<Suspense fallback={<AgentPageFallback />}><ManageBooking /></Suspense>} />
 
       {/* All other routes — MainNav + Footer layout */}
       <Route element={<MainLayout />}>
@@ -377,6 +390,7 @@ const AppRoutes = () => {
         <Route path="/audit" element={<ProtectedRoute><Audit /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+        <Route path="/calendar/scheduling" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><Scheduling /></Suspense></ProtectedRoute>} />
         <Route path="/invites" element={<ProtectedRoute><Invites /></ProtectedRoute>} />
         <Route path="/organization" element={<ProtectedRoute><Organization /></ProtectedRoute>} />
         {/* Public — token is the credential */}
