@@ -163,9 +163,7 @@ const Scheduling = lazy(() => import("./pages/calendar/Scheduling"));
 const RespondBooking = lazy(() => import("./pages/book/RespondBooking"));
 // Social media manager — connect, compose, inbox, rules, performance.
 const SocialLayout = lazy(() => import("./pages/agents/social/SocialLayout"));
-const SocialOverview = lazy(() => import("./pages/agents/social/Overview"));
 const SocialConnectionsRoom = lazy(() => import("./pages/agents/social/ConnectionsRoom"));
-const SocialComposerRoom = lazy(() => import("./pages/agents/social/ComposerRoom"));
 const SocialInboxRoom = lazy(() => import("./pages/agents/social/InboxRoom"));
 const SocialRulesRoom = lazy(() => import("./pages/agents/social/RulesRoom"));
 const SocialAnalyticsRoom = lazy(() => import("./pages/agents/social/AnalyticsRoom"));
@@ -454,15 +452,12 @@ const AppRoutes = () => {
             Rooms that need a connected account render blurred until there is
             one, so the shape of the product is visible before you authorise. */}
         <Route path="/agents/social-media" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialLayout /></Suspense></ProtectedRoute>}>
-          <Route index element={<Suspense fallback={<AgentPageFallback />}><SocialOverview /></Suspense>} />
+          <Route index element={<Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense>} />
           <Route path="connections" element={<Suspense fallback={<AgentPageFallback />}><SocialConnectionsRoom /></Suspense>} />
-          <Route path="compose" element={<Suspense fallback={<AgentPageFallback />}><SocialComposerRoom /></Suspense>} />
           <Route path="inbox" element={<Suspense fallback={<AgentPageFallback />}><SocialInboxRoom /></Suspense>} />
           <Route path="rules" element={<Suspense fallback={<AgentPageFallback />}><SocialRulesRoom /></Suspense>} />
           <Route path="analytics" element={<Suspense fallback={<AgentPageFallback />}><SocialAnalyticsRoom /></Suspense>} />
         </Route>
-        {/* The original single-page agent, kept reachable while the hub beds in. */}
-        <Route path="/agents/social-media-classic" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialMediaAgent /></Suspense></ProtectedRoute>} />
         <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
         <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />
 

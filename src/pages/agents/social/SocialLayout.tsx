@@ -37,10 +37,11 @@ const SocialContext = createContext<SocialContextValue>({
 
 export const useSocial = () => useContext(SocialContext);
 
+// Studio first, because it is where the work happens and it needs nothing
+// connected. The automation rooms sit beside it rather than replacing it.
 const TABS = [
-    { to: '', label: 'Overview', end: true },
+    { to: '', label: 'Studio', end: true },
     { to: 'connections', label: 'Accounts' },
-    { to: 'compose', label: 'Compose' },
     { to: 'inbox', label: 'Inbox' },
     { to: 'rules', label: 'Auto-replies' },
     { to: 'analytics', label: 'Performance' },

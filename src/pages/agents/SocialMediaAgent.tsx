@@ -1,4 +1,21 @@
+/**
+ * The Studio — the room you work in day to day.
+ *
+ * This is the original Social Media Agent, unchanged in what it already did:
+ * generate a draft, check the tone, watch what is trending, keep your drafts.
+ * Those are the everyday tools and they stay exactly where they were.
+ *
+ * What is new is the bridge at the end of that work. Once accounts are
+ * connected, the same composer can publish for real and shape one idea into a
+ * native version per platform. Before then it behaves exactly as it always
+ * has, so nothing you already relied on depends on connecting anything.
+ *
+ * The page chrome (title, tabs) comes from SocialLayout — this renders inside
+ * it rather than wrapping itself.
+ */
+
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +24,9 @@ import {
   Share2, Send, TrendingUp, Heart, MessageCircle, Eye,
   Calendar, BarChart3, Hash, Clock, Globe, Zap, Loader2,
 } from "lucide-react";
-import AgentPageLayout from "@/components/AgentPageLayout";
 import { socialMediaApi } from "@/services/api";
+import { socialApi, socialError, PLATFORM_LABELS, type PlatformKey } from "@/services/socialApi";
+import { useSocial } from "./social/SocialLayout";
 import { toast } from "sonner";
 
 const platforms = [
@@ -61,6 +79,14 @@ const SocialMediaAgent: React.FC = () => {
   const [trends, setTrends] = useState<Array<{ tag: string; posts: string; trend: string }>>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [targets, setTargets] = useState<string[]>([]);
+  const [publishing, setPublishing] = useState(false);
+  const [shaping, setShaping] = useState(false);
+
+  // Connected accounts come from the hub shell. When there are none this
+  // whole section stays hidden and the page behaves as it always did.
+  const { accounts, connected } = useSocial();
+  const liveAccounts = accounts.filter((a) => a.status === "active");
 
   const currentPlatform = platforms.find(p => p.id === activePlatform)!;
 
@@ -148,6 +174,84 @@ const SocialMediaAgent: React.FC = () => {
     toast.success("Draft saved");
   };
 
+  /** Shape the current text into a native version per selected platform. */
+  const shapeForPlatforms = async () => {
+    if (!postContent.trim()) { toast.error("Write something to shape first."); return; }
+    const platformKeys = Array.from(new Set(
+      liveAccounts.filter((a) => targets.includes(a.id)).map((a) => a.provider)));
+    if (!platformKeys.length) { toast.error("Pick at least one account."); return; }
+    setShaping(true);
+    try {
+      const { variants } = await socialApi.adaptForPlatforms({
+        idea: postContent.trim(), platforms: platformKeys,
+      });
+      // Each shaped version is kept as a draft so nothing is lost and the
+      // person can compare them before publishing.
+      const entries: HistoryEntry[] = variants
+        .filter((v) => v.body)
+        .map((v) => ({
+          id: crypto.randomUUID(),
+          platform: PLATFORM_LABELS[v.platform as PlatformKey] ?? v.platform,
+          content: v.body as string,
+          status: "Generated",
+          created_at: new Date().toISOString(),
+        }));
+      if (!entries.length) { toast.error("Nothing came back — try again."); return; }
+      const next = [...entries, ...history].slice(0, 50);
+      setHistory(next); saveHistory(next);
+      setPostContent(entries[0].content);
+      toast.success(`${entries.length} version${entries.length === 1 ? "" : "s"} ready — click any draft to load it`);
+    } catch (e) {
+      toast.error(socialError(e, "Could not shape that"));
+    } finally { setShaping(false); }
+  };
+
+  /**
+   * Publish to the selected accounts.
+   *
+   * Create, approve, publish — in that order. The approval step is not
+   * ceremony we can skip: the publish pipeline refuses anything unapproved,
+   * and the person clicking Publish is the one approving it.
+   */
+  const publishNow = async () => {
+    if (!postContent.trim() || !targets.length) return;
+    setPublishing(true);
+    try {
+      const { id, warnings } = await socialApi.createPost({
+        idea: postContent.trim(),
+        variants: targets.map((account_id) => ({ account_id, body: postContent.trim() })),
+      });
+      warnings.forEach((w) => toast.warning(w));
+      await socialApi.approvePost(id);
+      const result = await socialApi.publishPost(id);
+
+      if (result.published === result.total) {
+        toast.success(`Published to ${result.total} account${result.total === 1 ? "" : "s"}`);
+      } else if (result.published) {
+        // Partial is honest and actionable — never report it as success.
+        toast.warning(`Published to ${result.published} of ${result.total}. Check Performance for the rest.`);
+      } else {
+        toast.error("Could not publish. Nothing went out.");
+        return;
+      }
+
+      const entry: HistoryEntry = {
+        id: crypto.randomUUID(),
+        platform: targets.length === 1
+          ? (liveAccounts.find((a) => a.id === targets[0])?.display_name ?? "Published")
+          : `${targets.length} accounts`,
+        content: postContent.trim(),
+        status: "Generated",
+        created_at: new Date().toISOString(),
+      };
+      const next = [entry, ...history].slice(0, 50);
+      setHistory(next); saveHistory(next);
+      setPostContent(""); setTargets([]);
+    } catch (e) {
+      toast.error(socialError(e, "Could not publish"));
+    } finally { setPublishing(false); }
+  };
+
   const stats = [
     { label: "Total Reach", value: analytics?.total_reach ?? analytics?.reach ?? "—", icon: Eye, color: "text-blue-500" },
     { label: "Engagement", value: analytics?.engagement_rate ? `${analytics.engagement_rate}%` : analytics?.engagement || "—", icon: Heart, color: "text-rose-500" },
@@ -156,7 +260,7 @@ const SocialMediaAgent: React.FC = () => {
   ];
 
   return (
-    <AgentPageLayout agentName="Social Media Agent" tagline="Create & manage social content" icon={Share2} gradient="from-pink-500 to-rose-600">
+    <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
@@ -200,7 +304,7 @@ const SocialMediaAgent: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button onClick={saveDraft} disabled={!postContent.trim()} className="bg-gray-900 hover:bg-gray-800 text-white h-9 px-4 text-xs">
                   <Send size={12} className="mr-1.5" /> Save Draft
                 </Button>
@@ -208,6 +312,56 @@ const SocialMediaAgent: React.FC = () => {
                   Clear
                 </Button>
               </div>
+
+              {/* Publishing for real. Only appears once accounts exist, so the
+                  page is unchanged for anyone using it as a drafting tool. */}
+              {connected ? (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-2">Publish to</p>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {liveAccounts.map((a) => (
+                      <button key={a.id}
+                        onClick={() => setTargets((cur) =>
+                          cur.includes(a.id) ? cur.filter((x) => x !== a.id) : [...cur, a.id])}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${targets.includes(a.id)
+                          ? "bg-lumicoria-purple text-white"
+                          : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}>
+                        {a.avatar_url && <img src={a.avatar_url} alt="" className="h-3 w-3 rounded-full" />}
+                        {a.display_name || a.handle}
+                        <span className="opacity-60">{PLATFORM_LABELS[a.provider]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <Button onClick={publishNow}
+                      disabled={publishing || !postContent.trim() || !targets.length}
+                      className="bg-lumicoria-purple hover:opacity-90 text-white h-9 px-4 text-xs">
+                      {publishing ? <Loader2 size={12} className="mr-1.5 animate-spin" /> : <Send size={12} className="mr-1.5" />}
+                      Publish{targets.length ? ` to ${targets.length}` : ""}
+                    </Button>
+                    <Button variant="outline" onClick={shapeForPlatforms}
+                      disabled={shaping || !postContent.trim() || !targets.length}
+                      className="border-gray-200 h-9 px-4 text-xs">
+                      {shaping ? <Loader2 size={12} className="mr-1.5 animate-spin" /> : <Zap size={12} className="mr-1.5" />}
+                      Shape per platform
+                    </Button>
+                    <span className="text-[10px] text-gray-400">
+                      One idea, a native version for each — edit any of them before you post.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-[11px] text-gray-500">
+                    Connect an account and this composer publishes for real — and
+                    answers your comments while you sleep.
+                  </p>
+                  <Link to="connections"
+                    className="text-[11px] font-medium text-lumicoria-purple hover:underline whitespace-nowrap">
+                    Connect an account →
+                  </Link>
+                </div>
+              )}
               {sentiment && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 p-3 rounded-xl bg-gray-50">
                   <p className="text-xs font-semibold text-gray-700 mb-2">Sentiment analysis</p>
@@ -303,7 +457,7 @@ const SocialMediaAgent: React.FC = () => {
           </div>
         </div>
       </div>
-    </AgentPageLayout>
+    </>
   );
 };
 
