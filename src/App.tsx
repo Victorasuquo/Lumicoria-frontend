@@ -161,6 +161,12 @@ const BookingPage = lazy(() => import("./pages/book/BookingPage"));
 const ManageBooking = lazy(() => import("./pages/book/ManageBooking"));
 const Scheduling = lazy(() => import("./pages/calendar/Scheduling"));
 const RespondBooking = lazy(() => import("./pages/book/RespondBooking"));
+// Social media manager — connect, compose, inbox, rules, performance.
+const SocialConnections = lazy(() => import("./pages/social/Connections"));
+const SocialComposer = lazy(() => import("./pages/social/Composer"));
+const SocialInbox = lazy(() => import("./pages/social/Inbox"));
+const SocialRules = lazy(() => import("./pages/social/Rules"));
+const SocialAnalytics = lazy(() => import("./pages/social/Analytics"));
 const BookingsList = lazy(() => import("./pages/bookings/BookingsList"));
 const BookingDetail = lazy(() => import("./pages/bookings/BookingDetail"));
 
@@ -397,6 +403,11 @@ const AppRoutes = () => {
         <Route path="/calendar/scheduling" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><Scheduling /></Suspense></ProtectedRoute>} />
         <Route path="/bookings" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BookingsList /></Suspense></ProtectedRoute>} />
         <Route path="/bookings/:id" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><BookingDetail /></Suspense></ProtectedRoute>} />
+        <Route path="/social/connections" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialConnections /></Suspense></ProtectedRoute>} />
+        <Route path="/social/compose" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialComposer /></Suspense></ProtectedRoute>} />
+        <Route path="/social/inbox" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialInbox /></Suspense></ProtectedRoute>} />
+        <Route path="/social/rules" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialRules /></Suspense></ProtectedRoute>} />
+        <Route path="/social/performance" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><SocialAnalytics /></Suspense></ProtectedRoute>} />
         <Route path="/invites" element={<ProtectedRoute><Invites /></ProtectedRoute>} />
         <Route path="/organization" element={<ProtectedRoute><Organization /></ProtectedRoute>} />
         {/* Public — token is the credential */}

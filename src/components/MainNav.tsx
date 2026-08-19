@@ -20,8 +20,7 @@ import {
   Mail,
   Building2,
   ScrollText,
-  ShieldCheck,
-} from 'lucide-react';
+  ShieldCheck, Share2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +102,7 @@ export default function MainNav() {
     { label: 'Tasks', path: '/tasks', icon: <ListChecks className="h-4 w-4" /> },
     { label: 'Agents', path: '/agents', icon: <User className="h-4 w-4" /> },
     { label: 'Agent Builder', path: '/agent-builder', icon: <Blocks className="h-4 w-4" /> },
+    { label: 'Social', path: '/social/inbox', icon: <Share2 className="h-4 w-4" /> },
   ];
 
   const handleLogout = async () => {
