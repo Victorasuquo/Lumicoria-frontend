@@ -347,7 +347,7 @@ export default function Connections() {
 
             <footer className="mt-10 flex items-center justify-between border-t border-gray-100 pt-5 text-xs text-gray-400">
                 <span>Access is encrypted and never shown back to you or anyone else.</span>
-                <Link to="/social/rules" className="inline-flex items-center gap-1 hover:text-lumicoria-purple">
+                <Link to="../rules" className="inline-flex items-center gap-1 hover:text-lumicoria-purple">
                     <RefreshCw size={12} /> Reply rules
                 </Link>
             </footer>

@@ -118,7 +118,7 @@ export default function Analytics() {
                         No numbers yet. They appear once you publish and the platforms
                         report back — usually within an hour or so.
                     </p>
-                    <Link to="/social/compose">
+                    <Link to="../compose">
                         <Button size="sm" variant="outline" className="mt-4">Write a post</Button>
                     </Link>
                 </div>
