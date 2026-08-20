@@ -521,3 +521,37 @@ export const socialExtras = {
         URL.revokeObjectURL(url);
     },
 };
+
+export interface ReportSchedule {
+    enabled: boolean;
+    cadence: 'weekly' | 'monthly';
+    recipients: string[];
+    org_name?: string | null;
+    next_run_at?: string | null;
+    last_run_at?: string | null;
+}
+
+export const socialSchedule = {
+    get: async (): Promise<ReportSchedule> =>
+        (await api.get('/social/report/schedule')).data,
+
+    set: async (payload: {
+        cadence: 'weekly' | 'monthly';
+        recipients: string[];
+        org_name?: string;
+        enabled: boolean;
+    }): Promise<ReportSchedule> =>
+        (await api.put('/social/report/schedule', payload)).data,
+
+    /**
+     * Move a scheduled post.
+     *
+     * Distinct from scheduling: this accepts posts that are already scheduled
+     * and leaves their approval intact, so dragging one across the calendar
+     * does not quietly send it back for review.
+     */
+    reschedule: async (postId: string, scheduledFor: Date): Promise<SocialPost> =>
+        (await api.patch(`/social/posts/${postId}/reschedule`, {
+            scheduled_for: scheduledFor.toISOString(),
+        })).data,
+};

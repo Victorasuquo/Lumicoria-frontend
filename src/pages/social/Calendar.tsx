@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     type CalendarPost, type PlatformKey, type PostStatus,
-    socialError, socialExtras,
+    socialError, socialExtras, socialSchedule,
 } from '@/services/socialApi';
 
 const STATUS_STYLE: Record<PostStatus, string> = {
@@ -52,6 +52,10 @@ function monthGrid(anchor: Date): Date[] {
     });
 }
 
+/** Only an approved or scheduled post has a time worth moving. */
+const movable = (post: CalendarPost) =>
+    post.status === 'scheduled' || post.status === 'approved';
+
 const dayKey = (d: Date | string) => {
     const date = typeof d === 'string' ? new Date(d) : d;
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -61,6 +65,8 @@ export default function Calendar() {
     const [anchor, setAnchor] = useState(() => new Date());
     const [posts, setPosts] = useState<CalendarPost[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dragging, setDragging] = useState<CalendarPost | null>(null);
+    const [dropTarget, setDropTarget] = useState<string | null>(null);
 
     const days = useMemo(() => monthGrid(anchor), [anchor]);
 
@@ -99,6 +105,54 @@ export default function Calendar() {
         return empty.length;
     }, [days, byDay, anchor]);
 
+    /**
+     * Drop a post on a new day.
+     *
+     * Keeps the original time of day and moves only the date — someone
+     * dragging a post from Tuesday to Thursday means "same slot, different
+     * day", not "9am becomes whenever I released the mouse".
+     *
+     * Only scheduled or approved posts can move; a draft has no time to keep
+     * and a published post cannot be unpublished.
+     */
+    const drop = async (day: Date) => {
+        const post = dragging;
+        setDragging(null);
+        setDropTarget(null);
+        if (!post) return;
+
+        if (!['scheduled', 'approved'].includes(post.status)) {
+            toast.error(
+                post.status === 'published'
+                    ? 'That one has already gone out.'
+                    : 'Only approved posts can be scheduled. Approve it first.');
+            return;
+        }
+
+        const original = new Date(post.calendar_at);
+        const target = new Date(day);
+        target.setHours(original.getHours(), original.getMinutes(), 0, 0);
+
+        if (target <= new Date()) {
+            toast.error('Pick a day in the future.');
+            return;
+        }
+
+        // Move it on screen first, then reconcile. Waiting on the network
+        // makes a drag feel broken even when it works.
+        const previous = posts;
+        setPosts((rows) => rows.map((r) =>
+            r.id === post.id ? { ...r, calendar_at: target.toISOString() } : r));
+        try {
+            await socialSchedule.reschedule(post.id, target);
+            toast.success(`Moved to ${target.toLocaleDateString(undefined, {
+                weekday: 'long', day: 'numeric', month: 'short' })}`);
+        } catch (error) {
+            setPosts(previous);
+            toast.error(socialError(error, 'Could not move that post'));
+        }
+    };
+
     const move = (months: number) => {
         const next = new Date(anchor);
         next.setMonth(anchor.getMonth() + months);
@@ -114,7 +168,8 @@ export default function Calendar() {
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
                         Drafts and posts awaiting approval are shown too, so you can
-                        see what is coming and what is missing.
+                        see what is coming and what is missing. Drag a scheduled
+                        post to another day to move it.
                     </p>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -164,7 +219,14 @@ export default function Calendar() {
 
                             return (
                                 <div key={key}
-                                    className={`min-h-[92px] border-b border-r border-gray-100 p-1.5 last:border-r-0 ${otherMonth ? 'bg-gray-50/40' : ''}`}>
+                                    onDragOver={(e) => {
+                                        if (!dragging) return;
+                                        e.preventDefault();
+                                        setDropTarget(key);
+                                    }}
+                                    onDragLeave={() => setDropTarget((c) => (c === key ? null : c))}
+                                    onDrop={(e) => { e.preventDefault(); void drop(day); }}
+                                    className={`min-h-[92px] border-b border-r border-gray-100 p-1.5 transition-colors last:border-r-0 ${otherMonth ? 'bg-gray-50/40' : ''} ${dropTarget === key ? 'bg-purple-50 ring-1 ring-inset ring-lumicoria-purple' : ''}`}>
                                     <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${isToday
                                         ? 'bg-lumicoria-purple font-medium text-white'
                                         : otherMonth ? 'text-gray-300' : 'text-gray-500'}`}>
@@ -176,8 +238,13 @@ export default function Calendar() {
                                             const provider = post.variants?.[0]?.provider;
                                             return (
                                                 <div key={post.id}
-                                                    title={post.idea ?? post.variants?.[0]?.body ?? ''}
-                                                    className={`flex items-center gap-1 truncate rounded border px-1 py-0.5 text-[10px] ${STATUS_STYLE[post.status]}`}>
+                                                    draggable={movable(post)}
+                                                    onDragStart={() => setDragging(post)}
+                                                    onDragEnd={() => { setDragging(null); setDropTarget(null); }}
+                                                    title={movable(post)
+                                                        ? 'Drag to another day to move it'
+                                                        : post.idea ?? post.variants?.[0]?.body ?? ''}
+                                                    className={`flex items-center gap-1 truncate rounded border px-1 py-0.5 text-[10px] ${STATUS_STYLE[post.status]} ${movable(post) ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging?.id === post.id ? 'opacity-40' : ''}`}>
                                                     {provider && (
                                                         <PlatformIcon
                                                             platform={provider as PlatformKey}

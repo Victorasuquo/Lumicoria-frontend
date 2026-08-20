@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
     BarChart3, Eye, Heart, Loader2, MessageCircle, MousePointerClick,
-    Download, Share2, TriangleAlert, Users,
+    Download, Mail, Share2, TriangleAlert, Users,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type PlatformKey, type SocialAnalytics,
-    formatMetric, socialApi, socialError, socialExtras,
+    type ReportSchedule,
+    formatMetric, socialApi, socialError, socialExtras, socialSchedule,
 } from '@/services/socialApi';
 
 const RANGES = [7, 30, 90];
@@ -47,6 +48,10 @@ export default function Analytics() {
     const [data, setData] = useState<SocialAnalytics | null>(null);
     const [range, setRange] = useState(30);
     const [loading, setLoading] = useState(true);
+    const [schedule, setSchedule] = useState<ReportSchedule | null>(null);
+    const [editingSchedule, setEditingSchedule] = useState(false);
+    const [recipients, setRecipients] = useState('');
+    const [cadence, setCadence] = useState<'weekly' | 'monthly'>('weekly');
 
     const load = useCallback(async (days: number) => {
         setLoading(true);
@@ -60,6 +65,33 @@ export default function Analytics() {
     }, []);
 
     useEffect(() => { void load(range); }, [load, range]);
+
+    useEffect(() => {
+        void socialSchedule.get().then((row) => {
+            setSchedule(row);
+            setRecipients((row.recipients ?? []).join(', '));
+            setCadence(row.cadence ?? 'weekly');
+        }).catch(() => { /* no schedule yet is the normal case */ });
+    }, []);
+
+    const saveSchedule = async (enabled: boolean) => {
+        try {
+            const saved = await socialSchedule.set({
+                cadence,
+                // Split on comma OR whitespace: people paste address lists in
+                // both shapes and neither should silently drop a recipient.
+                recipients: recipients.split(/[,\s]+/).map((r) => r.trim()).filter(Boolean),
+                enabled,
+            });
+            setSchedule(saved);
+            setEditingSchedule(false);
+            toast.success(enabled
+                ? `Report will send ${saved.cadence}`
+                : 'Recurring report turned off');
+        } catch (error) {
+            toast.error(socialError(error, 'Could not save that'));
+        }
+    };
 
     if (loading && !data) {
         return (
@@ -197,7 +229,62 @@ export default function Analytics() {
                 </>
             )}
 
-            <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-xs text-gray-500 shadow-sm">
+            <section className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <Mail size={14} className="text-gray-400" />
+                        <span className="text-sm text-gray-900">
+                            {schedule?.enabled
+                                ? `Emailing ${schedule.recipients.length} ${schedule.recipients.length === 1 ? 'person' : 'people'} ${schedule.cadence}`
+                                : 'Send this report automatically'}
+                        </span>
+                    </div>
+                    <Button size="sm" variant="outline"
+                        onClick={() => setEditingSchedule((v) => !v)}>
+                        {schedule?.enabled ? 'Change' : 'Set up'}
+                    </Button>
+                </div>
+
+                {schedule?.enabled && schedule.next_run_at && !editingSchedule && (
+                    <p className="mt-1.5 text-[11px] text-gray-400">
+                        Next on {new Date(schedule.next_run_at).toLocaleDateString(undefined,
+                            { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
+                )}
+
+                {editingSchedule && (
+                    <div className="mt-4 border-t border-gray-100 pt-4">
+                        <label className="mb-1 block text-xs text-gray-600">Send to</label>
+                        <input value={recipients}
+                            onChange={(e) => setRecipients(e.target.value)}
+                            placeholder="client@example.com, boss@example.com"
+                            className="mb-3 h-9 w-full rounded-md border border-gray-300 px-3 text-sm outline-none focus:border-lumicoria-purple" />
+                        <div className="flex flex-wrap items-center gap-2">
+                            {(['weekly', 'monthly'] as const).map((option) => (
+                                <button key={option} onClick={() => setCadence(option)}
+                                    className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${cadence === option
+                                        ? 'border-lumicoria-purple bg-purple-50 text-lumicoria-purple'
+                                        : 'border-gray-200 text-gray-600'}`}>
+                                    {option === 'weekly' ? 'Every Monday' : '1st of the month'}
+                                </button>
+                            ))}
+                            <Button size="sm" className="ml-auto"
+                                disabled={!recipients.trim()}
+                                onClick={() => saveSchedule(true)}>
+                                Save
+                            </Button>
+                            {schedule?.enabled && (
+                                <Button size="sm" variant="ghost"
+                                    onClick={() => saveSchedule(false)}>
+                                    Turn off
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </section>
+
+            <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-xs text-gray-500 shadow-sm">
                 <span>
                     This month: {data.usage.posts_this_month} post
                     {data.usage.posts_this_month === 1 ? '' : 's'} ·{' '}
