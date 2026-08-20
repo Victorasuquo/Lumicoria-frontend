@@ -27,6 +27,7 @@ import {
 import { socialMediaApi } from "@/services/api";
 import { socialApi, socialError, PLATFORM_LABELS, type PlatformKey } from "@/services/socialApi";
 import { useSocial } from "./social/SocialLayout";
+import { PlatformIcon } from "@/components/social/PlatformIcon";
 import { toast } from "sonner";
 
 const platforms = [
@@ -326,9 +327,8 @@ const SocialMediaAgent: React.FC = () => {
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${targets.includes(a.id)
                           ? "bg-lumicoria-purple text-white"
                           : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}>
-                        {a.avatar_url && <img src={a.avatar_url} alt="" className="h-3 w-3 rounded-full" />}
+                        <PlatformIcon platform={a.provider} size={13} />
                         {a.display_name || a.handle}
-                        <span className="opacity-60">{PLATFORM_LABELS[a.provider]}</span>
                       </button>
                     ))}
                   </div>

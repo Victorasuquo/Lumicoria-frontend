@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type SocialComment, type SocialConversation,
     type SocialMention, type SocialMessage,
@@ -226,9 +227,7 @@ export default function Inbox() {
                                         <span className="font-medium text-gray-900">
                                             {comment.author_handle || 'Someone'}
                                         </span>
-                                        <Badge variant="outline" className="text-[10px]">
-                                            {PLATFORM_LABELS[comment.provider]}
-                                        </Badge>
+                                        <PlatformIcon platform={comment.provider} size={14} />
                                         <span>{timeAgo(comment.created_at)}</span>
                                     </div>
                                     <p className="mt-2 whitespace-pre-line text-sm text-gray-800">
@@ -295,9 +294,7 @@ export default function Inbox() {
                                     <span className="truncate text-sm font-medium text-gray-900">
                                         {thread.participant_handle || 'Conversation'}
                                     </span>
-                                    <Badge variant="outline" className="text-[10px]">
-                                        {PLATFORM_LABELS[thread.provider]}
-                                    </Badge>
+                                    <PlatformIcon platform={thread.provider} size={14} />
                                 </span>
                                 <span className="mt-0.5 block text-xs text-gray-400">
                                     {timeAgo(thread.last_message_at)}
@@ -390,9 +387,7 @@ export default function Inbox() {
                                 <span className="font-medium text-gray-900">
                                     {mention.author_handle || 'Someone'}
                                 </span>
-                                <Badge variant="outline" className="text-[10px]">
-                                    {PLATFORM_LABELS[mention.provider]}
-                                </Badge>
+                                <PlatformIcon platform={mention.provider} size={14} />
                                 {mention.sentiment === 'negative' && (
                                     <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] text-red-700">
                                         negative

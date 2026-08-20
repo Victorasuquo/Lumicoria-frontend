@@ -22,6 +22,7 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type PlatformKey, type SocialAnalytics,
     formatMetric, socialApi, socialError,
@@ -152,6 +153,7 @@ export default function Analytics() {
                                     <div key={provider}
                                         className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                                         <div className="flex items-center gap-2">
+                                            <PlatformIcon platform={provider as PlatformKey} size={18} />
                                             <span className="text-sm text-gray-900">{label}</span>
                                             <Badge variant="outline" className="text-[10px]">
                                                 {stats.posts} post{stats.posts === 1 ? '' : 's'}

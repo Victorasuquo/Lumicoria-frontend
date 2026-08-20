@@ -21,6 +21,7 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type ConnectableAccount, type PlatformKey,
     type ProviderCapability, type ReplyMode, type SocialAccount,
@@ -182,9 +183,7 @@ export default function Connections() {
                                         {account.avatar_url
                                             ? <img src={account.avatar_url} alt=""
                                                 className="h-11 w-11 rounded-full object-cover" />
-                                            : <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-sm font-medium text-gray-500">
-                                                {PLATFORM_LABELS[account.provider][0]}
-                                            </div>}
+                                            : <PlatformIcon platform={account.provider} size={44} />}
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium text-gray-900">
@@ -262,7 +261,9 @@ export default function Connections() {
                             <div key={cap.platform}
                                 className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div>
+                                    <div className="flex items-start gap-3">
+                                        <PlatformIcon platform={cap.platform} size={36} />
+                                        <div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium text-gray-900">
                                                 {PLATFORM_LABELS[cap.platform]}
@@ -276,6 +277,7 @@ export default function Connections() {
                                         <p className="mt-1 text-xs text-gray-500">
                                             {capabilitySummary(cap)}
                                         </p>
+                                        </div>
                                     </div>
                                     <Button size="sm"
                                         disabled={!cap.configured || connecting === cap.platform}
@@ -322,9 +324,7 @@ export default function Connections() {
                                 <button key={`${account.platform}-${account.external_account_id}`}
                                     onClick={() => confirmAccount(account)}
                                     className="flex w-full items-center gap-3 rounded-xl border border-gray-200 p-3 text-left transition-colors hover:border-lumicoria-purple hover:bg-purple-50/40">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
-                                        {PLATFORM_LABELS[account.platform][0]}
-                                    </span>
+                                    <PlatformIcon platform={account.platform} size={32} />
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm text-gray-900">
                                             {account.display_name || account.handle}
