@@ -167,6 +167,8 @@ const SocialConnectionsRoom = lazy(() => import("./pages/agents/social/Connectio
 const SocialInboxRoom = lazy(() => import("./pages/agents/social/InboxRoom"));
 const SocialRulesRoom = lazy(() => import("./pages/agents/social/RulesRoom"));
 const SocialAnalyticsRoom = lazy(() => import("./pages/agents/social/AnalyticsRoom"));
+const SocialCalendarRoom = lazy(() => import("./pages/agents/social/CalendarRoom"));
+const SocialLibraryRoom = lazy(() => import("./pages/agents/social/LibraryRoom"));
 const BookingsList = lazy(() => import("./pages/bookings/BookingsList"));
 const BookingDetail = lazy(() => import("./pages/bookings/BookingDetail"));
 
@@ -457,6 +459,8 @@ const AppRoutes = () => {
           <Route path="inbox" element={<Suspense fallback={<AgentPageFallback />}><SocialInboxRoom /></Suspense>} />
           <Route path="rules" element={<Suspense fallback={<AgentPageFallback />}><SocialRulesRoom /></Suspense>} />
           <Route path="analytics" element={<Suspense fallback={<AgentPageFallback />}><SocialAnalyticsRoom /></Suspense>} />
+          <Route path="calendar" element={<Suspense fallback={<AgentPageFallback />}><SocialCalendarRoom /></Suspense>} />
+          <Route path="library" element={<Suspense fallback={<AgentPageFallback />}><SocialLibraryRoom /></Suspense>} />
         </Route>
         <Route path="/agents/translation" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><TranslationAgent /></Suspense></ProtectedRoute>} />
         <Route path="/agents/customer-service" element={<ProtectedRoute><Suspense fallback={<AgentPageFallback />}><CustomerServiceAgent /></Suspense></ProtectedRoute>} />

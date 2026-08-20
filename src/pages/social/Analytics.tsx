@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
     BarChart3, Eye, Heart, Loader2, MessageCircle, MousePointerClick,
-    Share2, TriangleAlert, Users,
+    Download, Share2, TriangleAlert, Users,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type PlatformKey, type SocialAnalytics,
-    formatMetric, socialApi, socialError,
+    formatMetric, socialApi, socialError, socialExtras,
 } from '@/services/socialApi';
 
 const RANGES = [7, 30, 90];
@@ -84,7 +84,15 @@ export default function Analytics() {
                         {data.connected_accounts === 1 ? '' : 's'}.
                     </p>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" className="mr-1"
+                        onClick={() => {
+                            void socialExtras.downloadReport(range)
+                                .then(() => toast.success('Report downloaded'))
+                                .catch((e) => toast.error(socialError(e, 'Could not build the report')));
+                        }}>
+                        <Download size={13} className="mr-1.5" /> Report
+                    </Button>
                     {RANGES.map((days) => (
                         <button key={days} onClick={() => setRange(days)}
                             className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${range === days

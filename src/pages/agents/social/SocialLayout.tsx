@@ -41,10 +41,12 @@ export const useSocial = () => useContext(SocialContext);
 // connected. The automation rooms sit beside it rather than replacing it.
 const TABS = [
     { to: '', label: 'Studio', end: true },
-    { to: 'connections', label: 'Accounts' },
+    { to: 'calendar', label: 'Calendar' },
     { to: 'inbox', label: 'Inbox' },
+    { to: 'library', label: 'Library' },
     { to: 'rules', label: 'Auto-replies' },
     { to: 'analytics', label: 'Performance' },
+    { to: 'connections', label: 'Accounts' },
 ];
 
 export default function SocialLayout() {

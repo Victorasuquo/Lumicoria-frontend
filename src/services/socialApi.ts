@@ -405,3 +405,119 @@ export function socialError(error: unknown, fallback = 'Something went wrong'): 
     }
     return err?.message || fallback;
 }
+
+// ── calendar, media, links, roles, reports ───────────────────────────────
+
+export interface CalendarPost extends SocialPost {
+    /** The date the calendar places it on: when due, or when it went out. */
+    calendar_at: string;
+}
+
+export interface MediaAsset {
+    id: string;
+    s3_key: string;
+    kind: 'image' | 'video';
+    mime: string;
+    size_bytes: number;
+    width?: number | null;
+    height?: number | null;
+    alt_text?: string | null;
+    created_at?: string;
+    /** Presigned — unpublished creative is not left openly readable. */
+    url: string;
+    /** Which platforms will crop this. Advisory, not blocking. */
+    warnings?: string[];
+}
+
+export interface TrackedLink {
+    id: string;
+    short_code: string;
+    short_url: string;
+    target_url: string;
+    utm_campaign?: string | null;
+    click_count: number;
+    last_clicked_at?: string | null;
+    created_at: string;
+}
+
+export interface TrackUrlResult {
+    provider: PlatformKey;
+    external_post_id: string;
+    /** False when the post is not on a connected account — public metrics only. */
+    owned: boolean;
+    note: string;
+}
+
+export type SocialRoleKey =
+    | 'social_viewer' | 'social_drafter' | 'social_approver' | 'social_admin';
+
+export interface SocialRoles {
+    roles: Array<{ user_id: string; role: SocialRoleKey; updated_at?: string }>;
+    your_role: SocialRoleKey | null;
+    requirements: Record<string, SocialRoleKey>;
+}
+
+export const socialExtras = {
+    calendar: async (from: string, to: string): Promise<CalendarPost[]> =>
+        (await api.get('/social/calendar', { params: { from, to } })).data,
+
+    listMedia: async (): Promise<MediaAsset[]> =>
+        (await api.get('/social/media')).data,
+
+    uploadMedia: async (file: File, altText?: string): Promise<MediaAsset> => {
+        const form = new FormData();
+        form.append('file', file);
+        if (altText) form.append('alt_text', altText);
+        return (await api.post('/social/media', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })).data;
+    },
+
+    deleteMedia: async (id: string): Promise<{ deleted: boolean }> =>
+        (await api.delete(`/social/media/${id}`)).data,
+
+    listLinks: async (): Promise<TrackedLink[]> =>
+        (await api.get('/social/links')).data,
+
+    createLink: async (payload: {
+        target_url: string; campaign?: string; provider?: string;
+    }): Promise<TrackedLink> => (await api.post('/social/links', payload)).data,
+
+    trackUrl: async (url: string): Promise<TrackUrlResult> =>
+        (await api.post('/social/track-url', { url })).data,
+
+    roles: async (): Promise<SocialRoles> => (await api.get('/social/roles')).data,
+
+    setRole: async (user_id: string, role: SocialRoleKey) =>
+        (await api.put('/social/roles', { user_id, role })).data,
+
+    claimComment: async (id: string): Promise<{ claimed: boolean }> =>
+        (await api.post(`/social/comments/${id}/claim`)).data,
+
+    addNote: async (id: string, body: string) =>
+        (await api.post(`/social/comments/${id}/notes`, { body })).data,
+
+    listNotes: async (id: string): Promise<Array<{ id: string; body: string; created_at: string }>> =>
+        (await api.get(`/social/comments/${id}/notes`)).data,
+
+    /**
+     * Download the branded PDF.
+     *
+     * Fetched as a blob and saved client-side rather than opened in a tab, so
+     * the browser keeps the filename we set instead of naming it after the id.
+     */
+    downloadReport: async (days = 30, orgName?: string): Promise<void> => {
+        const response = await api.get('/social/report', {
+            params: { days, org_name: orgName },
+            responseType: 'blob',
+        });
+        const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `social-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+    },
+};

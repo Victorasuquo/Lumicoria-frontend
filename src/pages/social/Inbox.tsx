@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
     AlertOctagon, AtSign, Clock, Loader2, MessageCircle,
-    Send, Sparkles, TriangleAlert,
+    Send, Sparkles, StickyNote, TriangleAlert, UserCheck,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,7 @@ import { PlatformIcon } from '@/components/social/PlatformIcon';
 import {
     PLATFORM_LABELS, type SocialComment, type SocialConversation,
     type SocialMention, type SocialMessage,
-    socialApi, socialError,
+    socialApi, socialError, socialExtras,
 } from '@/services/socialApi';
 
 type Tab = 'needs_human' | 'comments' | 'messages' | 'mentions';
@@ -66,6 +66,9 @@ export default function Inbox() {
     const [replyTo, setReplyTo] = useState<string | null>(null);
     const [draft, setDraft] = useState('');
     const [busy, setBusy] = useState(false);
+    const [claimed, setClaimed] = useState<Set<string>>(new Set());
+    const [noteFor, setNoteFor] = useState<string | null>(null);
+    const [note, setNote] = useState('');
 
     const load = useCallback(async () => {
         try {
@@ -101,6 +104,35 @@ export default function Inbox() {
             setMessages(await socialApi.listMessages(thread.id));
         } catch (error) {
             toast.error(socialError(error, 'Could not open that conversation'));
+        }
+    };
+
+    /**
+     * Take a comment before replying.
+     *
+     * Losing the race tells you who has it rather than letting you start
+     * typing a duplicate — two people answering one customer seconds apart is
+     * the failure this exists to prevent.
+     */
+    const claim = async (comment: SocialComment) => {
+        try {
+            await socialExtras.claimComment(comment.id);
+            setClaimed((current) => new Set(current).add(comment.id));
+            setReplyTo(comment.id);
+            setDraft('');
+        } catch (error) {
+            toast.error(socialError(error, 'Someone else is handling this one'));
+        }
+    };
+
+    const saveNote = async (comment: SocialComment) => {
+        if (!note.trim()) return;
+        try {
+            await socialExtras.addNote(comment.id, note.trim());
+            toast.success('Note saved — only your team can see it');
+            setNote(''); setNoteFor(null);
+        } catch (error) {
+            toast.error(socialError(error, 'Could not save that note'));
         }
     };
 
@@ -241,12 +273,36 @@ export default function Inbox() {
                                     )}
                                 </div>
                                 {replyTo !== comment.id && (
-                                    <Button size="sm" variant="outline"
-                                        onClick={() => { setReplyTo(comment.id); setDraft(''); }}>
-                                        Reply
-                                    </Button>
+                                    <div className="flex shrink-0 items-center gap-1.5">
+                                        <Button size="sm" variant="ghost"
+                                            title="Add an internal note"
+                                            onClick={() => { setNoteFor(comment.id); setNote(''); }}>
+                                            <StickyNote size={13} />
+                                        </Button>
+                                        <Button size="sm" variant="outline"
+                                            onClick={() => claim(comment)}>
+                                            {claimed.has(comment.id)
+                                                ? <><UserCheck size={13} className="mr-1" />Yours</>
+                                                : 'Reply'}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
+
+                            {noteFor === comment.id && (
+                                <div className="mt-3 rounded-xl bg-amber-50/60 p-3">
+                                    <Textarea value={note} rows={2}
+                                        onChange={(e) => setNote(e.target.value)}
+                                        placeholder="Internal note — never sent to the platform"
+                                        className="bg-white text-sm" />
+                                    <div className="mt-2 flex gap-2">
+                                        <Button size="sm" disabled={!note.trim()}
+                                            onClick={() => saveNote(comment)}>Save note</Button>
+                                        <Button size="sm" variant="ghost"
+                                            onClick={() => setNoteFor(null)}>Cancel</Button>
+                                    </div>
+                                </div>
+                            )}
 
                             {replyTo === comment.id && (
                                 <div className="mt-3 border-t border-gray-100 pt-3">
